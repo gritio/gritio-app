@@ -1,0 +1,213 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model - linked to Auth0
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  auth0Id   String     @unique // Auth0 user ID
+  password  String?    // Password hash for local authentication
+  name      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  goals     Goal[]
+  todos     Todo[]
+}
+
+// Goal model - yearly goals
+model Goal {
+  id              String     @id @default(cuid())
+  userId          String
+  title           String
+  area            String     // e.g., "Health", "Learning", "Career"
+  unit            String     // "Kilogram", "Count", "Time"
+  startDate       DateTime
+  endDate         DateTime
+  target          Int        // 100 for percentage
+  progress        Int        @default(0) // 0-100 for yearly progress
+  status          GoalStatus @default(ON_TRACK)
+  remarks         String?
+  yearlyMeasure   String?    // deprecated - use unit-specific targets instead
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyGoals    MonthlyGoal[]
+  tasks           Task[]
+  weightGoal      WeightGoal?
+  countGoal       CountGoal?
+  timeGoal        TimeGoal?
+
+  @@index([userId])
+}
+
+// Weight-specific goal tracking
+model WeightGoal {
+  id              String     @id @default(cuid())
+  goalId          String     @unique
+  startWeight     Float      // kg
+  currentWeight   Float      // kg
+  targetWeight    Float      // kg
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+// Count-specific goal tracking (e.g., books read, articles written, etc.)
+model CountGoal {
+  id              String     @id @default(cuid())
+  goalId          String     @unique
+  targetCount     Int        // e.g., 24 books, 100 articles
+  currentCount    Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+// Time-specific goal tracking (e.g., 100 hours of learning, 50 hours of coding)
+model TimeGoal {
+  id              String     @id @default(cuid())
+  goalId          String     @unique
+  targetHours     Int        // Total hours target
+  targetMinutes   Int        @default(0) // Additional minutes (0-59)
+  currentHours    Int        @default(0)
+  currentMinutes  Int        @default(0) // Current minutes (0-59)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+// Monthly goals - breakdown of yearly goals
+model MonthlyGoal {
+  id              String     @id @default(cuid())
+  goalId          String
+  title           String
+  month           String     // e.g., "January 2025"
+  monthDate       DateTime   // First day of month
+  target          Decimal    @db.Decimal(10, 2) // Monthly target value (supports decimals)
+  unit            String     // e.g., "KG", "count", "hours"
+  currentProgress Decimal    @default(0) @db.Decimal(10, 2) // Changed to Decimal to match target
+  status          GoalStatus @default(ON_TRACK)
+  remarks         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+}
+
+// Tasks - daily or weekly actions (attached to yearly goal, not monthly goal)
+model Task {
+  id              String     @id @default(cuid())
+  goalId          String     // Links to yearly goal
+  title           String
+  type            MeasurementType // "number", "time", "steps", "distance"
+  frequency       Frequency  // "daily" or "weekly"
+  target          Int        // Target per day/week (for Time/Steps/Distance) or 1 (for Number)
+  unit            String     // e.g., "sessions", "steps", "mins", "km" (for Number, default to "times")
+  timesPerWeek    Int?       // Only for weekly tasks (1-7)
+  lastUpdated     DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  goal            Goal       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  completionRecords TaskCompletion[]
+  monthAggregations TaskMonthAggregation[]
+
+  @@index([goalId])
+}
+
+// Task completion logs - track daily/weekly task progress
+model TaskCompletion {
+  id              String     @id @default(cuid())
+  taskId          String
+  date            DateTime   // Date of completion (stored as UTC midnight)
+  value           Decimal    @db.Decimal(10, 2) // Value completed (e.g., 7500 steps, 28 mins)
+  completed       Boolean    @default(false) // Whether target was fully met
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  task            Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, date]) // One record per task per day
+  @@index([taskId])
+  @@index([date])
+}
+
+// Task month aggregation - pre-computed monthly progress for each task
+model TaskMonthAggregation {
+  id              String     @id @default(cuid())
+  taskId          String
+  year            Int
+  month           Int        // 1-12
+  totalValue      Decimal    @db.Decimal(10, 2) // Sum of all completions for numeric tasks
+  daysWithActivity Int       @default(0) // Count of days with non-zero activity
+  target          Int        // Task target at the time of aggregation (for progress calculation)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  task            Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, year, month]) // One aggregation per task per month
+  @@index([taskId])
+  @@index([year, month])
+}
+
+// Todos - personal task tracking independent of goals
+model Todo {
+  id          String     @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  done        Boolean    @default(false)
+  priority    Boolean    @default(false)
+  dueDate     DateTime
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dueDate])
+}
+
+// Enums
+enum GoalStatus {
+  ON_TRACK
+  BEHIND
+  AHEAD
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+}
+
+enum MeasurementType {
+  NUMBER
+  TIME
+  STEPS
+  DISTANCE
+}
