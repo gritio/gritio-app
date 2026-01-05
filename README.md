@@ -34,8 +34,15 @@ cd ../..
 ```
 
 ### Step 3: Setup Database
+Create a `.env` file in the project root with your database connection:
+```bash
+DATABASE_URL="postgresql://postgres:password@localhost:5432/gritio_db"
+```
+
+Then run:
 ```bash
 cd src/api
+npx prisma generate
 npx prisma migrate dev
 npm run seed
 cd ../..
