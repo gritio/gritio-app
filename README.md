@@ -16,27 +16,54 @@ A **production-ready Goal Tracking application** with:
 ### Step 1: Extract Files
 ```bash
 # If you have the tar.gz
-tar -xzf goal-tracker-complete.tar.gz
-cd goal-tracker
+tar -xzf gritio-app.tar.gz
+cd gritio-app
 
 # Otherwise, copy all files to a folder
-mkdir goal-tracker && cd goal-tracker
+mkdir gritio-app && cd gritio-app
 ```
 
 ### Step 2: Install Dependencies
+
+**Frontend:**
 ```bash
 npm install
 ```
 
-### Step 3: Start Dev Server
+**Backend:**
+```bash
+cd src/api
+npm install
+cd ../..
+```
+
+### Step 3: Setup Database
+```bash
+cd src/api
+npx prisma migrate dev
+npm run seed
+cd ../..
+```
+
+### Step 4: Start Backend Server
+```bash
+cd src/api
+npm run start
+# or for development with hot reload:
+npm run start:dev
+```
+Backend will run on: `http://localhost:3000`
+
+### Step 5: Start Frontend Dev Server (in another terminal)
 ```bash
 npm run dev
 ```
+Frontend will run on: `http://localhost:5173`
 
-### Step 4: Open in Browser
+### Step 6: Open in Browser
 Visit: `http://localhost:5173`
 
-### Step 5: Test the Feature
+### Step 7: Test the Feature
 1. Click **Edit** button on any goal
 2. Side panel slides in from the right
 3. Edit fields, click **Save Changes**
