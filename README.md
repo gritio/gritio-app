@@ -101,7 +101,8 @@ outputs/
 
 ---
 
-## 🎯 Key Features
+<details>
+<summary><h2>🎯 Key Features</h2></summary>
 
 ### Feature #1: Goals Overview
 - All goals grouped by area (Health, Learning, Career, etc.)
@@ -135,9 +136,12 @@ outputs/
 - Today (daily tasks)
 - Weekly (weekly review)
 
+</details>
+
 ---
 
-## 💻 Using with Claude Code
+<details>
+<summary><h2>💻 Using with Claude Code</h2></summary>
 
 ### Open in VS Code
 ```bash
@@ -169,9 +173,12 @@ Claude Code will:
 3. Keep the app running
 4. See changes live at `http://localhost:5173`
 
+</details>
+
 ---
 
-## 📝 File Reference Guide
+<details>
+<summary><h2>📝 File Reference Guide</h2></summary>
 
 ### Most Important Files
 
@@ -210,9 +217,12 @@ Purpose: Provides demo data for the app
 Edit: Change goal names, add more goals, etc.
 ```
 
+</details>
+
 ---
 
-## 🔧 Common Modifications
+<details>
+<summary><h2>🔧 Common Modifications</h2></summary>
 
 ### Change Colors
 In `GoalEditPanel.tsx`:
@@ -278,9 +288,12 @@ transition-transform duration-200
 transition-transform duration-500
 ```
 
+</details>
+
 ---
 
-## 🐛 Troubleshooting
+<details>
+<summary><h2>🐛 Troubleshooting</h2></summary>
 
 ### Problem: Port 5173 already in use
 ```bash
@@ -311,9 +324,12 @@ npm install
 npm install typescript@latest
 ```
 
+</details>
+
 ---
 
-## 🧪 Testing the App
+<details>
+<summary><h2>🧪 Testing the App</h2></summary>
 
 ### Manual Checklist
 - [ ] App loads at localhost:5173
@@ -327,9 +343,12 @@ npm install typescript@latest
 - [ ] Click overlay → Panel closes
 - [ ] Click Cancel → Panel closes without saving
 
+</details>
+
 ---
 
-## 📚 Code Examples
+<details>
+<summary><h2>📚 Code Examples</h2></summary>
 
 ### How Edit Panel Works
 ```typescript
@@ -374,9 +393,12 @@ const handleDelete = () => {
 };
 ```
 
+</details>
+
 ---
 
-## 🚀 Next Steps
+<details>
+<summary><h2>🚀 Next Steps</h2></summary>
 
 ### For Beginners
 1. ✅ Get the app running locally
@@ -399,9 +421,12 @@ const handleDelete = () => {
 4. ✅ Add real-time updates with WebSockets
 5. ✅ Deploy to production
 
+</details>
+
 ---
 
-## 📖 Documentation Files
+<details>
+<summary><h2>📖 Documentation Files</h2></summary>
 
 | File | Purpose |
 |------|---------|
@@ -410,9 +435,12 @@ const handleDelete = () => {
 | `CLAUDE_CODE_GUIDE.md` | How to use Claude Code effectively |
 | `README.md` | Quick overview (this file) |
 
+</details>
+
 ---
 
-## 🎓 Learning Resources
+<details>
+<summary><h2>🎓 Learning Resources</h2></summary>
 
 ### React Concepts Used
 - ✅ Functional components with hooks
@@ -433,9 +461,12 @@ const handleDelete = () => {
 - ✅ Optional properties
 - ✅ Union types
 
+</details>
+
 ---
 
-## 🤝 Getting Help
+<details>
+<summary><h2>🤝 Getting Help</h2></summary>
 
 ### With Claude Code
 Just ask naturally:
@@ -458,9 +489,12 @@ A: Modify Tailwind classes - they're named and simple
 **Q: Can I use this commercially?**
 A: Yes, it's yours to use as you like!
 
+</details>
+
 ---
 
-## 📋 Checklist Before You Start
+<details>
+<summary><h2>📋 Checklist Before You Start</h2></summary>
 
 - [ ] Node.js 18+ installed
 - [ ] npm or yarn working
@@ -472,15 +506,20 @@ A: Yes, it's yours to use as you like!
 - [ ] Tested the app in browser
 - [ ] Read through this guide
 
+</details>
+
 ---
 
-## 💡 Pro Tips
+<details>
+<summary><h2>💡 Pro Tips</h2></summary>
 
 1. **Keep dev server running** - Changes hot-reload automatically
 2. **Use browser DevTools** - F12 for debugging
 3. **Check console for errors** - First troubleshooting step
 4. **Ask Claude Code specifically** - "Change the save button color to green" works better than "make it prettier"
 5. **Git commit often** - Easy to roll back if needed
+
+</details>
 
 ---
 
