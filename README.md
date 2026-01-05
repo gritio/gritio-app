@@ -13,14 +13,10 @@ A **production-ready Goal Tracking application** with:
 
 ## 🚀 Quick Start (5 Minutes)
 
-### Step 1: Extract Files
+### Step 1: Clone Repository
 ```bash
-# If you have the tar.gz
-tar -xzf gritio-app.tar.gz
+git clone git@github.com:gritio/gritio-app.git
 cd gritio-app
-
-# Otherwise, copy all files to a folder
-mkdir gritio-app && cd gritio-app
 ```
 
 ### Step 2: Install Dependencies
