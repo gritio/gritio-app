@@ -11,7 +11,50 @@ A **production-ready Goal Tracking application** with:
 
 ---
 
-## 🚀 Quick Start (5 Minutes)
+## 🚀 Quick Start with Docker (2 Minutes)
+
+### Prerequisites
+- Docker installed (Docker Desktop or Colima)
+- docker-compose installed
+
+### Step 1: Clone Repository
+```bash
+git clone git@github.com:gritio/gritio-app.git
+cd gritio-app
+```
+
+### Step 2: Start with Docker Compose
+```bash
+docker-compose up --build
+```
+
+This starts:
+- ✅ **Frontend** on http://localhost:5173
+- ✅ **Backend** on http://localhost:3000
+- ✅ **PostgreSQL** database (with data persistence)
+- ✅ **pgAdmin** on http://localhost:5050 (for viewing database)
+
+### Step 3: View Database (Optional)
+Access pgAdmin at: http://localhost:5050
+- Email: `admin@example.com`
+- Password: `admin`
+
+Register server:
+1. Right-click "Servers" → Register → Server
+2. Name: `gritio-postgres`
+3. Host: `postgres`, Port: `5432`
+4. Username: `postgres`, Password: `postgres`
+
+### Step 4: Stop Services
+```bash
+docker-compose down
+```
+
+Data persists! Next time you run `docker-compose up`, everything will be restored.
+
+---
+
+## 🖥️ Alternative: Local Development (Without Docker)
 
 ### Step 1: Clone Repository
 ```bash
@@ -34,7 +77,7 @@ cd ../..
 ```
 
 ### Step 3: Setup Database
-Create a `.env` file in the project root with your database connection:
+Create `.env` in project root:
 ```bash
 DATABASE_URL="postgresql://postgres:password@localhost:5432/gritio_db"
 ```
@@ -51,8 +94,6 @@ cd ../..
 ### Step 4: Start Backend Server
 ```bash
 cd src/api
-npm run start
-# or for development with hot reload:
 npm run start:dev
 ```
 Backend will run on: `http://localhost:3000`
@@ -65,12 +106,6 @@ Frontend will run on: `http://localhost:5173`
 
 ### Step 6: Open in Browser
 Visit: `http://localhost:5173`
-
-### Step 7: Test the Feature
-1. Click **Edit** button on any goal
-2. Side panel slides in from the right
-3. Edit fields, click **Save Changes**
-4. See changes reflected in the main view
 
 ---
 

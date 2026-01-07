@@ -115,6 +115,196 @@ npm run build
 - Generate runs automatically with `migrate dev`
 - Never skip `npm run seed` after migrations in development
 
+# Deployment Guide: Docker + GitHub Actions → Railway
+
+## Overview
+
+This guide covers deploying the Gritio app to Railway using Docker and GitHub Actions for automated CI/CD.
+
+**Final Architecture:**
+- Frontend (Next.js) and Backend (NestJS) containerized with Docker
+- PostgreSQL managed by Railway
+- Automated deployments via GitHub Actions
+- All within Railway's $5/month Hobby plan
+
+## Phase 1: Local Docker Setup (1 hour)
+
+### 1.1 Create NestJS Backend Dockerfile
+**Location:** `src/api/Dockerfile`
+- Multi-stage build (dependencies → production)
+- Install dependencies
+- Run Prisma migrations on startup
+- Start NestJS server on port 3000
+- Expose port 3000
+
+### 1.2 Create Next.js Frontend Dockerfile
+**Location:** `Dockerfile` (root)
+- Multi-stage build
+- Build Next.js production bundle
+- Start server on port 3000
+- Set NEXT_PUBLIC_API_URL environment variable
+
+### 1.3 Create docker-compose.yml
+**Location:** `docker-compose.yml` (root)
+- PostgreSQL service (port 5432)
+- Backend service (port 3000)
+- Frontend service (port 5173)
+- Shared Docker network
+- Volume for PostgreSQL data persistence
+- Environment variables for local development
+
+### 1.4 Test Docker Locally
+```bash
+docker-compose up
+# Verify:
+# - Frontend: http://localhost:5173
+# - Backend: http://localhost:3000
+# - Database connected
+```
+
+## Phase 2: Railway Account Setup (15 mins)
+
+### 2.1 Create Railway Account
+- Sign up at https://railway.app
+- Verify email
+
+### 2.2 Create Railway Project
+- Click "New Project"
+- Name: "gritio-app"
+
+### 2.3 Get Railway API Token
+- Account Settings → Generate API token
+- Save for GitHub Secrets
+
+### 2.4 Add Payment Method
+- Add credit card (charges only beyond $5 hobby plan)
+
+## Phase 3: GitHub Setup (30 mins)
+
+### 3.1 Push Code to GitHub
+```bash
+git add .
+git commit -m "Initial commit with Docker setup"
+git push origin main
+```
+
+### 3.2 Add GitHub Secrets
+**Location:** GitHub repo → Settings → Secrets and variables → Actions
+
+**Required Secrets:**
+1. `RAILWAY_API_TOKEN` - Railway API token from 2.3
+2. `RAILWAY_PROJECT_ID` - From Railway dashboard
+3. `NEXT_PUBLIC_API_URL` - Backend service URL (populated after deployment)
+4. `DATABASE_URL` - Railway PostgreSQL connection string
+
+### 3.3 Create GitHub Actions Workflow
+**Location:** `.github/workflows/deploy.yml`
+- Trigger: on push to main branch
+- Checkout code
+- Build Docker images
+- Push to Railway Registry
+- Deploy services
+- Verify deployment
+
+## Phase 4: Railway Infrastructure Setup (30 mins)
+
+### 4.1 Create PostgreSQL Service
+**In Railway dashboard:**
+- Add service → PostgreSQL
+- Name: "gritio-postgres"
+- Get connection string (DATABASE_URL)
+
+### 4.2 Configure Environment Variables
+**In Railway dashboard, set:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `NODE_ENV` - "production"
+- `AUTH0_DOMAIN` - Your Auth0 domain
+- `AUTH0_CLIENT_ID` - Your Auth0 client ID
+- `AUTH0_CLIENT_SECRET` - Your Auth0 secret
+- `JWT_SECRET` - Random secret key
+
+## Phase 5: First Deployment (1 hour)
+
+### 5.1 Create Backend Service
+**In Railway dashboard:**
+- Add service → Git Repository (connect GitHub repo)
+- Service name: "gritio-backend"
+- Dockerfile path: `src/api/Dockerfile`
+- Start command: `npm run start:prod`
+- Port: 3000
+
+### 5.2 Create Frontend Service
+**In Railway dashboard:**
+- Add service → Git Repository (connect GitHub repo)
+- Service name: "gritio-frontend"
+- Dockerfile path: `Dockerfile`
+- Start command: `npm start`
+- Port: 3000
+- Environment: `NEXT_PUBLIC_API_URL` = Backend service URL
+
+### 5.3 Deploy
+- Manual: Click "Deploy" in Railway dashboard
+- Automatic: GitHub Actions triggers on push
+
+### 5.4 Verify Deployment
+- Check all services deployed successfully
+- Test frontend loads at Railway URL
+- Verify frontend can call backend API
+
+## Phase 6: GitHub Actions CI/CD (45 mins)
+
+### 6.1 Workflow File
+**Location:** `.github/workflows/deploy.yml`
+- Runs tests on push
+- Builds Docker images
+- Pushes to Railway Registry
+- Deploys services
+- Notifies on success/failure
+
+### 6.2 Test Automation
+- Make code change
+- Push to main
+- Watch GitHub Actions run
+- Verify deployment in Railway dashboard
+
+## Phase 7: Post-Deployment (30 mins)
+
+### 7.1 Custom Domain (Optional)
+- Buy domain
+- Update Railway domain settings
+- Update Auth0 redirect URLs
+
+### 7.2 Monitoring
+- Monitor Railway dashboard logs
+- Set up GitHub Actions log monitoring
+- Configure alerts if needed
+
+### 7.3 Documentation
+- Update README with deployment info
+- Document environment variables
+- Create troubleshooting guide
+
+## Cost Summary
+
+**Railway Hobby Plan: $5/month**
+- Includes: Backend + Frontend + PostgreSQL
+- 8GB RAM per service (more than enough)
+- Automatic scaling within credits
+- Pay-as-you-go for overages (unlikely for 2 users)
+
+## Quick Reference
+
+| Phase | Task | Time |
+|---|---|---|
+| 1 | Docker setup | 1 hr |
+| 2 | Railway account | 15 min |
+| 3 | GitHub setup | 30 min |
+| 4 | Railway infrastructure | 30 min |
+| 5 | First deployment | 1 hr |
+| 6 | GitHub Actions CI/CD | 45 min |
+| 7 | Post-deployment | 30 min |
+| **TOTAL** | | **~4.5 hours** |
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
