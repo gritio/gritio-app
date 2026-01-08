@@ -12,6 +12,13 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
   
+  if (process.env.NODE_ENV === 'production') {
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    });
+  }
+  
   app.useGlobalPipes(new ValidationPipe());
   
   await app.listen(process.env.PORT ?? 3000);
