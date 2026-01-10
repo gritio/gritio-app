@@ -1,5 +1,7 @@
 FROM node:22-alpine
 
+ARG BUILD_ENV
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -8,12 +10,12 @@ RUN npm ci
 
 COPY . .
 
-RUN echo "NODE_ENV is: $NODE_ENV"
+RUN echo "BUILD_ENV is: $BUILD_ENV"
 
-RUN sh -c "if [ \"$NODE_ENV\" = \"production\" ] || [ \"$NODE_ENV\" = \"PRODUCTION\" ]; then echo 'Running prisma generate'; npx prisma generate; else echo 'Skipping prisma generate (not production)'; fi"
+RUN if [ "$BUILD_ENV" != "development" ]; then echo "Running prisma generate..."; npx prisma generate; else echo "Skipping prisma generate (development mode)"; fi
 
 RUN npm run build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "if [ \"$NODE_ENV\" = \"production\" ] || [ \"$NODE_ENV\" = \"PRODUCTION\" ]; then npx prisma migrate deploy && npm run seed && node dist/src/main.js; else node dist/src/main.js; fi"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/src/main.js"]

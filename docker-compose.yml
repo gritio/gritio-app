@@ -22,6 +22,8 @@ services:
     build:
       context: .
       dockerfile: src/api/Dockerfile
+      args:
+        BUILD_ENV: development
     container_name: gritio-backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gritio_db
