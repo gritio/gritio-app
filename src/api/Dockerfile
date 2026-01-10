@@ -8,10 +8,10 @@ RUN npm ci
 
 COPY . .
 
-RUN sh -c "if [ -n \"$RAILWAY_ENVIRONMENT\" ]; then npx prisma generate; fi"
+RUN sh -c "if [ \"$NODE_ENV\" = \"production\" ]; then npx prisma generate; fi"
 
 RUN npm run build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "if [ -n \"$RAILWAY_ENVIRONMENT\" ]; then npx prisma migrate deploy && npm run seed && node dist/src/main.js; else node dist/src/main.js; fi"]
+CMD ["sh", "-c", "if [ \"$NODE_ENV\" = \"production\" ]; then npx prisma migrate deploy && npm run seed && node dist/src/main.js; else node dist/src/main.js; fi"]
