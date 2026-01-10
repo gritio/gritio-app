@@ -8,7 +8,9 @@ RUN npm ci
 
 COPY . .
 
-RUN sh -c "if [ \"$NODE_ENV\" = \"production\" ]; then npx prisma generate; fi"
+RUN echo "NODE_ENV is: $NODE_ENV"
+
+RUN sh -c "if [ \"$NODE_ENV\" = \"production\" ]; then echo 'Running prisma generate'; npx prisma generate; else echo 'Skipping prisma generate (not production)'; fi"
 
 RUN npm run build
 
