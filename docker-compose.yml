@@ -40,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NODE_ENV: development
     container_name: gritio-frontend
     environment:
       NODE_ENV: development
