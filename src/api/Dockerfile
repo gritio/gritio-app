@@ -8,6 +8,8 @@ RUN npm ci
 
 COPY . .
 
+RUN sh -c "if [ -n \"$RAILWAY_ENVIRONMENT\" ]; then npx prisma generate; fi"
+
 RUN npm run build
 
 EXPOSE 3000
