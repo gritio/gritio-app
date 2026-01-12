@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Goal, MonthlyGoal } from '../types';
-import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X, Calendar } from 'lucide-react';
 import { ProgressBar } from './ProgressBar';
 import { tasksApi } from '../services/api';
 
@@ -14,6 +14,7 @@ interface CollapsibleGoalRowProps {
   onEditGoal?: (goalId: string) => void;
   onDeleteGoal?: (goalId: string) => void;
   onAddTask?: (goalId: string) => void;
+  onGenerateMonthlyGoals?: (goalId: string) => void;
   tasks?: any[];
 }
 
@@ -27,6 +28,7 @@ export function CollapsibleGoalRow({
   onEditGoal,
   onDeleteGoal,
   onAddTask,
+  onGenerateMonthlyGoals,
   tasks = [],
 }: CollapsibleGoalRowProps) {
   const [monthOffset, setMonthOffset] = useState(0);
@@ -326,6 +328,18 @@ export function CollapsibleGoalRow({
                 title="Add task"
               >
                 <Plus className="w-4 h-4" />
+              </button>
+            )}
+            {onGenerateMonthlyGoals && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenerateMonthlyGoals(goal.id);
+                }}
+                className="p-1 text-[#805232] hover:text-[#805232] transition-colors"
+                title="Generate monthly goals"
+              >
+                <Calendar className="w-4 h-4" />
               </button>
             )}
             {onEditGoal && (

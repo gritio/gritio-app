@@ -31,6 +31,23 @@
 $ pnpm install
 ```
 
+## Database Setup
+
+Before running the application, set up the database and run migrations:
+
+```bash
+# 1. Export the database URL
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/gritio_db"
+
+# 2. Run Prisma migrations
+npx prisma migrate dev
+
+# 3. (Optional) Reset database and reseed
+npx prisma migrate reset
+```
+
+**Note:** If you encounter migration conflicts, use `prisma migrate reset` to drop and recreate the database with all migrations applied in order.
+
 ## Compile and run the project
 
 ```bash

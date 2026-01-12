@@ -29,7 +29,8 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     targetMinutes: ''
   });
   const [autoCreateMonthly, setAutoCreateMonthly] = useState(false);
-  const [distributionStrategy, setDistributionStrategy] = useState<'spread' | 'equal' | 'frontload'>('spread');
+  const [distributionStrategy, setDistributionStrategy] = useState<'spread' | 'equal' | 'frontload' | 'progressive'>('spread');
+  const [startValue, setStartValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -40,7 +41,10 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     } else if (formData.unit === 'Count' && countData.targetCount) {
       return parseInt(countData.targetCount);
     } else if (formData.unit === 'Time' && timeData.targetHours) {
-      return parseInt(timeData.targetHours);
+      // For time goals, convert hours and minutes to total minutes
+      const hours = parseInt(timeData.targetHours) || 0;
+      const minutes = parseInt(timeData.targetMinutes) || 0;
+      return hours * 60 + minutes;
     }
     return 0;
   };
@@ -78,6 +82,19 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       if (fractionalPart > 0 && wholePart < 12) {
         months[wholePart] = fractionalPart;
       }
+    } else if (distributionStrategy === 'progressive') {
+      // Ramp from startValue to target linearly, then maintain
+      const start = parseInt(startValue) || 0;
+      const monthsToReach = Math.min(target, 12);
+      const incrementPerMonth = (target - start) / monthsToReach;
+      
+      for (let i = 0; i < 12; i++) {
+        if (i < monthsToReach) {
+          months[i] = Math.round(start + (i + 1) * incrementPerMonth);
+        } else {
+          months[i] = target;
+        }
+      }
     }
 
     return months;
@@ -93,6 +110,9 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       return `Consistent targets: ${(target / 12).toFixed(2)} per month`;
     } else if (distributionStrategy === 'frontload') {
       return `Build momentum early: Fill first ${Math.ceil(target)} months`;
+    } else if (distributionStrategy === 'progressive') {
+      const start = parseFloat(startValue) || 0;
+      return `Ramp from ${start} to ${target}: increasing each month`;
     }
     return '';
   };
@@ -104,6 +124,8 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       return 'Consistent targets every month, total equals goal';
     } else if (distributionStrategy === 'frontload') {
       return 'Build momentum early, finish ahead of schedule';
+    } else if (distributionStrategy === 'progressive') {
+      return 'Start easy, build progressively toward goal';
     }
     return '';
   };
@@ -152,7 +174,16 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
 
       if (autoCreateMonthly) {
         goalPayload.autoCreateMonthly = true;
-        goalPayload.distributionStrategy = distributionStrategy;
+        const strategyMap: Record<string, string> = {
+          'spread': 'SPREAD_EVENLY',
+          'equal': 'EQUAL_DISTRIBUTION',
+          'frontload': 'FRONT_LOAD',
+          'progressive': 'PROGRESSIVE'
+        };
+        goalPayload.distributionStrategy = strategyMap[distributionStrategy] || 'SPREAD_EVENLY';
+        if (distributionStrategy === 'progressive') {
+          goalPayload.startValue = parseInt(startValue);
+        }
       }
 
       if (formData.unit === 'Kilogram' && weightData.startWeight) {
@@ -186,6 +217,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       setWeightData({ startWeight: '', targetWeight: '' });
       setCountData({ targetCount: '' });
       setTimeData({ targetHours: '', targetMinutes: '' });
+      setStartValue('');
       setAutoCreateMonthly(false);
       console.log('Closing modal');
       onClose();
@@ -475,8 +507,49 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                           <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
                         </div>
                       </label>
+
+                      {/* Progressive - Only for Count and Time goals */}
+                      {(formData.unit === 'Count' || formData.unit === 'Time') && (
+                        <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                          style={{borderColor: distributionStrategy === 'progressive' ? '#805232' : '', backgroundColor: distributionStrategy === 'progressive' ? '#f5f1ed' : ''}}>
+                          <input
+                            type="radio"
+                            name="strategy"
+                            value="progressive"
+                            checked={distributionStrategy === 'progressive'}
+                            onChange={(e) => setDistributionStrategy(e.target.value as any)}
+                            className="w-4 h-4 mt-0.5"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-[#805232]">Progressive</div>
+                            <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
+                          </div>
+                        </label>
+                      )}
                     </div>
                   </div>
+
+                  {/* Progressive Strategy Fields */}
+                  {(formData.unit === 'Count' || formData.unit === 'Time') && distributionStrategy === 'progressive' && (
+                    <div className="ml-6 p-3 bg-gray-50 rounded-lg">
+                      <div className="max-w-xs">
+                        <label className="block text-xs mb-1 text-[#805232] font-medium">
+                          Start Value *
+                        </label>
+                        <input
+                          type="number"
+                          step="1"
+                          value={startValue}
+                          onChange={(e) => setStartValue(e.target.value)}
+                          placeholder="e.g., 3"
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                        />
+                        <p className="text-xs text-gray-600 mt-2">
+                          Will increase to {getTargetValue()} by year-end
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Distribution Preview */}
                   <div>
