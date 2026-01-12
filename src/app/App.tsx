@@ -11,6 +11,7 @@ import { EditMonthlyGoalPanel } from './components/EditMonthlyGoalPanel';
 import { UpdateProgressPanel } from './components/UpdateProgressPanel';
 import { AddGoalModal } from './components/AddGoalModal';
 import { LoginPage } from './components/LoginPage';
+import { RegisterPage } from './components/RegisterPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi } from './services/api';
@@ -19,6 +20,7 @@ type View = 'overview' | 'detail' | 'today' | 'weekly' | 'todos';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
+  const [showRegister, setShowRegister] = useState(false);
   const [currentView, setCurrentView] = useState<View>('overview');
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
@@ -312,7 +314,17 @@ export default function App() {
   return (
     <>
       {!isAuthenticated ? (
-        <LoginPage onLoginSuccess={() => setIsAuthenticated(true)} />
+        showRegister ? (
+          <RegisterPage 
+            onRegisterSuccess={() => setShowRegister(false)}
+            onBackToLogin={() => setShowRegister(false)}
+          />
+        ) : (
+          <LoginPage 
+            onLoginSuccess={() => setIsAuthenticated(true)}
+            onShowRegister={() => setShowRegister(true)}
+          />
+        )
       ) : goalsLoading ? (
         <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex items-center justify-center">
           <div className="text-center">

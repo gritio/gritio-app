@@ -49,6 +49,36 @@ export const authApi = {
     }
   },
 
+  register: async (data: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    dob?: string;
+  }): Promise<{ message: string; user: any }> => {
+    try {
+      console.log('API: Sending register request to /auth/register');
+      const response = await apiClient.post('/auth/register', data);
+      console.log('API: Register response received:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: Register request failed:', error);
+      throw error;
+    }
+  },
+
+  verifyEmail: async (token: string): Promise<{ message: string }> => {
+    try {
+      console.log('API: Sending email verification request to /auth/verify-email');
+      const response = await apiClient.post('/auth/verify-email', { token });
+      console.log('API: Email verification response received:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: Email verification request failed:', error);
+      throw error;
+    }
+  },
+
   logout: async () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');

@@ -127,39 +127,44 @@ This guide covers deploying the Gritio app to Railway using Docker and GitHub Ac
 - Automated deployments via GitHub Actions
 - All within Railway's $5/month Hobby plan
 
-## Phase 1: Local Docker Setup (1 hour)
+## Phase 1: Local Docker Setup
 
-### 1.1 Create NestJS Backend Dockerfile
-**Location:** `src/api/Dockerfile`
-- Multi-stage build (dependencies → production)
-- Install dependencies
-- Run Prisma migrations on startup
-- Start NestJS server on port 3000
-- Expose port 3000
+### Docker Architecture
+- **Backend Dockerfile** (`src/api/Dockerfile`): Build context is `src/api`, works for both local and Railway
+- **Frontend Dockerfile** (`Dockerfile` root): Multi-stage build, serves dist on port 3000
+- **docker-compose.yml** (`docker-compose.yml` root): Local development setup
 
-### 1.2 Create Next.js Frontend Dockerfile
-**Location:** `Dockerfile` (root)
-- Multi-stage build
-- Build Next.js production bundle
-- Start server on port 3000
-- Set NEXT_PUBLIC_API_URL environment variable
+### Backend Dockerfile Key Points
+```dockerfile
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npx prisma generate
+RUN npm run build
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/main"]
+```
 
-### 1.3 Create docker-compose.yml
-**Location:** `docker-compose.yml` (root)
-- PostgreSQL service (port 5432)
-- Backend service (port 3000)
-- Frontend service (port 5173)
-- Shared Docker network
-- Volume for PostgreSQL data persistence
-- Environment variables for local development
+### docker-compose Backend Service
+```yaml
+backend:
+  build:
+    context: src/api          # Build context is the api directory
+    dockerfile: Dockerfile     # Simpler path since context is src/api
+  container_name: gritio-backend
+```
 
-### 1.4 Test Docker Locally
+### Important Docker Notes
+- **Build vs Runtime**: RUN commands execute during build, CMD at runtime
+- **WORKDIR**: Sets working directory for all subsequent commands
+- **Migration Timestamps**: Must be in chronological order (use `npx prisma migrate dev --name <desc>`)
+- **Seed File**: `src/api/prisma/seed.ts` runs on container startup
+
+### Test Docker Locally
 ```bash
+docker-compose down -v  # Remove volumes for clean start
 docker-compose up
-# Verify:
-# - Frontend: http://localhost:5173
-# - Backend: http://localhost:3000
-# - Database connected
+# Verify: Frontend http://localhost:5173, Backend http://localhost:3000
 ```
 
 ## Phase 2: Railway Account Setup (15 mins)

@@ -10,13 +10,18 @@ datasource db {
 
 // User model - linked to Auth0
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  auth0Id   String     @unique // Auth0 user ID
-  password  String?    // Password hash for local authentication
-  name      String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  email           String     @unique
+  auth0Id         String?    @unique // Auth0 user ID (optional for local auth)
+  password        String?    // Password hash for local authentication
+  name            String?
+  dob             DateTime?  // Date of birth
+  phone           String?    // Phone number
+  emailVerified   Boolean    @default(false) // Email verification status
+  emailVerificationToken String? @unique // Token for email verification
+  emailVerificationExpires DateTime? // Token expiration time
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   // Relations
   goals     Goal[]
