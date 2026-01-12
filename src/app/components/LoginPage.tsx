@@ -4,9 +4,10 @@ import { Mail, Lock } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onShowRegister?: () => void;
 }
 
-export function LoginPage({ onLoginSuccess }: LoginPageProps) {
+export function LoginPage({ onLoginSuccess, onShowRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -87,6 +88,18 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <button
+              onClick={onShowRegister}
+              className="text-[#805232] font-medium hover:underline"
+            >
+              Sign up here
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   );

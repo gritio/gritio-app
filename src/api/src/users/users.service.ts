@@ -1,6 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -40,22 +41,35 @@ export class UsersService {
     });
   }
 
-  async createUser(email: string, password: string, name?: string) {
+  async createUser(
+    email: string,
+    password: string,
+    name?: string,
+    phone?: string,
+    dob?: string,
+  ) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      throw new UnauthorizedException('User already exists');
+      throw new BadRequestException('User already exists');
     }
 
     const hashedPassword = await argon2.hash(password);
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     return this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || email.split('@')[0],
-        auth0Id: email,
+        phone: phone || null,
+        dob: dob ? new Date(dob) : null,
+        emailVerified: false,
+        emailVerificationToken,
+        emailVerificationExpires,
       },
     });
   }
@@ -79,5 +93,28 @@ export class UsersService {
       email: user.email,
       name: user.name,
     };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { emailVerificationToken: token },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid verification token');
+    }
+
+    if (user.emailVerificationExpires && user.emailVerificationExpires < new Date()) {
+      throw new BadRequestException('Verification token has expired');
+    }
+
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      },
+    });
   }
 }

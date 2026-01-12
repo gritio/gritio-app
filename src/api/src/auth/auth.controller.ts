@@ -35,6 +35,43 @@ export class AuthController {
     };
   }
 
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() body: { 
+    email: string; 
+    password: string; 
+    name: string;
+    phone?: string;
+    dob?: string;
+  }) {
+    const user = await this.usersService.createUser(
+      body.email,
+      body.password,
+      body.name,
+      body.phone,
+      body.dob,
+    );
+
+    return {
+      message: 'Registration successful. Please check your email to verify your account.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        emailVerified: user.emailVerified,
+      },
+    };
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() body: { token: string }) {
+    await this.usersService.verifyEmail(body.token);
+    return {
+      message: 'Email verified successfully. You can now login.',
+    };
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() credentials: { email: string; password: string }) {
