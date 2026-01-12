@@ -16,6 +16,9 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMonthlyGoalsModal, setShowMonthlyGoalsModal] = useState(false);
+  const [distributionStrategy, setDistributionStrategy] = useState<'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE'>('SPREAD_EVENLY');
+  const [startValue, setStartValue] = useState('');
 
   useEffect(() => {
     if (goal) {
@@ -71,6 +74,36 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
       onDelete(formData.id);
       setShowDeleteConfirm(false);
       onClose();
+    }
+  };
+
+  const handleGenerateMonthlyGoals = async () => {
+    if (!formData) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const payload: any = {
+        autoCreateMonthly: true,
+        distributionStrategy,
+      };
+      
+      if (distributionStrategy === 'PROGRESSIVE') {
+        payload.startValue = parseInt(startValue);
+      }
+      
+      const updatedGoal = await goalsApi.updateGoal(formData.id, payload);
+      onSave(updatedGoal);
+      setShowMonthlyGoalsModal(false);
+      setDistributionStrategy('SPREAD_EVENLY');
+      setStartValue('');
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to generate monthly goals';
+      console.error('Generate monthly goals error:', errorMsg);
+      setError(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -308,6 +341,16 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
             </button>
           </div>
           
+          {/* Generate Monthly Goals Button */}
+          <button
+            type="button"
+            onClick={() => setShowMonthlyGoalsModal(true)}
+            disabled={isLoading}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Generate Monthly Goals
+          </button>
+          
           {/* Delete Button */}
           <button
             type="button"
@@ -319,6 +362,75 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
           </button>
         </div>
       </div>
+
+      {/* Monthly Goals Generation Modal */}
+      {showMonthlyGoalsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{backgroundColor: 'rgba(0, 0, 0, 0.6)'}}>
+          <div className="bg-[#DCDCDC] border border-[#B8B9BA] rounded-lg p-6 max-w-sm mx-4 shadow-lg">
+            <h3 className="text-lg font-semibold text-[#805232] mb-4">Generate Monthly Goals</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-medium">Distribution Strategy</label>
+                <select
+                  value={distributionStrategy}
+                  onChange={(e) => setDistributionStrategy(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                >
+                  <option value="SPREAD_EVENLY">Spread Evenly</option>
+                  <option value="EQUAL_DISTRIBUTION">Equal Distribution</option>
+                  <option value="FRONT_LOAD">Front Load</option>
+                  {(formData?.unit === 'Count' || formData?.unit === 'Time') && (
+                    <option value="PROGRESSIVE">Progressive</option>
+                  )}
+                </select>
+              </div>
+              
+              {distributionStrategy === 'PROGRESSIVE' && (
+                <div>
+                  <label className="block text-sm mb-2 text-[#805232] font-medium">Start Value</label>
+                  <input
+                    type="number"
+                    step="1"
+                    value={startValue}
+                    onChange={(e) => setStartValue(e.target.value)}
+                    placeholder="e.g., 3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                  />
+                </div>
+              )}
+            </div>
+            
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm mb-4">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleGenerateMonthlyGoals}
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isLoading ? 'Generating...' : 'Generate'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowMonthlyGoalsModal(false);
+                  setDistributionStrategy('SPREAD_EVENLY');
+                  setStartValue('');
+                  setError(null);
+                }}
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (

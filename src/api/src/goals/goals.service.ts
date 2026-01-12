@@ -8,13 +8,14 @@ export class GoalsService {
 
   private calculateMonthlyDistribution(
     target: number,
-    strategy: 'spread' | 'equal' | 'frontload'
+    strategy: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE',
+    startValue?: number
   ): number[] {
     const months: number[] = Array(12).fill(0);
 
     if (target <= 0) return months;
 
-    if (strategy === 'spread') {
+    if (strategy === 'SPREAD_EVENLY') {
       // Distribute evenly across quarters (Jan, Apr, Jul, Oct)
       const remainder = target % 4;
       const basePerMonth = Math.floor(target / 4);
@@ -23,13 +24,13 @@ export class GoalsService {
       months[3] = basePerMonth + (remainder > 1 ? 1 : 0);
       months[6] = basePerMonth + (remainder > 2 ? 1 : 0);
       months[9] = basePerMonth + (remainder > 3 ? 1 : 0);
-    } else if (strategy === 'equal') {
+    } else if (strategy === 'EQUAL_DISTRIBUTION') {
       // Divide equally across all 12 months
       const monthlyTarget = parseFloat((target / 12).toFixed(2));
       for (let i = 0; i < 12; i++) {
         months[i] = monthlyTarget;
       }
-    } else if (strategy === 'frontload') {
+    } else if (strategy === 'FRONT_LOAD') {
       // Fill first N months
       const wholePart = Math.floor(target);
       const fractionalPart = target - wholePart;
@@ -39,6 +40,19 @@ export class GoalsService {
       }
       if (fractionalPart > 0 && wholePart < 12) {
         months[wholePart] = fractionalPart;
+      }
+    } else if (strategy === 'PROGRESSIVE') {
+      // Ramp from startValue to target linearly, then maintain
+      const start = Math.round(startValue || 0);
+      const monthsToReach = Math.min(target, 12);
+      const incrementPerMonth = (target - start) / monthsToReach;
+      
+      for (let i = 0; i < 12; i++) {
+        if (i < monthsToReach) {
+          months[i] = Math.round(start + (i + 1) * incrementPerMonth);
+        } else {
+          months[i] = target;
+        }
       }
     }
 
@@ -59,6 +73,9 @@ export class GoalsService {
         endDate: new Date(dto.endDate),
         target: 100,
         remarks: dto.remarks,
+        distributionStrategy: dto.distributionStrategy || 'SPREAD_EVENLY',
+        startValue: dto.startValue,
+        finalTarget: dto.finalTarget,
       },
       include: {
         weightGoal: true,
@@ -106,10 +123,17 @@ export class GoalsService {
       } else if (dto.unit === 'Count' && dto.countGoal) {
         target = parseFloat(String(dto.countGoal.targetCount));
       } else if (dto.unit === 'Time' && dto.timeGoal) {
-        target = parseFloat(String(dto.timeGoal.targetHours));
+        // For time goals, convert hours and minutes to total minutes
+        const hours = parseFloat(String(dto.timeGoal.targetHours)) || 0;
+        const minutes = parseFloat(String(dto.timeGoal.targetMinutes)) || 0;
+        target = hours * 60 + minutes;
       }
 
-      const distribution = this.calculateMonthlyDistribution(target, dto.distributionStrategy);
+      const distribution = this.calculateMonthlyDistribution(
+        target,
+        (dto.distributionStrategy as 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE') || 'SPREAD_EVENLY',
+        dto.startValue
+      );
 
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthIndex, 1);

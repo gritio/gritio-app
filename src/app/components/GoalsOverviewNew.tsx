@@ -3,7 +3,8 @@ import { Goal, MonthlyGoal, Task } from '../types';
 import { Target, Plus, Trash2, Edit, X } from 'lucide-react';
 import { CollapsibleGoalRow } from './CollapsibleGoalRow';
 import { AddTaskPanel } from './AddTaskPanel';
-import { monthlyGoalsApi } from '../services/api';
+import { GenerateMonthlyGoalsPanel } from './GenerateMonthlyGoalsPanel';
+import { monthlyGoalsApi, goalsApi } from '../services/api';
 
 interface GoalsOverviewNewProps {
   goals: Goal[];
@@ -37,6 +38,8 @@ export function GoalsOverviewNew({
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddTaskPanelOpen, setIsAddTaskPanelOpen] = useState(false);
   const [selectedGoalForTask, setSelectedGoalForTask] = useState<Goal | null>(null);
+  const [isGenerateMonthlyGoalsPanelOpen, setIsGenerateMonthlyGoalsPanelOpen] = useState(false);
+  const [selectedGoalForGeneration, setSelectedGoalForGeneration] = useState<Goal | null>(null);
   const [localMonthlyGoals, setLocalMonthlyGoals] = useState(monthlyGoals);
   const [localGoals, setLocalGoals] = useState(goals);
 
@@ -119,6 +122,39 @@ export function GoalsOverviewNew({
     }
   };
 
+  const handleOpenGenerateMonthlyGoalsPanel = (goalId: string) => {
+    const goal = localGoals.find(g => g.id === goalId);
+    if (goal) {
+      setSelectedGoalForGeneration(goal);
+      setIsGenerateMonthlyGoalsPanelOpen(true);
+    }
+  };
+
+  const handleGenerateMonthlyGoals = async (strategy: string, startValue?: number) => {
+    if (!selectedGoalForGeneration) return;
+
+    try {
+      const payload: any = {
+        autoCreateMonthly: true,
+        distributionStrategy: strategy,
+      };
+
+      if (startValue !== undefined) {
+        payload.startValue = startValue;
+      }
+
+      await goalsApi.updateGoal(selectedGoalForGeneration.id, payload);
+      
+      setIsGenerateMonthlyGoalsPanelOpen(false);
+      setSelectedGoalForGeneration(null);
+      
+      if (onRefreshGoals) onRefreshGoals();
+    } catch (error: any) {
+      console.error('Failed to generate monthly goals:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-6">
       {/* Header */}
@@ -194,6 +230,7 @@ export function GoalsOverviewNew({
             onEditGoal={onEditGoal}
             onDeleteGoal={(goalId) => setDeleteConfirmGoalId(goalId)}
             onAddTask={handleOpenAddTaskPanel}
+            onGenerateMonthlyGoals={handleOpenGenerateMonthlyGoalsPanel}
             tasks={tasks}
           />
         ))}
@@ -247,6 +284,19 @@ export function GoalsOverviewNew({
           goalId={selectedGoalForTask.id}
           goalTitle={selectedGoalForTask.title}
           onSave={handleSaveTask}
+        />
+      )}
+
+      {/* Generate Monthly Goals Panel */}
+      {selectedGoalForGeneration && (
+        <GenerateMonthlyGoalsPanel
+          goal={selectedGoalForGeneration}
+          isOpen={isGenerateMonthlyGoalsPanelOpen}
+          onClose={() => {
+            setIsGenerateMonthlyGoalsPanelOpen(false);
+            setSelectedGoalForGeneration(null);
+          }}
+          onGenerate={handleGenerateMonthlyGoals}
         />
       )}
     </div>

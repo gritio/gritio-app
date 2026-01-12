@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateGoalDto {
   @IsString()
@@ -43,7 +43,15 @@ export class CreateGoalDto {
 
   @IsOptional()
   @IsString()
-  distributionStrategy?: 'spread' | 'equal' | 'frontload';
+  distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
+
+  @IsOptional()
+  @IsNumber()
+  startValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  finalTarget?: number;
 }
 
 export class UpdateGoalDto {
