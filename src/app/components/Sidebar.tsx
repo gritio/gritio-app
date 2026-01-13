@@ -1,6 +1,8 @@
 import { LayoutGrid, Calendar, TrendingUp, Target, LogOut, CheckSquare, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { AllyLogo } from './AllyLogo';
+import { authApi } from '../services/api';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
   currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'todos';
@@ -10,6 +12,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
   const [expandedMenu, setExpandedMenu] = useState<string | null>('overview');
+  const user = authApi.getStoredUser();
 
   const menuItems = [
     {
@@ -117,13 +120,20 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       </nav>
 
       {/* Footer Section */}
-      <div className="absolute bottom-0 w-64 p-4 border-t border-[#B8B9BA] space-y-3">
-        <div className="bg-[#DCDCDC] rounded-lg p-4 text-center">
-          <p className="text-[#805232] text-sm">
-            <strong>Gritio</strong><br />
-            Small Steps, Big Results
-          </p>
-        </div>
+      <div className="absolute bottom-0 w-64 p-4 border-t border-[#B8B9BA] space-y-1">
+        {user && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="p-3 cursor-help text-center">
+                <p className="text-[#805232] text-xs font-medium">Logged in as</p>
+                <p className="text-[#805232] text-sm font-bold truncate">{user.name || user.email}</p>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="bg-[#805232] text-white">
+              {user.name || user.email}
+            </TooltipContent>
+          </Tooltip>
+        )}
         {onLogout && (
           <button
             onClick={onLogout}
