@@ -65,6 +65,7 @@ export class GoalsService {
     const goal = await this.prisma.goal.create({
       data: {
         userId,
+        lifeGoalId: dto.lifeGoalId || null,
         title: dto.title,
         area: dto.area,
         unit: dto.unit,
@@ -81,6 +82,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        lifeGoal: true,
       },
     });
     console.log('GoalsService.createGoal - goal created with id:', goal.id);
@@ -195,6 +197,7 @@ export class GoalsService {
         countGoal: true,
         timeGoal: true,
         monthlyGoals: true,
+        lifeGoal: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -210,6 +213,7 @@ export class GoalsService {
         countGoal: true,
         timeGoal: true,
         monthlyGoals: true,
+        lifeGoal: true,
       },
     });
   }
@@ -229,11 +233,13 @@ export class GoalsService {
       data: {
         ...(dto.title && { title: dto.title }),
         ...(dto.remarks !== undefined && { remarks: dto.remarks }),
+        ...(dto.lifeGoalId !== undefined && { lifeGoalId: dto.lifeGoalId || null }),
       },
       include: {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        lifeGoal: true,
       },
     });
 

@@ -4,6 +4,15 @@ export type MeasurementType = 'number' | 'time' | 'steps' | 'distance';
 export type Frequency = 'daily' | 'weekly';
 export type GoalStatus = 'on-track' | 'behind' | 'ahead';
 
+export interface LifeGoal {
+  id: string;
+  title: string;
+  description?: string;
+  goals?: Goal[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface WeightGoal {
   startWeight: number;
   currentWeight: number;
@@ -26,6 +35,8 @@ export interface Goal {
   progress: number; // Calculated from linked monthly goals
   status: GoalStatus;
   remarks?: string;
+  lifeGoalId?: string; // Link to life goal
+  lifeGoal?: LifeGoal;
   weightGoal?: WeightGoal;
   countGoal?: {
     targetCount: number;

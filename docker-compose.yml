@@ -32,9 +32,6 @@ services:
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET:-your-client-secret}
     ports:
       - "3000:3000"
-    volumes:
-      - ./src/api/src:/app/src
-    command: npm run start:dev
     depends_on:
       postgres:
         condition: service_healthy

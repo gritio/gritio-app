@@ -21,6 +21,10 @@ export class CreateGoalDto {
   remarks?: string;
 
   @IsOptional()
+  @IsString()
+  lifeGoalId?: string;
+
+  @IsOptional()
   weightGoal?: {
     startWeight: number;
     currentWeight: number;
@@ -62,6 +66,10 @@ export class UpdateGoalDto {
   @IsOptional()
   @IsString()
   remarks?: string;
+
+  @IsOptional()
+  @IsString()
+  lifeGoalId?: string;
 
   @IsOptional()
   weightGoal?: {
