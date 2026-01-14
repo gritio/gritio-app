@@ -144,6 +144,7 @@ export const goalsApi = {
     goalData: {
       title?: string;
       remarks?: string;
+      lifeGoalId?: string;
       weightGoal?: { startWeight?: number; currentWeight?: number; targetWeight?: number };
       countGoal?: { targetCount?: number; currentCount?: number };
       timeGoal?: { targetHours?: number; targetMinutes?: number; currentHours?: number; currentMinutes?: number };
@@ -297,6 +298,66 @@ export const tasksApi = {
     } catch (error: any) {
       console.error('Failed to fetch month completions:', error.response?.data || error.message);
       return [];
+    }
+  },
+};
+
+export const lifeGoalsApi = {
+  createLifeGoal: async (data: {
+    title: string;
+    description?: string;
+  }): Promise<any> => {
+    try {
+      console.log('API: Creating life goal with data:', data);
+      const response = await apiClient.post('/life-goals', data);
+      console.log('API: Life goal created successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: Life goal creation failed:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getLifeGoals: async (): Promise<any[]> => {
+    try {
+      console.log('API: Fetching life goals');
+      const response = await apiClient.get('/life-goals');
+      console.log('API: Life goals fetched successfully, count:', response.data?.length || 0);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: Failed to fetch life goals:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getLifeGoal: async (id: string): Promise<any> => {
+    const response = await apiClient.get(`/life-goals/${id}`);
+    return response.data;
+  },
+
+  updateLifeGoal: async (
+    id: string,
+    data: { title?: string; description?: string }
+  ): Promise<any> => {
+    try {
+      console.log('API: Updating life goal with data:', data);
+      const response = await apiClient.put(`/life-goals/${id}`, data);
+      console.log('API: Life goal updated successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: Life goal update failed:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  deleteLifeGoal: async (id: string): Promise<void> => {
+    try {
+      console.log('API: Deleting life goal:', id);
+      await apiClient.delete(`/life-goals/${id}`);
+      console.log('API: Life goal deleted successfully');
+    } catch (error: any) {
+      console.error('API: Life goal delete failed:', error.response?.data || error.message);
+      throw error;
     }
   },
 };

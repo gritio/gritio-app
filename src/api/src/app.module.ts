@@ -8,6 +8,7 @@ import { GoalsModule } from './goals/goals.module';
 import { MonthlyGoalsModule } from './monthly-goals/monthly-goals.module';
 import { TasksModule } from './tasks/tasks.module';
 import { TodosModule } from './todos/todos.module';
+import { LifeGoalsModule } from './life-goals/life-goals.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TodosModule } from './todos/todos.module';
     MonthlyGoalsModule,
     TasksModule,
     TodosModule,
+    LifeGoalsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,6 +5,8 @@ import { GoalDetail } from './components/GoalDetail';
 import { TodayView } from './components/TodayView';
 import { WeeklyTaskView } from './components/WeeklyTaskView';
 import { TodosPage } from './components/TodosPage';
+import { LifeGoalsPage } from './components/LifeGoalsPage';
+import { GoalHierarchyPage } from './components/GoalHierarchyPage';
 import { GoalEditPanel } from './components/GoalEditPanel';
 import { MonthlyGoalPanel } from './components/MonthlyGoalPanel';
 import { EditMonthlyGoalPanel } from './components/EditMonthlyGoalPanel';
@@ -13,10 +15,10 @@ import { AddGoalModal } from './components/AddGoalModal';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
-import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo } from './types';
-import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi } from './services/api';
+import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
+import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'todos';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -47,6 +49,7 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [checkIns] = useState<WeeklyCheckIn[]>(mockWeeklyCheckIns);
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -66,18 +69,21 @@ export default function App() {
         goalsApi.getGoals(),
         monthlyGoalsApi.getAllMonthlyGoals(),
         tasksApi.getAllTasks(),
-        todosApi.getAllTodos()
+        todosApi.getAllTodos(),
+        lifeGoalsApi.getLifeGoals()
       ]);
-      const [fetchedGoals, fetchedMonthlyGoals, fetchedTasks, fetchedTodos] = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const [fetchedGoals, fetchedMonthlyGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals] = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       console.log('Goals fetched successfully:', fetchedGoals);
       console.log('Monthly goals fetched successfully:', fetchedMonthlyGoals);
       console.log('Tasks fetched successfully:', fetchedTasks);
       console.log('Todos fetched successfully:', fetchedTodos);
+      console.log('Life goals fetched successfully:', fetchedLifeGoals);
       setGoals(fetchedGoals);
       setMonthlyGoals(fetchedMonthlyGoals);
       setTasks(fetchedTasks);
       setTodos(fetchedTodos);
+      setLifeGoals(fetchedLifeGoals || []);
       setGoalsLoading(false);
     } catch (error: any) {
       const errorMsg = error?.message || error?.response?.data?.message || 'Unknown error fetching goals';
@@ -108,8 +114,16 @@ export default function App() {
     setIsEditPanelOpen(true);
   };
 
-  const handleSaveEditedGoal = (updatedGoal: Goal) => {
-    setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
+  const handleSaveEditedGoal = async (updatedGoal: Goal) => {
+    try {
+      // Refetch the goal to get full data including lifeGoal relationship
+      const fullGoal = await goalsApi.getGoal(updatedGoal.id);
+      setGoals(goals.map(g => g.id === updatedGoal.id ? fullGoal : g));
+    } catch (error) {
+      console.error('Failed to refetch goal:', error);
+      // Fallback: at least update with the returned data
+      setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
+    }
   };
 
   const handleEditMonthlyGoal = async (monthlyGoalId: string) => {
@@ -399,6 +413,19 @@ export default function App() {
                     setSelectedGoalId(goalId);
                     setCurrentView('overview');
                   }}
+                />
+              )}
+
+              {currentView === 'life-goals' && (
+                <LifeGoalsPage />
+              )}
+
+              {currentView === 'hierarchy' && (
+                <GoalHierarchyPage 
+                  goals={goals}
+                  monthlyGoals={monthlyGoals}
+                  tasks={tasks}
+                  lifeGoals={lifeGoals}
                 />
               )}
             </main>

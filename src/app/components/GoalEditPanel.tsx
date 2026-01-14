@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Goal } from '../types';
+import { Goal, LifeGoal } from '../types';
 import { X, Trash2 } from 'lucide-react';
-import { goalsApi } from '../services/api';
+import { goalsApi, lifeGoalsApi } from '../services/api';
 
 interface GoalEditPanelProps {
   goal: Goal | null;
@@ -19,6 +19,8 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
   const [showMonthlyGoalsModal, setShowMonthlyGoalsModal] = useState(false);
   const [distributionStrategy, setDistributionStrategy] = useState<'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE'>('SPREAD_EVENLY');
   const [startValue, setStartValue] = useState('');
+  const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
+  const [loadingLifeGoals, setLoadingLifeGoals] = useState(false);
 
   useEffect(() => {
     if (goal) {
@@ -26,6 +28,24 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
       setError(null);
     }
   }, [goal]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLifeGoals();
+    }
+  }, [isOpen]);
+
+  const fetchLifeGoals = async () => {
+    try {
+      setLoadingLifeGoals(true);
+      const data = await lifeGoalsApi.getLifeGoals();
+      setLifeGoals(data);
+    } catch (err) {
+      console.error('Failed to fetch life goals:', err);
+    } finally {
+      setLoadingLifeGoals(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +58,7 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
       const updateData: any = {
         title: formData.title,
         remarks: formData.remarks,
+        lifeGoalId: formData.lifeGoalId || undefined,
       };
       
       if (formData.unit === 'Kilogram' && formData.weightGoal) {
@@ -142,6 +163,26 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
               placeholder="e.g., Reach Target Weight"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
             />
+          </div>
+
+          {/* Life Goal */}
+          <div>
+            <label className="block text-sm mb-2 text-[#805232] font-bold">
+              Link to Life Goal (Optional)
+            </label>
+            <select
+              value={formData.lifeGoalId || ''}
+              onChange={(e) => setFormData({...formData, lifeGoalId: e.target.value || undefined})}
+              disabled={loadingLifeGoals}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232] disabled:bg-gray-100"
+            >
+              <option value="">Select a life goal...</option>
+              {lifeGoals.map((lg) => (
+                <option key={lg.id} value={lg.id}>
+                  {lg.title}
+                </option>
+              ))}
+            </select>
           </div>
           
           {/* Area - Read Only */}

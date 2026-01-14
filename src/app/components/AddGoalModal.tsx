@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Goal, MeasurementType, Frequency } from '../types';
+import { useState, useEffect } from 'react';
+import { Goal, MeasurementType, Frequency, LifeGoal } from '../types';
 import { X } from 'lucide-react';
+import { lifeGoalsApi } from '../services/api';
 
 interface AddGoalModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     unit: '',
     remarks: '',
+    lifeGoalId: '',
   });
   const [weightData, setWeightData] = useState({
     startWeight: '',
@@ -33,6 +35,26 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
   const [startValue, setStartValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
+  const [loadingLifeGoals, setLoadingLifeGoals] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLifeGoals();
+    }
+  }, [isOpen]);
+
+  const fetchLifeGoals = async () => {
+    try {
+      setLoadingLifeGoals(true);
+      const data = await lifeGoalsApi.getLifeGoals();
+      setLifeGoals(data);
+    } catch (err) {
+      console.error('Failed to fetch life goals:', err);
+    } finally {
+      setLoadingLifeGoals(false);
+    }
+  };
   
   const getTargetValue = (): number => {
     if (formData.unit === 'Kilogram' && weightData.targetWeight && weightData.startWeight) {
@@ -170,6 +192,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
         startDate: formData.startDate,
         endDate: formData.endDate,
         remarks: formData.remarks || undefined,
+        lifeGoalId: formData.lifeGoalId || undefined,
       };
 
       if (autoCreateMonthly) {
@@ -213,6 +236,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         unit: '',
         remarks: '',
+        lifeGoalId: '',
       });
       setWeightData({ startWeight: '', targetWeight: '' });
       setCountData({ targetCount: '' });
@@ -262,6 +286,29 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                 placeholder="e.g., Reach Target Weight"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
               />
+            </div>
+            
+            {/* Life Goal */}
+            <div>
+              <label className="block text-sm mb-2 text-[#805232]">
+                Link to Life Goal (Optional)
+              </label>
+              <select
+                value={formData.lifeGoalId}
+                onChange={(e) => setFormData({...formData, lifeGoalId: e.target.value})}
+                disabled={loadingLifeGoals}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232] disabled:bg-gray-100"
+              >
+                <option value="">Select a life goal...</option>
+                {lifeGoals.map((lg) => (
+                  <option key={lg.id} value={lg.id}>
+                    {lg.title}
+                  </option>
+                ))}
+              </select>
+              {lifeGoals.length === 0 && !loadingLifeGoals && (
+                <p className="text-xs text-gray-600 mt-1">No life goals created yet. <a href="#" className="underline">Create one first</a></p>
+              )}
             </div>
             
             {/* Area */}

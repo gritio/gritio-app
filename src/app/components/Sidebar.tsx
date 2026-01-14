@@ -5,8 +5,8 @@ import { authApi } from '../services/api';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
-  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'todos';
-  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'todos') => void;
+  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy';
+  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy') => void;
   onLogout?: () => void;
 }
 
@@ -22,9 +22,19 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       view: 'overview' as const,
       submenu: [
         {
+          id: 'life-goals',
+          label: 'Life Goals',
+          view: 'life-goals' as const
+        },
+        {
           id: 'weekly',
           label: 'Weekly Check-in',
           view: 'weekly' as const
+        },
+        {
+          id: 'hierarchy',
+          label: 'Goal Hierarchy',
+          view: 'hierarchy' as const
         }
       ]
     },
