@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Task } from '../types';
-import { ChevronLeft, ChevronRight, Check, Plus, Minus, X, ThumbsUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, Minus, X, ThumbsUp, Edit2, Trash2 } from 'lucide-react';
 import { tasksApi } from '../services/api';
+import { EditTaskPanel } from './EditTaskPanel';
 
 interface WeeklyTaskViewProps {
   tasks: Task[];
   goals: any[];
   onGoalClick?: (goalId: string) => void;
+  onTasksUpdate?: () => void;
 }
 
-export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProps) {
+export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: WeeklyTaskViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [completions, setCompletions] = useState<Record<string, Record<number, number>>>(
@@ -20,6 +22,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProp
   );
   const [celebrations, setCelebrations] = useState<Set<string>>(new Set());
   const [globalCelebration, setGlobalCelebration] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const triggerCelebration = (taskId: string, dayIndex: number) => {
     const key = `${taskId}-${dayIndex}`;
@@ -213,6 +218,20 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProp
 
   const goalMap = new Map(goals.map(g => [g.id, g]));
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      setIsDeleting(true);
+      await tasksApi.deleteTask(taskId);
+      setDeleteConfirmTaskId(null);
+      if (onTasksUpdate) onTasksUpdate();
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      alert('Failed to delete task');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-2">
       <style>{`
@@ -397,29 +416,50 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProp
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-3 flex gap-4 items-start">
-              {/* Progress Circle */}
-              <div className="flex-shrink-0 flex flex-col items-center w-16">
-                <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
-                  style={{ 
-                    background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
-                  }}>
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                    <span className="text-xs font-bold text-amber-900">{progress}%</span>
+            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-3">
+              <div className="flex gap-4 items-start">
+                {/* Progress Circle */}
+                <div className="flex-shrink-0 flex flex-col items-center w-16">
+                  <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
+                    style={{ 
+                      background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
+                    }}>
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                      <span className="text-xs font-bold text-amber-900">{progress}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Task Name and Description */}
-              <div className="flex-shrink-0 flex flex-col items-start justify-center w-24">
-                <h3 className="font-semibold text-amber-900 text-sm">{task.title}</h3>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency === 'daily' ? 'daily' : `${task.timesPerWeek}x/week`}
-                </p>
-              </div>
+                {/* Task Name and Description */}
+                <div className="flex-shrink-0 flex flex-col items-start justify-center w-24">
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <h3 className="font-semibold text-amber-900 text-sm">{task.title}</h3>
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency === 'daily' ? 'daily' : `${task.timesPerWeek}x/week`}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setEditingTaskId(task.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
+                        title="Edit task"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmTaskId(task.id)}
+                        className="p-1 hover:bg-red-50 rounded transition-colors text-gray-600 hover:text-red-600"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Days Grid */}
-              <div className="flex-1 grid gap-2 pl-4" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+                {/* Days Grid */}
+                <div className="flex-1 grid gap-2 pl-4" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
                 {dayNames.map((dayName, dayIndex) => {
                   const date = weekDays[dayIndex];
                   const isToday = new Date().toDateString() === date.toDateString();
@@ -545,6 +585,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProp
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
           );
@@ -556,6 +597,47 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick }: WeeklyTaskViewProp
           </div>
         )}
       </div>
+
+      {/* Edit Task Panel */}
+      {editingTaskId && (
+        <EditTaskPanel
+          isOpen={!!editingTaskId}
+          onClose={() => setEditingTaskId(null)}
+          task={tasks.find(t => t.id === editingTaskId) || null}
+          onSave={(updatedTask) => {
+            if (onTasksUpdate) onTasksUpdate();
+            setEditingTaskId(null);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmTaskId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Task?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{tasks.find(t => t.id === deleteConfirmTaskId)?.title}"? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmTaskId(null)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTask(deleteConfirmTaskId)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
