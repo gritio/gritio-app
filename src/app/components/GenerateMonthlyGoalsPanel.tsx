@@ -59,14 +59,9 @@ export function GenerateMonthlyGoalsPanel({ goal, isOpen, onClose, onGenerate }:
       }
     } else if (distributionStrategy === 'progressive') {
       const start = parseInt(startValue) || 0;
-      const monthsToReach = Math.min(target, 12);
-      const incrementPerMonth = (target - start) / monthsToReach;
+      const incrementPerMonth = (target - start) / 12;
       for (let i = 0; i < 12; i++) {
-        if (i < monthsToReach) {
-          months[i] = Math.round(start + (i + 1) * incrementPerMonth);
-        } else {
-          months[i] = target;
-        }
+        months[i] = Math.round(start + (i + 1) * incrementPerMonth);
       }
     }
 
