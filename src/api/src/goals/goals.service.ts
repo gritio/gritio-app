@@ -42,17 +42,12 @@ export class GoalsService {
         months[wholePart] = fractionalPart;
       }
     } else if (strategy === 'PROGRESSIVE') {
-      // Ramp from startValue to target linearly, then maintain
+      // Ramp from startValue to target linearly over all 12 months
       const start = Math.round(startValue || 0);
-      const monthsToReach = Math.min(target, 12);
-      const incrementPerMonth = (target - start) / monthsToReach;
+      const incrementPerMonth = (target - start) / 12;
       
       for (let i = 0; i < 12; i++) {
-        if (i < monthsToReach) {
-          months[i] = Math.round(start + (i + 1) * incrementPerMonth);
-        } else {
-          months[i] = target;
-        }
+        months[i] = Math.round(start + (i + 1) * incrementPerMonth);
       }
     }
 
@@ -277,6 +272,74 @@ export class GoalsService {
         where: { goalId: id },
         data: timeGoalData,
       });
+    }
+
+    if (dto.autoCreateMonthly && dto.distributionStrategy) {
+      await this.prisma.monthlyGoal.deleteMany({
+        where: { goalId: id }
+      });
+
+      const startDate = new Date(goal.startDate);
+      let target = 0;
+
+      if (goal.unit === 'Kilogram' && goal.weightGoal) {
+        target = Math.abs(parseFloat(String(goal.weightGoal.targetWeight)) - parseFloat(String(goal.weightGoal.startWeight)));
+      } else if (goal.unit === 'Count' && goal.countGoal) {
+        target = parseFloat(String(goal.countGoal.targetCount));
+      } else if (goal.unit === 'Time' && goal.timeGoal) {
+        const hours = parseFloat(String(goal.timeGoal.targetHours)) || 0;
+        const minutes = parseFloat(String(goal.timeGoal.targetMinutes)) || 0;
+        target = hours * 60 + minutes;
+      }
+
+      const distribution = this.calculateMonthlyDistribution(
+        target,
+        (dto.distributionStrategy as 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE') || 'SPREAD_EVENLY',
+        dto.startValue
+      );
+
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthIndex, 1);
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthName = monthNames[monthDate.getMonth()];
+        const year = monthDate.getFullYear();
+
+        let monthlyTarget = distribution[monthIndex];
+        
+        if (goal.unit === 'Kilogram' && goal.weightGoal) {
+          const startWeight = parseFloat(String(goal.weightGoal.startWeight));
+          const targetWeight = parseFloat(String(goal.weightGoal.targetWeight));
+          
+          let cumulativeWeightLost = 0;
+          for (let i = 0; i <= monthIndex; i++) {
+            cumulativeWeightLost += distribution[i];
+          }
+          
+          const direction = targetWeight < startWeight ? -1 : 1;
+          monthlyTarget = parseFloat((startWeight + (direction * cumulativeWeightLost)).toFixed(2));
+          
+          console.log(`INSERT Weight Goal: month=${monthName}, startWeight=${startWeight}, cumulativeWeightLost=${cumulativeWeightLost}, monthlyTarget=${monthlyTarget}`);
+        } else {
+          console.log(`INSERT: month=${monthName}, target=${monthlyTarget}, targetString=${monthlyTarget.toString()}`);
+        }
+        
+        await this.prisma.executeRawUnsafe(
+          `INSERT INTO "MonthlyGoal" ("id", "goalId", "title", "month", "monthDate", "target", "unit", "remarks", "status", "createdAt", "updatedAt") 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          require('crypto').randomUUID(),
+          goal.id,
+          `${goal.title} - ${monthName}`,
+          `${monthName} ${year}`,
+          monthDate,
+          monthlyTarget,
+          goal.unit,
+          `Monthly target for ${monthName}`,
+          'ON_TRACK',
+          new Date(),
+          new Date()
+        );
+      }
     }
 
     return this.getGoalById(id);

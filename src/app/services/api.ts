@@ -148,6 +148,9 @@ export const goalsApi = {
       weightGoal?: { startWeight?: number; currentWeight?: number; targetWeight?: number };
       countGoal?: { targetCount?: number; currentCount?: number };
       timeGoal?: { targetHours?: number; targetMinutes?: number; currentHours?: number; currentMinutes?: number };
+      autoCreateMonthly?: boolean;
+      distributionStrategy?: string;
+      startValue?: number;
     }
   ): Promise<Goal> => {
     try {

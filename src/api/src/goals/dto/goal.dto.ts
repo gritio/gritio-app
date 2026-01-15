@@ -91,4 +91,15 @@ export class UpdateGoalDto {
     currentHours?: number;
     currentMinutes?: number;
   };
+
+  @IsOptional()
+  autoCreateMonthly?: boolean;
+
+  @IsOptional()
+  @IsString()
+  distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
+
+  @IsOptional()
+  @IsNumber()
+  startValue?: number;
 }
