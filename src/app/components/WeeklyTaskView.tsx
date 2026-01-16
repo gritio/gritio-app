@@ -436,7 +436,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                     <div>
                       <h3 className="font-semibold text-amber-900 text-sm">{task.title}</h3>
                       <p className="text-xs text-gray-600 mt-0.5">
-                        {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency === 'daily' ? 'daily' : `${task.timesPerWeek}x/week`}
+                        {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
                       </p>
                     </div>
                     <div className="flex gap-1">
