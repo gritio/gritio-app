@@ -416,9 +416,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-3">
-              <div className="flex gap-4 items-start">
-                {/* Progress Circle */}
+            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-3 flex items-center">
+              <div className="flex gap-4 items-center w-full">
+                {/* Progress Circle and Buttons */}
                 <div className="flex-shrink-0 flex flex-col items-center w-16">
                   <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
                     style={{ 
@@ -428,34 +428,30 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                       <span className="text-xs font-bold text-amber-900">{progress}%</span>
                     </div>
                   </div>
+                  <div className="flex gap-1 mt-2">
+                    <button
+                      onClick={() => setEditingTaskId(task.id)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
+                      title="Edit task"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmTaskId(task.id)}
+                      className="p-1 hover:bg-red-50 rounded transition-colors text-gray-600 hover:text-red-600"
+                      title="Delete task"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Task Name and Description */}
-                <div className="flex-shrink-0 flex flex-col items-start justify-center w-24">
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <h3 className="font-semibold text-amber-900 text-sm">{task.title}</h3>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setEditingTaskId(task.id)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
-                        title="Edit task"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmTaskId(task.id)}
-                        className="p-1 hover:bg-red-50 rounded transition-colors text-gray-600 hover:text-red-600"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex-shrink-0 w-40">
+                  <h3 className="font-semibold text-amber-900 text-sm break-words">{task.title}</h3>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
+                  </p>
                 </div>
 
                 {/* Days Grid */}
@@ -492,7 +488,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                     // Steps input with text field
                     <div
                       key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1 h-16 relative overflow-visible ${
+                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
@@ -518,7 +514,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                     // Time input with hours and minutes
                     <div
                       key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1 h-16 relative overflow-visible ${
+                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
@@ -526,7 +522,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                           : 'border-gray-200 bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center gap-1 text-xs">
+                      <div className="flex items-center justify-center gap-1 text-xs w-full">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -561,7 +557,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                     // Distance input with text field
                     <div
                       key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1 h-16 relative overflow-visible ${
+                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
