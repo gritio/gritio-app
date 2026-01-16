@@ -53,7 +53,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
   ];
 
   return (
-    <div className="w-64 bg-[#DCDCDC] min-h-screen shadow-lg">
+    <div className="w-64 bg-[#DCDCDC] min-h-screen shadow-lg flex flex-col">
       {/* Logo/Brand */}
       <div className="p-6 border-b border-[#B8B9BA]">
         <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       </div>
 
       {/* Menu Items */}
-      <nav className="p-4 space-y-2">
+      <nav className="p-4 space-y-2 flex-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isExpanded = expandedMenu === item.id;
@@ -129,8 +129,8 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer Section */}
-      <div className="absolute bottom-0 w-64 p-4 border-t border-[#B8B9BA] space-y-1">
+      {/* Footer Section - Sticks to bottom when scrolling */}
+      <div className="sticky bottom-0 p-4 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC]">
         {user && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -147,7 +147,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
         {onLogout && (
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#DCDCDC] text-[#805232] rounded-lg hover:bg-[#DCDCDC] transition-colors font-medium text-sm border border-[#805232]"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#DCDCDC] text-[#805232] rounded-lg hover:bg-[#C0C0C0] transition-colors font-medium text-sm border border-[#805232]"
           >
             <LogOut className="w-4 h-4" />
             Logout
