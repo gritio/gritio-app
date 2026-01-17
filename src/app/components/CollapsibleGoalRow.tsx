@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Goal, MonthlyGoal } from '../types';
-import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X, Zap } from 'lucide-react';
 import { ProgressBar } from './ProgressBar';
 import { tasksApi } from '../services/api';
 
@@ -205,6 +205,30 @@ export function CollapsibleGoalRow({
             opacity: 0;
           }
         }
+        @keyframes iconPulse {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.2);
+          }
+        }
+        @keyframes iconRotate {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+        @keyframes iconBounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-3px);
+          }
+        }
         .global-celebration {
           position: fixed;
           top: 10%;
@@ -215,6 +239,55 @@ export function CollapsibleGoalRow({
         }
         .celebration-character {
           font-size: 5rem;
+        }
+        .icon-pulse:hover {
+          animation: iconPulse 0.6s ease-in-out;
+        }
+        .icon-rotate:hover {
+          animation: iconRotate 0.6s ease-in-out;
+        }
+        .icon-bounce:hover {
+          animation: iconBounce 0.6s ease-in-out;
+        }
+        .tooltip-container {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .tooltip-text {
+          visibility: hidden;
+          width: max-content;
+          background-color: #805232;
+          color: white;
+          text-align: center;
+          border-radius: 6px;
+          padding: 5px 10px;
+          position: absolute;
+          z-index: 1000;
+          bottom: 125%;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+          opacity: 0;
+          transition: opacity 0.3s ease-in-out;
+          pointer-events: none;
+        }
+        .tooltip-text::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          margin-left: -5px;
+          border-width: 5px;
+          border-style: solid;
+          border-color: #805232 transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip-text {
+          visibility: visible;
+          opacity: 1;
         }
       `}</style>
 
@@ -228,12 +301,12 @@ export function CollapsibleGoalRow({
       )}
 
       {/* Goal Header */}
-      <div className="bg-[#DCDCDC] border border-gray-300 rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-3 mb-4 hover:shadow-xl transition-all duration-200 border-l-4 border-l-[#805232] hover:scale-105 hover:-translate-y-1">
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button
               onClick={onToggle}
-              className="text-[#805232] hover:text-[#805232] flex-shrink-0"
+              className="text-[#805232] hover:text-[#805232] flex-shrink-0 mt-0.5"
             >
               {isExpanded ? (
                 <ChevronDown className="w-5 h-5" />
@@ -242,131 +315,156 @@ export function CollapsibleGoalRow({
               )}
             </button>
 
-            <div className="flex-shrink-0">
-              <h3 className="text-sm font-bold text-[#805232]">{goal.title}</h3>
-              <p className="text-xs text-[#805232]">{goal.area}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-[#805232] mb-1">{goal.title}</h3>
+              <p className="text-xs text-[#805232] mb-2">{goal.lifeGoal?.title || 'No Life Goal'}</p>
             </div>
-
-            {goal.unit === 'Kilogram' && goal.weightGoal ? (
-              // Weight goal - show start and target weight
-              (() => {
-                // Get the latest non-zero current weight from monthly goals (from all months, not just past)
-                let currentWeightDisplay = goal.weightGoal.currentWeight;
-                if (goalMonthlyGoals.length > 0) {
-                  // Find the most recent month with non-zero currentProgress
-                  for (let i = goalMonthlyGoals.length - 1; i >= 0; i--) {
-                    const progress = Number(goalMonthlyGoals[i].currentProgress);
-                    if (progress !== 0) {
-                      currentWeightDisplay = progress;
-                      break;
-                    }
-                  }
-                }
-                
-                const progressPercent = Math.min(Math.max(
-                  ((goal.weightGoal.startWeight - currentWeightDisplay) / (goal.weightGoal.startWeight - goal.weightGoal.targetWeight)) * 100, 
-                  0
-                ), 100);
-                
-                return (
-                  <div className="flex items-center gap-2 flex-1 justify-end">
-                    <span className="text-xs font-semibold text-[#805232]">
-                      {goal.weightGoal.startWeight}kg
-                    </span>
-                    <span className="text-xs font-semibold text-[#805232]">
-                      →
-                    </span>
-                    <span className="text-xs font-semibold text-[#805232]">
-                      {goal.weightGoal.targetWeight}kg
-                    </span>
-                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
-                      <div
-                        className="h-full bg-cyan-500 transition-all duration-300"
-                        style={{
-                          width: `${progressPercent}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-[#805232]">
-                      {currentWeightDisplay}kg
-                    </span>
-                  </div>
-                );
-              })()
-            ) : (
-              // Other goals - show progress bar
-              <div className="flex items-center gap-2 flex-1 justify-end">
-                <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      goal.progress >= 100 ? 'bg-green-500' :
-                      goal.progress >= 70 ? 'bg-green-500' :
-                      goal.progress >= 50 ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}
-                    style={{
-                      width: `${Math.min(goal.progress, 100)}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-[#805232] flex-shrink-0">
-                  {goal.progress}%
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-2 flex-shrink-0">
             {onAddTask && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddTask(goal.id);
-                }}
-                className="p-1 text-[#805232] hover:text-[#805232] transition-colors"
-                title="Add task"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+              <div className="tooltip-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddTask(goal.id);
+                  }}
+                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-bounce"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+                <span className="tooltip-text">Add Task</span>
+              </div>
             )}
             {onGenerateMonthlyGoals && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGenerateMonthlyGoals(goal.id);
-                }}
-                className="p-1 text-[#805232] hover:text-[#805232] transition-colors"
-                title="Generate monthly goals"
-              >
-                <Calendar className="w-4 h-4" />
-              </button>
+              <div className="tooltip-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGenerateMonthlyGoals(goal.id);
+                  }}
+                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-rotate"
+                >
+                  <Zap className="w-4 h-4" />
+                </button>
+                <span className="tooltip-text">Generate Monthly Goals</span>
+              </div>
             )}
             {onEditGoal && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditGoal(goal.id);
-                }}
-                className="p-1 text-[#805232] hover:text-[#805232] transition-colors"
-                title="Edit goal"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
+              <div className="tooltip-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditGoal(goal.id);
+                  }}
+                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-pulse"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <span className="tooltip-text">Edit Goal</span>
+              </div>
             )}
             {onDeleteGoal && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteGoal(goal.id);
-                }}
-                className="p-1 text-[#805232] hover:text-[#805232] transition-colors"
-                title="Delete goal"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="tooltip-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteGoal(goal.id);
+                  }}
+                  className="p-1 text-[#805232] hover:text-red-600 transition-colors icon-bounce"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <span className="tooltip-text">Delete Goal</span>
+              </div>
             )}
           </div>
+        </div>
+
+        {/* Tags and Progress Row */}
+        <div className="flex items-center justify-between gap-4 mt-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-[#E8D5C4] text-[#805232]">
+              {goal.area}
+            </span>
+            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+              goal.progress >= 100 ? 'bg-green-100 text-green-700' :
+              goal.progress >= 70 ? 'bg-green-100 text-green-700' :
+              goal.progress >= 50 ? 'bg-yellow-100 text-yellow-700' :
+              'bg-orange-100 text-orange-700'
+            }`}>
+              {goal.progress >= 100 ? 'Completed' :
+               goal.progress >= 70 ? 'On Track' :
+               goal.progress >= 50 ? 'At Risk' :
+               'Behind'}
+            </span>
+          </div>
+
+          {/* Progress Bar */}
+          {goal.unit === 'Kilogram' && goal.weightGoal ? (
+            (() => {
+              let currentWeightDisplay = goal.weightGoal.currentWeight;
+              if (goalMonthlyGoals.length > 0) {
+                for (let i = goalMonthlyGoals.length - 1; i >= 0; i--) {
+                  const progress = Number(goalMonthlyGoals[i].currentProgress);
+                  if (progress !== 0) {
+                    currentWeightDisplay = progress;
+                    break;
+                  }
+                }
+              }
+              
+              const progressPercent = Math.min(Math.max(
+                ((goal.weightGoal.startWeight - currentWeightDisplay) / (goal.weightGoal.startWeight - goal.weightGoal.targetWeight)) * 100, 
+                0
+              ), 100);
+              
+              return (
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <span className="text-xs font-semibold text-[#805232]">
+                    {goal.weightGoal.startWeight}kg
+                  </span>
+                  <span className="text-xs font-semibold text-[#805232]">
+                    →
+                  </span>
+                  <span className="text-xs font-semibold text-[#805232]">
+                    {goal.weightGoal.targetWeight}kg
+                  </span>
+                  <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
+                    <div
+                      className="h-full bg-cyan-500 transition-all duration-300"
+                      style={{
+                        width: `${progressPercent}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-[#805232]">
+                    {currentWeightDisplay}kg
+                  </span>
+                </div>
+              );
+            })()
+          ) : (
+            <div className="flex items-center gap-2 flex-1 justify-end">
+              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    goal.progress >= 100 ? 'bg-green-500' :
+                    goal.progress >= 70 ? 'bg-green-500' :
+                    goal.progress >= 50 ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{
+                    width: `${Math.min(goal.progress, 100)}%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs font-semibold text-[#805232] flex-shrink-0">
+                {goal.progress}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

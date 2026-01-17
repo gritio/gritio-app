@@ -54,21 +54,22 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
 
   return (
     <div className="w-64 bg-[#DCDCDC] min-h-screen shadow-lg flex flex-col">
-      {/* Logo/Brand */}
-      <div className="p-6 border-b border-[#B8B9BA]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center">
-            <AllyLogo size={40} />
-          </div>
-          <div>
-            <h1 className="text-[#805232] font-bold text-lg">Gritio</h1>
-            <p className="text-[#805232] text-xs">Small Steps, Big Results</p>
+      {/* Logo/Brand + Menu - Fixed at top */}
+      <div className="sticky top-0 z-10 bg-[#DCDCDC]">
+        <div className="p-6 border-b border-[#B8B9BA]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center">
+              <AllyLogo size={40} />
+            </div>
+            <div>
+              <h1 className="text-[#805232] font-bold text-lg">Gritio</h1>
+              <p className="text-[#805232] text-xs">Small Steps, Big Results</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Menu Items */}
-      <nav className="p-4 space-y-2 flex-1">
+        {/* Menu Items - Sticky */}
+        <nav className="p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isExpanded = expandedMenu === item.id;
@@ -127,10 +128,11 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
             </div>
           );
         })}
-      </nav>
+        </nav>
+      </div>
 
       {/* Footer Section - Sticks to bottom when scrolling */}
-      <div className="sticky bottom-0 p-4 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC]">
+      <div className="sticky bottom-0 p-4 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC] mt-auto">
         {user && (
           <Tooltip>
             <TooltipTrigger asChild>

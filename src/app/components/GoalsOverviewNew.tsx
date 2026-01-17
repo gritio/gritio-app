@@ -163,27 +163,27 @@ export function GoalsOverviewNew({
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-[#DCDCDC] border border-gray-400 rounded-lg p-6 mb-6">
+      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-6 mb-6">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3 flex-1">
-            <div className="bg-[#DCDCDC] border border-[#805232] p-3 rounded-lg">
+            <div className="bg-white border border-[#805232] p-3 rounded-lg">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div>
               <div className="text-[#805232] text-sm">Total Goals</div>
-              <div className="text-2xl text-[#805232]">{localGoals.length}</div>
+              <div className="text-xl text-[#805232]">{localGoals.length}</div>
             </div>
           </div>
 
           <div className="w-px h-16 bg-gray-400"></div>
 
           <div className="flex items-center gap-3 flex-1">
-            <div className="bg-[#DCDCDC] border border-[#805232] p-3 rounded-lg">
+            <div className="bg-white border border-[#805232] p-3 rounded-lg">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div>
               <div className="text-[#805232] text-sm">On Track</div>
-              <div className="text-2xl text-[#805232]">
+              <div className="text-xl text-[#805232]">
                 {localGoals.filter(g => g.status === 'on-track' || g.status === 'ahead').length}
               </div>
             </div>
@@ -192,12 +192,12 @@ export function GoalsOverviewNew({
           <div className="w-px h-16 bg-gray-400"></div>
 
           <div className="flex items-center gap-3 flex-1">
-            <div className="bg-[#DCDCDC] border border-[#805232] p-3 rounded-lg">
+            <div className="bg-white border border-[#805232] p-3 rounded-lg">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div>
               <div className="text-[#805232] text-sm">Avg. Progress</div>
-              <div className="text-2xl text-[#805232]">
+              <div className="text-xl text-[#805232]">
                 {localGoals.length > 0 ? Math.round(localGoals.reduce((sum, g) => sum + g.progress, 0) / localGoals.length) : 0}%
               </div>
             </div>
@@ -208,7 +208,7 @@ export function GoalsOverviewNew({
       {/* Empty State */}
       {localGoals.length === 0 && (
         <div className="text-center py-8">
-          <div className="bg-[#DCDCDC] border-2 border-dashed border-gray-200 rounded-lg p-12">
+          <div className="bg-white border-2 border-dashed border-[#D0D0D0] rounded-lg p-12">
             <Target className="w-16 h-16 mx-auto mb-4 text-[#805232]" />
             <h3 className="mb-2 text-[#805232]">No Goals Yet</h3>
             <p className="text-[#805232] mb-6">Get started by creating your first yearly goal</p>
@@ -232,6 +232,7 @@ export function GoalsOverviewNew({
             onAddTask={handleOpenAddTaskPanel}
             onGenerateMonthlyGoals={handleOpenGenerateMonthlyGoalsPanel}
             tasks={tasks}
+            onRefreshGoals={onRefreshGoals}
           />
         ))}
       </div>
@@ -239,7 +240,7 @@ export function GoalsOverviewNew({
       {/* Delete Confirmation Dialog */}
       {deleteConfirmGoalId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
-          <div className="bg-[#DCDCDC] border border-[#B8B9BA] rounded-lg p-6 max-w-sm mx-4 shadow-lg">
+          <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-6 max-w-sm mx-4 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-[#805232]">Delete Goal?</h3>
               <button
@@ -264,7 +265,7 @@ export function GoalsOverviewNew({
               </button>
               <button
                 onClick={() => setDeleteConfirmGoalId(null)}
-                className="flex-1 px-4 py-2 bg-[#DCDCDC] text-[#805232] rounded-lg hover:bg-[#DCDCDC] transition-colors font-medium border border-[#805232]"
+                className="flex-1 px-4 py-2 bg-gray-200 text-[#805232] rounded-lg hover:bg-gray-300 transition-colors font-medium border border-[#805232]"
               >
                 Cancel
               </button>
