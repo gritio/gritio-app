@@ -4,6 +4,7 @@ import { GoalsOverviewNew as GoalsOverview } from './components/GoalsOverviewNew
 import { GoalDetail } from './components/GoalDetail';
 import { TodayView } from './components/TodayView';
 import { WeeklyTaskView } from './components/WeeklyTaskView';
+import { TaskTimelinePage } from './components/TaskTimelinePage';
 import { TodosPage } from './components/TodosPage';
 import { LifeGoalsPage } from './components/LifeGoalsPage';
 import { GoalHierarchyPage } from './components/GoalHierarchyPage';
@@ -18,7 +19,7 @@ import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './da
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'hierarchy';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -413,6 +414,13 @@ export default function App() {
                     setSelectedGoalId(goalId);
                     setCurrentView('overview');
                   }}
+                />
+              )}
+
+              {currentView === 'task-timeline' && (
+                <TaskTimelinePage 
+                  goals={goals}
+                  tasks={tasks}
                 />
               )}
 

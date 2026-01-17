@@ -1,12 +1,12 @@
-import { LayoutGrid, Calendar, TrendingUp, Target, LogOut, CheckSquare, ChevronDown } from 'lucide-react';
+import { LayoutGrid, Calendar, Target, LogOut, CheckSquare, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
-  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy';
-  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'todos' | 'life-goals' | 'hierarchy') => void;
+  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'hierarchy';
+  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'hierarchy') => void;
   onLogout?: () => void;
 }
 
@@ -22,14 +22,19 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       view: 'overview' as const,
       submenu: [
         {
-          id: 'life-goals',
-          label: 'Life Goals',
-          view: 'life-goals' as const
-        },
-        {
           id: 'weekly',
           label: 'Weekly Check-in',
           view: 'weekly' as const
+        },
+        {
+          id: 'task-timeline',
+          label: 'Task Timeline',
+          view: 'task-timeline' as const
+        },
+        {
+          id: 'life-goals',
+          label: 'Life Goals',
+          view: 'life-goals' as const
         },
         {
           id: 'hierarchy',
@@ -74,8 +79,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
           const Icon = item.icon;
           const isExpanded = expandedMenu === item.id;
           const hasSubmenu = 'submenu' in item;
-          const isActive = hasSubmenu ? currentView === item.view && !item.submenu.some(sub => currentView === sub.view) : currentView === item.view;
-          const isActiveParent = hasSubmenu && item.submenu.some(sub => currentView === sub.view);
+          const isActive = hasSubmenu ? currentView === item.view && !(hasSubmenu && (item as any).submenu.some((sub: any) => currentView === sub.view)) : currentView === item.view;
 
           return (
             <div key={item.id}>
@@ -110,7 +114,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
               {/* Submenu */}
               {hasSubmenu && isExpanded && (
                 <div className="ml-6 mt-2 space-y-1">
-                  {item.submenu.map((subitem) => (
+                  {(item as any).submenu.map((subitem: any) => (
                     <button
                       key={subitem.id}
                       onClick={() => onNavigate(subitem.view)}
