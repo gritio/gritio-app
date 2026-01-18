@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsArray } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -22,6 +22,10 @@ export class CreateTaskDto {
   @IsOptional()
   @IsNumber()
   timesPerWeek?: number;
+
+  @IsOptional()
+  @IsArray()
+  months?: number[]; // Array of month indices (0-11)
 }
 
 export class UpdateTaskDto {

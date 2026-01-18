@@ -30,16 +30,6 @@ export class TasksController {
     return this.tasksService.createTask(dto, req.user.userId);
   }
 
-  @Get('goal/:goalId/week')
-  @UseGuards(JwtAuthGuard)
-  async getTasksForWeek(
-    @Param('goalId') goalId: string,
-    @Query('weekStart') weekStart?: string,
-  ) {
-    const startDate = weekStart ? new Date(weekStart) : new Date();
-    return this.tasksService.getTasksForWeek(goalId, startDate);
-  }
-
   @Get('goal/:goalId')
   @UseGuards(JwtAuthGuard)
   async getTasksByGoal(@Param('goalId') goalId: string) {
