@@ -16,16 +16,18 @@ export class TasksService {
       throw new Error('Goal not found or unauthorized');
     }
 
+    const taskData = {
+      goalId: dto.goalId,
+      title: dto.title,
+      type: dto.type.toUpperCase() as any,
+      frequency: dto.frequency.toUpperCase() as any,
+      target: dto.target,
+      unit: dto.unit,
+      timesPerWeek: dto.timesPerWeek,
+      months: dto.months || [0,1,2,3,4,5,6,7,8,9,10,11], // Default to all months if not specified
+    };
     return this.prisma.task.create({
-      data: {
-        goalId: dto.goalId,
-        title: dto.title,
-        type: dto.type.toUpperCase() as any,
-        frequency: dto.frequency.toUpperCase() as any,
-        target: dto.target,
-        unit: dto.unit,
-        timesPerWeek: dto.timesPerWeek,
-      },
+      data: taskData,
       include: {
         completionRecords: {
           orderBy: { date: 'desc' },
@@ -41,13 +43,23 @@ export class TasksService {
     });
     const goalIds = goals.map(g => g.id);
 
-    return this.prisma.task.findMany({
+    // Get current month (0-11)
+    const currentMonth = new Date().getMonth();
+
+    // Fetch all tasks and filter by current month in memory
+    const allTasks = await this.prisma.task.findMany({
       where: { goalId: { in: goalIds } },
       include: {
         completionRecords: {
           orderBy: { date: 'desc' },
         },
       },
+    });
+
+    // Filter tasks that apply to current month
+    return allTasks.filter(task => {
+      const months = (task as any).months as number[];
+      return months && months.includes(currentMonth);
     });
   }
 
@@ -61,37 +73,6 @@ export class TasksService {
       },
       orderBy: { createdAt: 'asc' },
     });
-  }
-
-  async getTasksForWeek(goalId: string, weekStartDate: Date) {
-    // Calculate week range (Monday to Sunday)
-    const weekStart = new Date(weekStartDate);
-    weekStart.setHours(0, 0, 0, 0);
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday
-    weekStart.setDate(diff);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    const tasks = await this.prisma.task.findMany({
-      where: { goalId },
-      include: {
-        completionRecords: {
-          where: {
-            date: {
-              gte: weekStart,
-              lte: weekEnd,
-            },
-          },
-          orderBy: { date: 'asc' },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    return { tasks, weekStart, weekEnd };
   }
 
   async getTaskById(id: string) {

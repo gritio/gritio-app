@@ -21,7 +21,17 @@ export function AddTaskPanel({ isOpen, onClose, goalId, goalTitle, onSave }: Add
     timesPerWeek: 1
   });
 
-  const [selectedMonths, setSelectedMonths] = useState<Set<number>>(new Set());
+  const getCurrentAndRemainingMonths = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const remainingMonths = new Set<number>();
+    for (let i = currentMonth; i < 12; i++) {
+      remainingMonths.add(i);
+    }
+    return remainingMonths;
+  };
+
+  const [selectedMonths, setSelectedMonths] = useState<Set<number>>(getCurrentAndRemainingMonths());
 
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -54,11 +64,13 @@ export function AddTaskPanel({ isOpen, onClose, goalId, goalTitle, onSave }: Add
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log("Selected Months")
+    console.log(Array.from(selectedMonths))
     const taskData = {
       goalId,
       ...formData,
-      timesPerWeek: formData.frequency === 'weekly' ? formData.timesPerWeek : undefined
+      timesPerWeek: formData.frequency === 'weekly' ? formData.timesPerWeek : undefined,
+      months: Array.from(selectedMonths)
     };
     
     try {
@@ -81,7 +93,7 @@ export function AddTaskPanel({ isOpen, onClose, goalId, goalTitle, onSave }: Add
       unit: 'times',
       timesPerWeek: 1
     });
-    setSelectedMonths(new Set());
+    setSelectedMonths(getCurrentAndRemainingMonths());
   };
 
   const showNumberTypeSpecificFields = formData.type === 'number';

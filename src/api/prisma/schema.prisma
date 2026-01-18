@@ -152,6 +152,7 @@ model Task {
   target          Int        // Target per day/week (for Time/Steps/Distance) or 1 (for Number)
   unit            String     // e.g., "sessions", "steps", "mins", "km" (for Number, default to "times")
   timesPerWeek    Int?       // Only for weekly tasks (1-7)
+  months          Int[]      @default([0,1,2,3,4,5,6,7,8,9,10,11]) // Months (0-11) when task applies
   lastUpdated     DateTime   @default(now())
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
