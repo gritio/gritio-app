@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Task, Goal } from '../types';
-import { ChevronDown, Filter, Search } from 'lucide-react';
+import { ChevronDown, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { tasksApi } from '../services/api';
 
 interface TaskTimelinePageProps {
@@ -13,6 +13,7 @@ interface TaskProgress {
   goal: Goal | undefined;
   progress: number;
   completedDays: number[];
+  completionValues: Record<number, number>;
   lastCompletionDate: string | null;
   status: 'on-track' | 'at-risk' | 'behind' | 'completed';
 }
@@ -24,14 +25,31 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'table' | 'heatmap'>('heatmap');
   const [taskProgress, setTaskProgress] = useState<TaskProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  const weekStart = getWeekStart(new Date());
+  const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(weekStart);
     date.setDate(date.getDate() + i);
     return date;
   });
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const handlePreviousWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentDate(newDate);
+  };
+
+  const handleNextWeek = () => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentDate(newDate);
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
 
   function getWeekStart(date: Date) {
     const d = new Date(date);
@@ -52,6 +70,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
             const history = await tasksApi.getHistory(task.id, 7);
 
             const completedDays: number[] = [];
+            const completionValues: Record<number, number> = {};
             let lastCompletionDate: string | null = null;
 
             for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
@@ -60,9 +79,14 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               const dateStr = date.toISOString().split('T')[0];
               const completion = history.find(h => h.date.split('T')[0] === dateStr);
 
-              if (completion && completion.value > 0) {
-                completedDays.push(dayIndex);
-                lastCompletionDate = dateStr;
+              if (completion) {
+                completionValues[dayIndex] = Number(completion.value) || 0;
+                if (completion.value > 0) {
+                  completedDays.push(dayIndex);
+                  lastCompletionDate = dateStr;
+                }
+              } else {
+                completionValues[dayIndex] = 0;
               }
             }
 
@@ -79,6 +103,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               goal,
               progress,
               completedDays,
+              completionValues,
               lastCompletionDate,
               status,
             };
@@ -94,7 +119,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
     };
 
     fetchTaskProgress();
-  }, [tasks, goals]);
+  }, [tasks, goals, currentDate]);
 
   const filteredTasks = taskProgress.filter(tp => {
     if (selectedGoal && tp.task.goalId !== selectedGoal) return false;
@@ -155,10 +180,34 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-8">
-      {/* Header */}
+      {/* Header with Week Navigation */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#805232] mb-2">Task Timeline</h1>
-        <p className="text-[#805232]">View all your tasks and their progress at a glance</p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-[#805232] mb-2">Task Timeline</h1>
+            <p className="text-[#805232]">View all your tasks and their progress at a glance</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handlePreviousWeek}
+              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6 text-[#805232]" />
+            </button>
+            <div className="text-center min-w-64">
+              <p className="text-sm text-gray-600">Week of</p>
+              <p className="text-lg font-semibold text-[#805232]">
+                {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+            <button
+              onClick={handleNextWeek}
+              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-6 h-6 text-[#805232]" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -375,19 +424,24 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               {filteredTasks.map((tp, index) => (
                 <tr key={tp.task.id} className={`border-t border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <td className="py-3 pr-6 text-sm font-medium text-[#805232]">{tp.task.title}</td>
-                  {dayNames.map((_, dayIndex) => (
-                    <td key={dayIndex} className="py-3 text-center">
-                      <div
-                        className={`w-8 h-8 mx-auto rounded flex items-center justify-center text-sm font-semibold ${
-                          tp.completedDays.includes(dayIndex)
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-400'
-                        }`}
-                      >
-                        {tp.completedDays.includes(dayIndex) ? '✓' : '○'}
-                      </div>
-                    </td>
-                  ))}
+                  {dayNames.map((_, dayIndex) => {
+                    const value = tp.completionValues[dayIndex] || 0;
+                    const isCompleted = tp.completedDays.includes(dayIndex);
+                    return (
+                      <td key={dayIndex} className="py-3 text-center">
+                        <div
+                          className={`w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors ${
+                            isCompleted
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-400'
+                          }`}
+                          title={`${tp.task.title}: ${value} ${tp.task.unit}`}
+                        >
+                          {tp.task.type?.toLowerCase() === 'number' ? (isCompleted ? '✓' : '○') : (value > 0 ? '✓' : '○')}
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
