@@ -26,6 +26,18 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
   const [taskProgress, setTaskProgress] = useState<TaskProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Determine number of days to show based on screen width
+  const daysToShow = windowWidth < 500 ? 1 : windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 7;
 
   const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -34,6 +46,10 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
     return date;
   });
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  const visibleDayIndices = Array.from({ length: daysToShow }, (_, i) => i);
+  const visibleDayNames = visibleDayIndices.map(i => dayNames[i]);
+  const visibleWeekDays = visibleDayIndices.map(i => weekDays[i]);
 
   const handlePreviousWeek = () => {
     const newDate = new Date(currentDate);
@@ -179,41 +195,41 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-8">
       {/* Header with Week Navigation */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-2 sm:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
           <div>
-            <h1 className="text-3xl font-bold text-[#805232] mb-2">Task Timeline</h1>
-            <p className="text-[#805232]">View all your tasks and their progress at a glance</p>
+            <h1 className="text-xl sm:text-3xl font-bold text-[#805232] mb-1 sm:mb-2">Task Timeline</h1>
+            <p className="text-xs sm:text-base text-[#805232]">View all your tasks and their progress at a glance</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={handlePreviousWeek}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-6 h-6 text-[#805232]" />
+              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
             </button>
-            <div className="text-center min-w-64">
-              <p className="text-sm text-gray-600">Week of</p>
-              <p className="text-lg font-semibold text-[#805232]">
+            <div className="text-center min-w-40 sm:min-w-64">
+              <p className="text-xs sm:text-sm text-gray-600">Week of</p>
+              <p className="text-sm sm:text-lg font-semibold text-[#805232]">
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
             <button
               onClick={handleNextWeek}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronRight className="w-6 h-6 text-[#805232]" />
+              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-4 mb-6">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-64">
+      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-2 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+          <div className="flex-1 min-w-40 sm:min-w-64">
             <div className="relative">
               <Search className="absolute left-3 top-3 w-4 h-4 text-[#805232]" />
               <input
@@ -221,7 +237,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                 placeholder="Search tasks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232]"
+                className="w-full pl-10 pr-2 sm:pr-4 py-1 sm:py-2 text-sm border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232]"
               />
             </div>
           </div>
@@ -229,7 +245,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
           <select
             value={selectedGoal || ''}
             onChange={(e) => setSelectedGoal(e.target.value || null)}
-            className="px-4 py-2 border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232] cursor-pointer"
+            className="px-2 sm:px-4 py-1 sm:py-2 text-sm border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232] cursor-pointer"
           >
             <option value="">All Goals</option>
             {goals.map(goal => (
@@ -240,7 +256,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
           <select
             value={selectedType || ''}
             onChange={(e) => setSelectedType(e.target.value || null)}
-            className="px-4 py-2 border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232] cursor-pointer"
+            className="px-2 sm:px-4 py-1 sm:py-2 text-sm border border-[#D0D0D0] rounded-lg focus:outline-none focus:border-[#805232] cursor-pointer"
           >
             <option value="">All Types</option>
             <option value="number">Number</option>
@@ -252,60 +268,65 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b-2 border-[#D0D0D0]">
+      <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 border-b-2 border-[#D0D0D0] overflow-x-auto">
         <button
           onClick={() => setActiveTab('summary')}
-          className={`pb-3 px-4 font-semibold transition-colors ${
+          className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'summary'
               ? 'text-[#805232] border-b-2 border-[#805232]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
-          Summary View
+          Summary
         </button>
         <button
           onClick={() => setActiveTab('table')}
-          className={`pb-3 px-4 font-semibold transition-colors ${
+          className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'table'
               ? 'text-[#805232] border-b-2 border-[#805232]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
-          Table View
+          Table
         </button>
         <button
           onClick={() => setActiveTab('heatmap')}
-          className={`pb-3 px-4 font-semibold transition-colors ${
+          className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'heatmap'
               ? 'text-[#805232] border-b-2 border-[#805232]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
-          Weekly Heatmap
+          Heatmap
         </button>
       </div>
 
       {/* Summary View */}
       {activeTab === 'summary' && (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
           {Object.entries(groupedByGoal).map(([goalId, goalTasks]) => {
             const goal = goals.find(g => g.id === goalId);
             return (
-              <div key={goalId} className="bg-white border-2 border-[#D0D0D0] rounded-lg p-6">
-                <h2 className="text-xl font-bold text-[#805232] mb-4">
-                  {goal?.title || 'Unknown Goal'} ({goalTasks.length} tasks)
+              <div key={goalId} className="bg-white border-2 border-[#D0D0D0] rounded-lg p-2 sm:p-4 md:p-6">
+                <h2 className="text-sm sm:text-base md:text-xl font-bold text-[#805232] mb-2 sm:mb-3 md:mb-4">
+                  {goal?.title || 'Unknown Goal'} ({goalTasks.length})
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-2 md:space-y-3">
                   {goalTasks.map(tp => (
-                    <div key={tp.task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-[#805232]">{tp.task.title}</h3>
-                        <p className="text-sm text-gray-600">
-                          {tp.task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${tp.task.timesPerWeek || 0}x/week`}
-                        </p>
+                    <div key={tp.task.id} className="flex flex-col gap-2 p-2 sm:p-2 md:p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-[#805232] text-xs sm:text-sm md:text-base truncate">{tp.task.title}</h3>
+                          <p className="text-xs text-gray-600">
+                            {tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/week`}
+                          </p>
+                        </div>
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ml-2 ${getStatusColor(tp.status)}`}>
+                          {getStatusLabel(tp.status)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-32">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
                           <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full transition-all duration-300 ${
@@ -317,13 +338,10 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                               style={{ width: `${Math.min(tp.progress, 100)}%` }}
                             />
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{tp.progress}%</p>
                         </div>
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>
-                          {getStatusLabel(tp.status)}
-                        </span>
-                        {tp.lastCompletionDate && (
-                          <span className="text-xs text-gray-600">Last: {new Date(tp.lastCompletionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        <span className="text-xs font-semibold text-gray-600 w-10 text-right">{tp.progress}%</span>
+                        {windowWidth >= 768 && tp.lastCompletionDate && (
+                          <span className="text-xs text-gray-600 whitespace-nowrap ml-2">Last: {new Date(tp.lastCompletionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                         )}
                       </div>
                     </div>
@@ -337,29 +355,34 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
 
       {/* Table View */}
       {activeTab === 'table' && (
-        <div className="bg-white border-2 border-[#D0D0D0] rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Task Name</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Goal</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Type</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Frequency</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Progress</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">This Week</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-[#805232]">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTasks.map((tp, index) => (
-                <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="px-6 py-4 text-sm font-medium text-[#805232]">{tp.task.title}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{tp.goal?.title || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 capitalize">{tp.task.type}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{tp.task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${tp.task.timesPerWeek || 0}x/week`}</td>
-                  <td className="px-6 py-4">
+        <div className="bg-white border-2 border-[#D0D0D0] rounded-lg overflow-x-auto">
+          {windowWidth < 768 ? (
+            <div className="space-y-2 p-2 sm:p-4">
+              {filteredTasks.map((tp) => (
+                <div key={tp.task.id} className="bg-gray-50 p-3 rounded-lg border border-[#D0D0D0]">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-[#805232] text-xs sm:text-sm truncate">{tp.task.title}</h3>
+                      <p className="text-xs text-gray-600">{tp.goal?.title || '-'}</p>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ml-2 ${getStatusColor(tp.status)}`}>
+                      {getStatusLabel(tp.status)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-600">Type:</span>
+                      <p className="font-medium text-[#805232]">{tp.task.type}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Freq:</span>
+                      <p className="font-medium text-[#805232]">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xs text-gray-600">Progress</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 ${
                             tp.status === 'completed' ? 'bg-green-500' :
@@ -370,82 +393,124 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                           style={{ width: `${Math.min(tp.progress, 100)}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold text-gray-600 w-8">{tp.progress}%</span>
+                      <span className="text-xs font-semibold text-gray-600 w-8 text-right">{tp.progress}%</span>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {tp.completedDays.length > 0 ? (
-                      <div className="flex gap-1">
-                        {dayNames.map((day, i) => (
-                          <span
-                            key={day}
-                            className={`w-6 h-6 flex items-center justify-center text-xs font-semibold rounded ${
-                              tp.completedDays.includes(i)
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-400'
-                            }`}
-                          >
-                            {day.charAt(0)}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getStatusColor(tp.status)}`}>
-                      {getStatusLabel(tp.status)}
-                    </span>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <table className="w-full text-xs sm:text-sm">
+              <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
+                <tr>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Task</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Goal</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Type</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Freq</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Progress</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Week</th>
+                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((tp, index) => (
+                  <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="px-3 md:px-4 py-2 md:py-4 font-medium text-[#805232] max-w-32 truncate">{tp.task.title}</td>
+                    <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600 max-w-24 truncate">{tp.goal?.title || '-'}</td>
+                    <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600 capitalize">{tp.task.type}</td>
+                    <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
+                    <td className="px-3 md:px-4 py-2 md:py-4">
+                      <div className="flex items-center gap-1">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              tp.status === 'completed' ? 'bg-green-500' :
+                              tp.status === 'on-track' ? 'bg-green-500' :
+                              tp.status === 'at-risk' ? 'bg-yellow-500' :
+                              'bg-orange-500'
+                            }`}
+                            style={{ width: `${Math.min(tp.progress, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-600 w-8 text-right">{tp.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600">
+                      {tp.completedDays.length > 0 ? (
+                        <div className="flex gap-0.5">
+                          {visibleDayNames.map((day, i) => {
+                            const dayIndex = visibleDayIndices[i];
+                            return (
+                              <span
+                                key={day}
+                                className={`w-5 h-5 flex items-center justify-center text-xs font-semibold rounded ${
+                                  tp.completedDays.includes(dayIndex)
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-400'
+                                }`}
+                              >
+                                {day.charAt(0)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-3 md:px-4 py-2 md:py-4">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>
+                        {getStatusLabel(tp.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
       {/* Weekly Heatmap */}
       {activeTab === 'heatmap' && (
-        <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-6 overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="text-left text-sm font-semibold text-[#805232] pb-3 pr-6">Task Name</th>
-                {dayNames.map((day, i) => (
-                  <th key={day} className="text-center text-sm font-semibold text-[#805232] pb-3">
-                    <div>{day}</div>
-                    <div className="text-xs text-gray-600">{weekDays[i].getDate()}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTasks.map((tp, index) => (
-                <tr key={tp.task.id} className={`border-t border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="py-3 pr-6 text-sm font-medium text-[#805232]">{tp.task.title}</td>
-                  {dayNames.map((_, dayIndex) => {
-                    const value = tp.completionValues[dayIndex] || 0;
-                    const isCompleted = tp.completedDays.includes(dayIndex);
-                    return (
-                      <td key={dayIndex} className="py-3 text-center">
-                        <div
-                          className={`w-8 h-8 mx-auto rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors ${
-                            isCompleted
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-400'
-                          }`}
-                          title={`${tp.task.title}: ${value} ${tp.task.unit}`}
-                        >
-                          {tp.task.type?.toLowerCase() === 'number' ? (isCompleted ? '✓' : '○') : (value > 0 ? '✓' : '○')}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-2 sm:p-4 md:p-6 overflow-x-auto">
+          <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${daysToShow}, minmax(0, 1fr))`, gap: '0.5rem' }}>
+            {/* Header */}
+            <div className="text-left text-xs sm:text-sm font-semibold text-[#805232] pb-3 pr-2 sm:pr-6 whitespace-nowrap">Task Name</div>
+            {visibleDayNames.map((day, i) => (
+              <div key={day} className="text-center text-xs sm:text-sm font-semibold text-[#805232] pb-3">
+                <div>{day}</div>
+                <div className="text-xs text-gray-600">{visibleWeekDays[i].getDate()}</div>
+              </div>
+            ))}
+            
+            {/* Task rows */}
+            {filteredTasks.map((tp) => (
+              <>
+                <div key={`${tp.task.id}-name`} className="py-2 sm:py-3 pr-2 sm:pr-6 text-xs sm:text-sm font-medium text-[#805232] whitespace-nowrap">
+                  {tp.task.title}
+                </div>
+                {visibleDayIndices.map((dayIndex) => {
+                  const value = tp.completionValues[dayIndex] || 0;
+                  const isCompleted = tp.completedDays.includes(dayIndex);
+                  return (
+                    <div key={`${tp.task.id}-${dayIndex}`} className="py-2 sm:py-3 text-center flex items-center justify-center">
+                      <div
+                        className={`w-6 sm:w-8 h-6 sm:h-8 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors ${
+                          isCompleted
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-400'
+                        }`}
+                        title={`${tp.task.title}: ${value} ${tp.task.unit}`}
+                      >
+                        {tp.task.type?.toLowerCase() === 'number' ? (isCompleted ? '✓' : '○') : (value > 0 ? '✓' : '○')}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ))}
+          </div>
         </div>
       )}
 

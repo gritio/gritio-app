@@ -144,12 +144,12 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
 
   const FlowchartNode = ({ node, level }: { node: HierarchyNode; level: number }) => {
     const data = node.data as any;
-    const nodeSize = level === 0 ? 'w-24 h-24' : level === 1 ? 'w-20 h-20' : 'w-16 h-16';
-    const textSize = level === 0 ? 'text-xs' : 'text-[10px]';
-    const subTextSize = level === 0 ? 'text-[10px]' : 'text-[8px]';
-    const spacing = level === 0 ? 'mt-6' : level === 1 ? 'mt-4' : 'mt-3';
-    const gapSize = level === 0 ? 'gap-8' : level === 1 ? 'gap-6' : 'gap-4';
-    const connectorHeight = level === 0 ? 'h-6' : 'h-4';
+    const nodeSize = level === 0 ? 'w-32 h-32' : level === 1 ? 'w-28 h-28' : 'w-24 h-24';
+    const textSize = level === 0 ? 'text-sm' : level === 1 ? 'text-xs' : 'text-[10px]';
+    const subTextSize = level === 0 ? 'text-xs' : level === 1 ? 'text-[10px]' : 'text-[8px]';
+    const spacing = level === 0 ? 'mt-8' : level === 1 ? 'mt-6' : 'mt-4';
+    const gapSize = level === 0 ? 'gap-12' : level === 1 ? 'gap-8' : 'gap-6';
+    const connectorHeight = level === 0 ? 'h-8' : level === 1 ? 'h-6' : 'h-4';
     
     return (
       <div className="flex flex-col items-center">
@@ -182,8 +182,8 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
                 className="absolute h-0.5 bg-gray-400"
                 style={{
                   top: 0,
-                  left: `calc(50% - ${(node.children.length * (level === 0 ? 90 : level === 1 ? 70 : 50)) / 2}px)`,
-                  width: `${node.children.length * (level === 0 ? 90 : level === 1 ? 70 : 50)}px`,
+                  left: `calc(50% - ${(node.children.length * (level === 0 ? 120 : level === 1 ? 100 : 80)) / 2}px)`,
+                  width: `${node.children.length * (level === 0 ? 120 : level === 1 ? 100 : 80)}px`,
                 }}
               />
             )}
@@ -206,11 +206,11 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
 
   if (goals.length === 0) {
     return (
-      <div className="max-w-6xl mx-auto p-8">
-        <h1 className="text-3xl font-bold text-[#805232] mb-4">Goal Hierarchy</h1>
-        <div className="text-center py-12 bg-[#F5F5F5] rounded-lg">
-          <p className="text-[#805232] text-lg">No goals yet</p>
-          <p className="text-gray-600">Create a goal to see the hierarchy</p>
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#805232] mb-4">Goal Hierarchy</h1>
+        <div className="text-center py-8 sm:py-12 bg-[#F5F5F5] rounded-lg">
+          <p className="text-[#805232] text-base sm:text-lg">No goals yet</p>
+          <p className="text-gray-600 text-sm sm:text-base">Create a goal to see the hierarchy</p>
         </div>
       </div>
     );
@@ -219,13 +219,13 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-white">
-        <h1 className="text-3xl font-bold text-[#805232] mb-2">Goal Hierarchy Flowchart</h1>
-        <p className="text-[#805232]">View your goals organized as a hierarchical flowchart</p>
+      <div className="p-2 sm:p-4 md:p-6 border-b border-gray-200 bg-white">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#805232] mb-2">Goal Hierarchy Flowchart</h1>
+        <p className="text-xs sm:text-sm md:text-base text-[#805232]">View your goals organized as a hierarchical flowchart</p>
       </div>
 
       {/* Legend */}
-      <div className="px-6 pt-4 pb-2 flex gap-6 flex-wrap bg-white border-b border-gray-200">
+      <div className="px-2 sm:px-4 md:px-6 pt-2 sm:pt-3 md:pt-4 pb-1 sm:pb-2 flex gap-2 sm:gap-4 md:gap-6 flex-wrap bg-white border-b border-gray-200">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-blue-100 border-2 border-blue-400" />
           <span className="text-xs text-[#805232] font-medium">Life Goal</span>
@@ -246,7 +246,7 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
 
       {/* Flowchart - Full Screen */}
       <div className="flex-1 overflow-auto bg-white">
-        <div className="flex flex-col gap-6 items-center py-6 px-6">
+        <div className="flex flex-col gap-4 sm:gap-6 items-center py-2 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6">
           {hierarchyData.map((node) => (
             <FlowchartNode key={node.id} node={node} level={0} />
           ))}
