@@ -58,23 +58,23 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
   ];
 
   return (
-    <div className="w-64 bg-[#DCDCDC] min-h-screen shadow-lg flex flex-col">
+    <div className="w-48 bg-[#DCDCDC] min-h-screen shadow-lg flex flex-col flex-shrink-0">
       {/* Logo/Brand + Menu - Fixed at top */}
       <div className="sticky top-0 z-10 bg-[#DCDCDC]">
-        <div className="p-6 border-b border-[#B8B9BA]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <AllyLogo size={40} />
+        <div className="p-3 border-b border-[#B8B9BA]">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 flex items-center justify-center">
+              <AllyLogo size={32} />
             </div>
             <div>
-              <h1 className="text-[#805232] font-bold text-lg">Gritio</h1>
-              <p className="text-[#805232] text-xs">Small Steps, Big Results</p>
+              <h1 className="text-[#805232] font-bold text-sm">Gritio</h1>
+              <p className="text-[#805232] text-xs leading-none">Small Steps, Big Results</p>
             </div>
           </div>
         </div>
 
         {/* Menu Items - Sticky */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-2 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isExpanded = expandedMenu === item.id;
@@ -92,15 +92,15 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
                     onNavigate(item.view);
                   }
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
+                className={`w-full flex items-center justify-between px-2 py-2 rounded-lg transition-all text-sm ${
                   isActive
                     ? 'bg-[#805232] text-white shadow-md'
                     : 'text-[#805232] hover:bg-[#805232] hover:text-white'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5" />
-                  <span className="font-bold">{item.label}</span>
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4" />
+                  <span className="font-bold text-sm">{item.label}</span>
                 </div>
                 {hasSubmenu && (
                   <ChevronDown
@@ -113,12 +113,12 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
 
               {/* Submenu */}
               {hasSubmenu && isExpanded && (
-                <div className="ml-6 mt-2 space-y-1">
+                <div className="ml-4 mt-1 space-y-1">
                   {(item as any).submenu.map((subitem: any) => (
                     <button
                       key={subitem.id}
                       onClick={() => onNavigate(subitem.view)}
-                      className={`w-full text-left px-4 py-2 rounded-lg transition-all text-sm ${
+                      className={`w-full text-left px-2 py-1 rounded text-xs transition-all ${
                         currentView === subitem.view
                           ? 'bg-[#805232] text-white font-semibold'
                           : 'text-[#805232] hover:bg-[#805232] hover:text-white'
@@ -136,13 +136,13 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       </div>
 
       {/* Footer Section - Sticks to bottom when scrolling */}
-      <div className="sticky bottom-0 p-4 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC] mt-auto">
+      <div className="sticky bottom-0 p-2 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC] mt-auto">
         {user && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="p-3 cursor-help text-center">
+              <div className="p-2 cursor-help text-center">
                 <p className="text-[#805232] text-xs font-medium">Logged in as</p>
-                <p className="text-[#805232] text-sm font-bold truncate">{user.name || user.email}</p>
+                <p className="text-[#805232] text-xs font-bold truncate">{user.name || user.email}</p>
               </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-[#805232] text-white">
@@ -153,9 +153,9 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
         {onLogout && (
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#DCDCDC] text-[#805232] rounded-lg hover:bg-[#C0C0C0] transition-colors font-medium text-sm border border-[#805232]"
+            className="w-full flex items-center justify-center gap-2 px-2 py-1 bg-[#DCDCDC] text-[#805232] rounded text-xs hover:bg-[#C0C0C0] transition-colors font-medium border border-[#805232]"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3 h-3" />
             Logout
           </button>
         )}

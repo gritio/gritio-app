@@ -349,14 +349,14 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex font-bold">
+        <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex font-bold overflow-hidden">
           {/* Sidebar */}
           <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} />
           
           {/* Main Content Area with Panel */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 ${isEditPanelOpen ? 'mr-96' : ''}`}>
+          <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'mr-96' : ''}`}>
             {/* Main Content */}
-            <main className="py-8 flex-1">
+            <main className="py-2 sm:py-4 md:py-8 flex-1 overflow-y-auto overflow-x-hidden">
               {currentView === 'overview' && (
                 <GoalsOverview 
                   goals={goals}

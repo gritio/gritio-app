@@ -25,6 +25,18 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Determine number of days to show based on screen width
+  const daysToShow = windowWidth < 500 ? 1 : windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 7;
 
   const triggerCelebration = (taskId: string, dayIndex: number) => {
     const key = `${taskId}-${dayIndex}`;
@@ -233,7 +245,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-2">
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2">
       <style>{`
         @keyframes celebrateNumber {
           0% {
@@ -365,18 +377,18 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
       
       {/* Header */}
       <div className="mb-2">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-[#805232]">Weekly Tasks</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#805232]">Weekly Tasks</h1>
+          <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={handlePreviousWeek}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-6 h-6 text-[#805232]" />
+              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
             </button>
-            <div className="text-center min-w-64">
-              <p className="text-sm text-gray-600">Week of</p>
-              <p className="text-lg font-semibold text-[#805232]">
+            <div className="text-center min-w-40 sm:min-w-64">
+              <p className="text-xs sm:text-sm text-gray-600">Week of</p>
+              <p className="text-sm sm:text-lg font-semibold text-[#805232]">
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {
                   new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
                     month: 'short',
@@ -388,19 +400,19 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
             </div>
             <button
               onClick={handleNextWeek}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronRight className="w-6 h-6 text-[#805232]" />
+              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Tasks Grid with inline headers */}
-      <div className="space-y-0">
+      <div className="space-y-0 overflow-x-hidden">
         {/* Day Names Row with Dates */}
-        <div className="flex gap-2 pl-60">
-          {dayNames.map((day, dayIndex) => (
+        <div className="flex gap-1 sm:gap-2 overflow-x-auto" style={{ paddingLeft: windowWidth < 500 ? '3.5rem' : windowWidth < 640 ? '5rem' : windowWidth < 1024 ? '10rem' : '15rem' }}>
+          {dayNames.slice(0, daysToShow).map((day, dayIndex) => (
             <div key={day} className="flex-1 text-center">
               <p className="text-xs font-bold text-amber-900">{day}</p>
               <p className="text-xs text-gray-600">{weekDays[dayIndex].getDate()}</p>
@@ -416,47 +428,51 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-3 flex items-center">
-              <div className="flex gap-4 items-center w-full">
-                {/* Progress Circle and Buttons */}
-                <div className="flex-shrink-0 flex flex-col items-center w-16">
-                  <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
-                    style={{ 
-                      background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
-                    }}>
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                      <span className="text-xs font-bold text-amber-900">{progress}%</span>
+            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 flex items-center overflow-x-auto">
+              <div className="flex gap-1 sm:gap-4 items-center w-full min-w-0">
+                {/* Progress Circle and Buttons - Hidden on mobile */}
+                {windowWidth >= 640 && (
+                  <div className="flex-shrink-0 flex flex-col items-center w-16">
+                    <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
+                      style={{ 
+                        background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
+                      }}>
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                        <span className="text-xs font-bold text-amber-900">{progress}%</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 mt-2">
+                      <button
+                        onClick={() => setEditingTaskId(task.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
+                        title="Edit task"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmTaskId(task.id)}
+                        className="p-1 hover:bg-red-50 rounded transition-colors text-gray-600 hover:text-red-600"
+                        title="Delete task"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1 mt-2">
-                    <button
-                      onClick={() => setEditingTaskId(task.id)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
-                      title="Edit task"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmTaskId(task.id)}
-                      className="p-1 hover:bg-red-50 rounded transition-colors text-gray-600 hover:text-red-600"
-                      title="Delete task"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
+                )}
 
                 {/* Task Name and Description */}
-                <div className="flex-shrink-0 w-40">
-                  <h3 className="font-semibold text-amber-900 text-sm break-words">{task.title}</h3>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
-                  </p>
+                <div className={windowWidth < 500 ? 'flex-shrink-0 w-16' : windowWidth < 640 ? 'flex-shrink-0 w-20' : 'flex-shrink-0 w-40'}>
+                  <h3 className="font-semibold text-amber-900 text-xs sm:text-sm break-words line-clamp-1">{task.title}</h3>
+                  {windowWidth >= 640 && (
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
+                    </p>
+                  )}
                 </div>
 
                 {/* Days Grid */}
-                <div className="flex-1 grid gap-2 pl-4" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-                {dayNames.map((dayName, dayIndex) => {
+                <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 1fr))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
+                {dayNames.slice(0, daysToShow).map((dayName, dayIndex) => {
                   const date = weekDays[dayIndex];
                   const isToday = new Date().toDateString() === date.toDateString();
                   const dayValue = Number(completions[task.id]?.[dayIndex] || 0);

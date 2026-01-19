@@ -75,7 +75,7 @@ export function GoalsOverview({ goals, monthlyGoals, tasks, onSelectGoal, onAddM
   };
   
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-6">
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-6">
       {/* Header */}
       <div className="mb-4">
         <h1 className="mb-2 text-[#805232]">Goals Overview</h1>
