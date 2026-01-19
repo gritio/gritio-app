@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { GoalsOverviewNew as GoalsOverview } from './components/GoalsOverviewNew';
+import { GoalsPage } from './components/GoalsPage';
 import { GoalDetail } from './components/GoalDetail';
 import { TodayView } from './components/TodayView';
 import { WeeklyTaskView } from './components/WeeklyTaskView';
 import { TaskTimelinePage } from './components/TaskTimelinePage';
 import { TodosPage } from './components/TodosPage';
-import { LifeGoalsPage } from './components/LifeGoalsPage';
-import { GoalHierarchyPage } from './components/GoalHierarchyPage';
 import { GoalEditPanel } from './components/GoalEditPanel';
 import { MonthlyGoalPanel } from './components/MonthlyGoalPanel';
 import { EditMonthlyGoalPanel } from './components/EditMonthlyGoalPanel';
@@ -19,7 +17,7 @@ import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './da
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'hierarchy';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -358,10 +356,11 @@ export default function App() {
             {/* Main Content */}
             <main className="py-2 sm:py-4 md:py-8 flex-1 overflow-y-auto overflow-x-hidden">
               {currentView === 'overview' && (
-                <GoalsOverview 
+                <GoalsPage
                   goals={goals}
                   monthlyGoals={monthlyGoals}
                   tasks={tasks}
+                  lifeGoals={lifeGoals}
                   onSelectGoal={handleSelectGoal}
                   onAddMonthlyGoal={handleAddMonthlyGoalFromOverview}
                   onAddTask={handleAddTaskFromOverview}
@@ -421,19 +420,6 @@ export default function App() {
                 <TaskTimelinePage 
                   goals={goals}
                   tasks={tasks}
-                />
-              )}
-
-              {currentView === 'life-goals' && (
-                <LifeGoalsPage />
-              )}
-
-              {currentView === 'hierarchy' && (
-                <GoalHierarchyPage 
-                  goals={goals}
-                  monthlyGoals={monthlyGoals}
-                  tasks={tasks}
-                  lifeGoals={lifeGoals}
                 />
               )}
             </main>
