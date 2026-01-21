@@ -22,7 +22,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'table' | 'heatmap'>('heatmap');
+  const [activeTab, setActiveTab] = useState<'summary' | 'table' | 'heatmap'>('table');
   const [taskProgress, setTaskProgress] = useState<TaskProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
