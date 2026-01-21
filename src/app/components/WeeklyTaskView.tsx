@@ -26,6 +26,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [tempInputs, setTempInputs] = useState<Record<string, Record<number, string>>>({});
 
   useEffect(() => {
     const handleResize = () => {
@@ -516,10 +517,43 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                         type="text"
                         inputMode="numeric"
                         placeholder="0"
-                        value={dayValue > 0 ? Math.round(dayValue) : ''}
+                        value={
+                          tempInputs[task.id]?.[dayIndex] !== undefined 
+                            ? tempInputs[task.id][dayIndex] 
+                            : dayValue > 0 ? Math.round(dayValue) : ''
+                        }
                         onChange={(e) => {
+                          setTempInputs(prev => ({
+                            ...prev,
+                            [task.id]: {
+                              ...prev[task.id],
+                              [dayIndex]: e.target.value
+                            }
+                          }));
+                        }}
+                        onBlur={(e) => {
                           const val = parseInt(e.target.value) || 0;
                           logNumericValue(task.id, dayIndex, val);
+                          setTempInputs(prev => ({
+                            ...prev,
+                            [task.id]: {
+                              ...prev[task.id],
+                              [dayIndex]: undefined
+                            }
+                          }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseInt(e.currentTarget.value) || 0;
+                            logNumericValue(task.id, dayIndex, val);
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [dayIndex]: undefined
+                              }
+                            }));
+                          }
                         }}
                         disabled={loading}
                         className="w-12 px-1 py-0.5 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900"
@@ -543,11 +577,47 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                           type="text"
                           inputMode="numeric"
                           placeholder="0"
-                          value={convertMinutesToTime(dayValue).hours}
+                          value={
+                            tempInputs[task.id]?.[`${dayIndex}-h`] !== undefined
+                              ? tempInputs[task.id][`${dayIndex}-h`]
+                              : convertMinutesToTime(dayValue).hours
+                          }
                           onChange={(e) => {
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [`${dayIndex}-h`]: e.target.value
+                              }
+                            }));
+                          }}
+                          onBlur={(e) => {
                             const h = parseInt(e.target.value) || 0;
-                            const m = convertMinutesToTime(dayValue).minutes;
+                            const m = parseInt(tempInputs[task.id]?.[`${dayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
                             logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [`${dayIndex}-h`]: undefined,
+                                [`${dayIndex}-m`]: undefined
+                              }
+                            }));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const h = parseInt(e.currentTarget.value) || 0;
+                              const m = parseInt(tempInputs[task.id]?.[`${dayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
+                              logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                              setTempInputs(prev => ({
+                                ...prev,
+                                [task.id]: {
+                                  ...prev[task.id],
+                                  [`${dayIndex}-h`]: undefined,
+                                  [`${dayIndex}-m`]: undefined
+                                }
+                              }));
+                            }
                           }}
                           disabled={loading}
                           className="w-7 h-6 px-1 py-0.5 text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900 text-xs"
@@ -557,11 +627,47 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                           type="text"
                           inputMode="numeric"
                           placeholder="0"
-                          value={convertMinutesToTime(dayValue).minutes}
+                          value={
+                            tempInputs[task.id]?.[`${dayIndex}-m`] !== undefined
+                              ? tempInputs[task.id][`${dayIndex}-m`]
+                              : convertMinutesToTime(dayValue).minutes
+                          }
                           onChange={(e) => {
-                            const h = convertMinutesToTime(dayValue).hours;
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [`${dayIndex}-m`]: e.target.value
+                              }
+                            }));
+                          }}
+                          onBlur={(e) => {
+                            const h = parseInt(tempInputs[task.id]?.[`${dayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
                             const m = parseInt(e.target.value) || 0;
                             logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [`${dayIndex}-h`]: undefined,
+                                [`${dayIndex}-m`]: undefined
+                              }
+                            }));
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const h = parseInt(tempInputs[task.id]?.[`${dayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
+                              const m = parseInt(e.currentTarget.value) || 0;
+                              logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                              setTempInputs(prev => ({
+                                ...prev,
+                                [task.id]: {
+                                  ...prev[task.id],
+                                  [`${dayIndex}-h`]: undefined,
+                                  [`${dayIndex}-m`]: undefined
+                                }
+                              }));
+                            }
                           }}
                           disabled={loading}
                           className="w-7 h-6 px-1 py-0.5 text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900 text-xs"
@@ -585,10 +691,43 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
-                        value={dayValue > 0 ? dayValue.toFixed(1) : ''}
+                        value={
+                          tempInputs[task.id]?.[dayIndex] !== undefined 
+                            ? tempInputs[task.id][dayIndex] 
+                            : dayValue > 0 ? dayValue.toFixed(1) : ''
+                        }
                         onChange={(e) => {
+                          setTempInputs(prev => ({
+                            ...prev,
+                            [task.id]: {
+                              ...prev[task.id],
+                              [dayIndex]: e.target.value
+                            }
+                          }));
+                        }}
+                        onBlur={(e) => {
                           const val = parseFloat(e.target.value) || 0;
                           logNumericValue(task.id, dayIndex, val);
+                          setTempInputs(prev => ({
+                            ...prev,
+                            [task.id]: {
+                              ...prev[task.id],
+                              [dayIndex]: undefined
+                            }
+                          }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseFloat(e.currentTarget.value) || 0;
+                            logNumericValue(task.id, dayIndex, val);
+                            setTempInputs(prev => ({
+                              ...prev,
+                              [task.id]: {
+                                ...prev[task.id],
+                                [dayIndex]: undefined
+                              }
+                            }));
+                          }
                         }}
                         disabled={loading}
                         className="w-12 px-1 py-0.5 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900"
