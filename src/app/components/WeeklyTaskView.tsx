@@ -37,7 +37,37 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   }, []);
 
   // Determine number of days to show based on screen width
-  const daysToShow = windowWidth < 500 ? 1 : windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 7;
+  const daysToShow = windowWidth < 500 ? 2 : windowWidth < 640 ? 2 : windowWidth < 1024 ? 3 : 7;
+
+  // Calculate which days to display based on current day and screen size
+  const getDisplayDayIndices = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get this week's start (Monday)
+    const weekStart = (() => {
+      const d = new Date(today);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+    
+    const currentDayIndex = Math.floor((today.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+    const isSameWeek = currentDayIndex >= 0 && currentDayIndex < 7;
+
+    if (!isSameWeek || daysToShow === 7) {
+      // Show first N days if not in current week, or show all 7 if daysToShow is 7
+      return Array.from({ length: daysToShow }, (_, i) => i);
+    }
+
+    // For mobile/tablet views, center around current day
+    const startIndex = Math.max(0, Math.min(currentDayIndex - Math.floor(daysToShow / 2), 7 - daysToShow));
+    return Array.from({ length: daysToShow }, (_, i) => startIndex + i);
+  };
+
+  const displayDayIndices = getDisplayDayIndices();
 
   const triggerCelebration = (taskId: string, dayIndex: number) => {
     const key = `${taskId}-${dayIndex}`;
@@ -413,10 +443,10 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
       <div className="space-y-0 overflow-x-hidden">
         {/* Day Names Row with Dates */}
         <div className="flex gap-1 sm:gap-2 overflow-x-auto" style={{ paddingLeft: windowWidth < 500 ? '3.5rem' : windowWidth < 640 ? '5rem' : windowWidth < 1024 ? '10rem' : '15rem' }}>
-          {dayNames.slice(0, daysToShow).map((day, dayIndex) => (
-            <div key={day} className="flex-1 text-center">
-              <p className="text-xs font-bold text-amber-900">{day}</p>
-              <p className="text-xs text-gray-600">{weekDays[dayIndex].getDate()}</p>
+          {displayDayIndices.map((actualDayIndex) => (
+            <div key={dayNames[actualDayIndex]} className="flex-1 text-center">
+              <p className="text-xs font-bold text-amber-900">{dayNames[actualDayIndex]}</p>
+              <p className="text-xs text-gray-600">{weekDays[actualDayIndex].getDate()}</p>
             </div>
           ))}
         </div>
@@ -433,7 +463,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
               <div className="flex gap-1 sm:gap-4 items-center w-full min-w-0">
                 {/* Progress Circle and Buttons - Hidden on mobile */}
                 {windowWidth >= 640 && (
-                  <div className="flex-shrink-0 flex flex-col items-center w-16">
+                  <div className="flex-shrink-0 flex flex-col items-center w-12">
                     <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
                       style={{ 
                         background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
@@ -462,8 +492,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                 )}
 
                 {/* Task Name and Description */}
-                <div className={windowWidth < 500 ? 'flex-shrink-0 w-16' : windowWidth < 640 ? 'flex-shrink-0 w-20' : 'flex-shrink-0 w-40'}>
-                  <h3 className="font-semibold text-amber-900 text-xs sm:text-sm break-words line-clamp-1">{task.title}</h3>
+                <div className={windowWidth < 500 ? 'flex-shrink-0 w-20' : windowWidth < 640 ? 'flex-shrink-0 w-24' : 'flex-shrink-0 w-40'}>
+                  <h3 className="font-semibold text-amber-900 text-base sm:text-base break-words line-clamp-1">{task.title}</h3>
                   {windowWidth >= 640 && (
                     <p className="text-xs text-gray-600 mt-0.5">
                       {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
@@ -472,22 +502,22 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                 </div>
 
                 {/* Days Grid */}
-                <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 1fr))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
-                {dayNames.slice(0, daysToShow).map((dayName, dayIndex) => {
-                  const date = weekDays[dayIndex];
+                <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 108px))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
+                {displayDayIndices.map((actualDayIndex) => {
+                  const date = weekDays[actualDayIndex];
                   const isToday = new Date().toDateString() === date.toDateString();
-                  const dayValue = Number(completions[task.id]?.[dayIndex] || 0);
+                  const dayValue = Number(completions[task.id]?.[actualDayIndex] || 0);
                   const isCompleted = isSimple ? dayValue >= 1 : dayValue >= task.target;
-                  const celebrationKey = `${task.id}-${dayIndex}`;
+                  const celebrationKey = `${task.id}-${actualDayIndex}`;
                   const isCelebrating = celebrations.has(celebrationKey);
 
                   return isSimple ? (
                     // Simple checkbox toggle for "number" type tasks
                     <button
-                      key={dayIndex}
-                      onClick={() => toggleCompletion(task.id, dayIndex)}
+                      key={actualDayIndex}
+                      onClick={() => toggleCompletion(task.id, actualDayIndex)}
                       disabled={loading}
-                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-hidden ${
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-hidden ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-900'
                           : isToday
@@ -504,8 +534,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                   ) : task.type?.toLowerCase() === 'steps' ? (
                     // Steps input with text field
                     <div
-                      key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
+                      key={actualDayIndex}
+                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
@@ -518,8 +548,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                         inputMode="numeric"
                         placeholder="0"
                         value={
-                          tempInputs[task.id]?.[dayIndex] !== undefined 
-                            ? tempInputs[task.id][dayIndex] 
+                          tempInputs[task.id]?.[actualDayIndex] !== undefined 
+                            ? tempInputs[task.id][actualDayIndex] 
                             : dayValue > 0 ? Math.round(dayValue) : ''
                         }
                         onChange={(e) => {
@@ -527,30 +557,30 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                             ...prev,
                             [task.id]: {
                               ...prev[task.id],
-                              [dayIndex]: e.target.value
+                              [actualDayIndex]: e.target.value
                             }
                           }));
                         }}
                         onBlur={(e) => {
                           const val = parseInt(e.target.value) || 0;
-                          logNumericValue(task.id, dayIndex, val);
+                          logNumericValue(task.id, actualDayIndex, val);
                           setTempInputs(prev => ({
                             ...prev,
                             [task.id]: {
                               ...prev[task.id],
-                              [dayIndex]: undefined
+                              [actualDayIndex]: undefined
                             }
                           }));
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             const val = parseInt(e.currentTarget.value) || 0;
-                            logNumericValue(task.id, dayIndex, val);
+                            logNumericValue(task.id, actualDayIndex, val);
                             setTempInputs(prev => ({
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [dayIndex]: undefined
+                                [actualDayIndex]: undefined
                               }
                             }));
                           }
@@ -563,8 +593,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                   ) : task.type?.toLowerCase() === 'time' ? (
                     // Time input with hours and minutes
                     <div
-                      key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
+                      key={actualDayIndex}
+                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
@@ -578,8 +608,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                           inputMode="numeric"
                           placeholder="0"
                           value={
-                            tempInputs[task.id]?.[`${dayIndex}-h`] !== undefined
-                              ? tempInputs[task.id][`${dayIndex}-h`]
+                            tempInputs[task.id]?.[`${actualDayIndex}-h`] !== undefined
+                              ? tempInputs[task.id][`${actualDayIndex}-h`]
                               : convertMinutesToTime(dayValue).hours
                           }
                           onChange={(e) => {
@@ -587,34 +617,34 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [`${dayIndex}-h`]: e.target.value
+                                [`${actualDayIndex}-h`]: e.target.value
                               }
                             }));
                           }}
                           onBlur={(e) => {
                             const h = parseInt(e.target.value) || 0;
-                            const m = parseInt(tempInputs[task.id]?.[`${dayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
-                            logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                            const m = parseInt(tempInputs[task.id]?.[`${actualDayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
+                            logNumericValue(task.id, actualDayIndex, convertTimeToMinutes(h, m));
                             setTempInputs(prev => ({
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [`${dayIndex}-h`]: undefined,
-                                [`${dayIndex}-m`]: undefined
+                                [`${actualDayIndex}-h`]: undefined,
+                                [`${actualDayIndex}-m`]: undefined
                               }
                             }));
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               const h = parseInt(e.currentTarget.value) || 0;
-                              const m = parseInt(tempInputs[task.id]?.[`${dayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
-                              logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                              const m = parseInt(tempInputs[task.id]?.[`${actualDayIndex}-m`] || convertMinutesToTime(dayValue).minutes) || 0;
+                              logNumericValue(task.id, actualDayIndex, convertTimeToMinutes(h, m));
                               setTempInputs(prev => ({
                                 ...prev,
                                 [task.id]: {
                                   ...prev[task.id],
-                                  [`${dayIndex}-h`]: undefined,
-                                  [`${dayIndex}-m`]: undefined
+                                  [`${actualDayIndex}-h`]: undefined,
+                                  [`${actualDayIndex}-m`]: undefined
                                 }
                               }));
                             }
@@ -628,8 +658,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                           inputMode="numeric"
                           placeholder="0"
                           value={
-                            tempInputs[task.id]?.[`${dayIndex}-m`] !== undefined
-                              ? tempInputs[task.id][`${dayIndex}-m`]
+                            tempInputs[task.id]?.[`${actualDayIndex}-m`] !== undefined
+                              ? tempInputs[task.id][`${actualDayIndex}-m`]
                               : convertMinutesToTime(dayValue).minutes
                           }
                           onChange={(e) => {
@@ -637,34 +667,34 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [`${dayIndex}-m`]: e.target.value
+                                [`${actualDayIndex}-m`]: e.target.value
                               }
                             }));
                           }}
                           onBlur={(e) => {
-                            const h = parseInt(tempInputs[task.id]?.[`${dayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
+                            const h = parseInt(tempInputs[task.id]?.[`${actualDayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
                             const m = parseInt(e.target.value) || 0;
-                            logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                            logNumericValue(task.id, actualDayIndex, convertTimeToMinutes(h, m));
                             setTempInputs(prev => ({
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [`${dayIndex}-h`]: undefined,
-                                [`${dayIndex}-m`]: undefined
+                                [`${actualDayIndex}-h`]: undefined,
+                                [`${actualDayIndex}-m`]: undefined
                               }
                             }));
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              const h = parseInt(tempInputs[task.id]?.[`${dayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
+                              const h = parseInt(tempInputs[task.id]?.[`${actualDayIndex}-h`] || convertMinutesToTime(dayValue).hours) || 0;
                               const m = parseInt(e.currentTarget.value) || 0;
-                              logNumericValue(task.id, dayIndex, convertTimeToMinutes(h, m));
+                              logNumericValue(task.id, actualDayIndex, convertTimeToMinutes(h, m));
                               setTempInputs(prev => ({
                                 ...prev,
                                 [task.id]: {
                                   ...prev[task.id],
-                                  [`${dayIndex}-h`]: undefined,
-                                  [`${dayIndex}-m`]: undefined
+                                  [`${actualDayIndex}-h`]: undefined,
+                                  [`${actualDayIndex}-m`]: undefined
                                 }
                               }));
                             }
@@ -678,8 +708,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                   ) : (
                     // Distance input with text field
                     <div
-                      key={dayIndex}
-                      className={`p-1 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
+                      key={actualDayIndex}
+                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
                         isCompleted
                           ? 'border-amber-900 bg-amber-50'
                           : isToday
@@ -692,8 +722,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                         inputMode="decimal"
                         placeholder="0"
                         value={
-                          tempInputs[task.id]?.[dayIndex] !== undefined 
-                            ? tempInputs[task.id][dayIndex] 
+                          tempInputs[task.id]?.[actualDayIndex] !== undefined 
+                            ? tempInputs[task.id][actualDayIndex] 
                             : dayValue > 0 ? dayValue.toFixed(1) : ''
                         }
                         onChange={(e) => {
@@ -701,30 +731,30 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                             ...prev,
                             [task.id]: {
                               ...prev[task.id],
-                              [dayIndex]: e.target.value
+                              [actualDayIndex]: e.target.value
                             }
                           }));
                         }}
                         onBlur={(e) => {
                           const val = parseFloat(e.target.value) || 0;
-                          logNumericValue(task.id, dayIndex, val);
+                          logNumericValue(task.id, actualDayIndex, val);
                           setTempInputs(prev => ({
                             ...prev,
                             [task.id]: {
                               ...prev[task.id],
-                              [dayIndex]: undefined
+                              [actualDayIndex]: undefined
                             }
                           }));
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             const val = parseFloat(e.currentTarget.value) || 0;
-                            logNumericValue(task.id, dayIndex, val);
+                            logNumericValue(task.id, actualDayIndex, val);
                             setTempInputs(prev => ({
                               ...prev,
                               [task.id]: {
                                 ...prev[task.id],
-                                [dayIndex]: undefined
+                                [actualDayIndex]: undefined
                               }
                             }));
                           }

@@ -357,48 +357,47 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
       {activeTab === 'table' && (
         <div className="bg-white border-2 border-[#D0D0D0] rounded-lg overflow-x-auto">
           {windowWidth < 768 ? (
-            <div className="space-y-2 p-2 sm:p-4">
-              {filteredTasks.map((tp) => (
-                <div key={tp.task.id} className="bg-gray-50 p-3 rounded-lg border border-[#D0D0D0]">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-[#805232] text-xs sm:text-sm truncate">{tp.task.title}</h3>
-                      <p className="text-xs text-gray-600">{tp.goal?.title || '-'}</p>
-                    </div>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ml-2 ${getStatusColor(tp.status)}`}>
-                      {getStatusLabel(tp.status)}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-600">Type:</span>
-                      <p className="font-medium text-[#805232]">{tp.task.type}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Freq:</span>
-                      <p className="font-medium text-[#805232]">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</p>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-600">Progress</span>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            tp.status === 'completed' ? 'bg-green-500' :
-                            tp.status === 'on-track' ? 'bg-green-500' :
-                            tp.status === 'at-risk' ? 'bg-yellow-500' :
-                            'bg-orange-500'
-                          }`}
-                          style={{ width: `${Math.min(tp.progress, 100)}%` }}
-                        />
+            <table className="w-full text-xs sm:text-sm">
+              <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
+                <tr>
+                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Task</th>
+                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Type</th>
+                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Freq</th>
+                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Progress</th>
+                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((tp, index) => (
+                  <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="px-2 py-2 font-medium text-[#805232] max-w-20 truncate text-xs">{tp.task.title}</td>
+                    <td className="px-2 py-2 text-gray-600 text-xs capitalize">{tp.task.type}</td>
+                    <td className="px-2 py-2 text-gray-600 text-xs">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
+                    <td className="px-2 py-2">
+                      <div className="flex items-center gap-0.5">
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              tp.status === 'completed' ? 'bg-green-500' :
+                              tp.status === 'on-track' ? 'bg-green-500' :
+                              tp.status === 'at-risk' ? 'bg-yellow-500' :
+                              'bg-orange-500'
+                            }`}
+                            style={{ width: `${Math.min(tp.progress, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-600 w-6 text-right">{tp.progress}%</span>
                       </div>
-                      <span className="text-xs font-semibold text-gray-600 w-8 text-right">{tp.progress}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                    <td className="px-2 py-2">
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>
+                        {getStatusLabel(tp.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <table className="w-full text-xs sm:text-sm">
               <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
