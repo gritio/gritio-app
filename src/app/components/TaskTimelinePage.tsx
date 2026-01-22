@@ -200,7 +200,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
       <div className="mb-2 sm:mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
           <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-[#805232] mb-1 sm:mb-2">Task Timeline</h1>
+            <h1 className="text-xl sm:text-3xl font-bold text-[#805232] mb-1 sm:mb-2">Tasks</h1>
             <p className="text-xs sm:text-base text-[#805232]">View all your tasks and their progress at a glance</p>
           </div>
           <div className="flex items-center gap-1 sm:gap-4">
@@ -271,7 +271,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
       <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 border-b-2 border-[#D0D0D0] overflow-x-auto">
         <button
           onClick={() => setActiveTab('summary')}
-          className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
+          className={`hidden pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'summary'
               ? 'text-[#805232] border-b-2 border-[#805232]'
               : 'text-gray-600 hover:text-[#805232]'
@@ -287,11 +287,11 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
-          Table
+          Task Progress
         </button>
         <button
           onClick={() => setActiveTab('heatmap')}
-          className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
+          className={`hidden pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'heatmap'
               ? 'text-[#805232] border-b-2 border-[#805232]'
               : 'text-gray-600 hover:text-[#805232]'
@@ -361,7 +361,6 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
                 <tr>
                   <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Task</th>
-                  <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Type</th>
                   <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Freq</th>
                   <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Progress</th>
                   <th className="px-2 py-2 text-left font-semibold text-[#805232] whitespace-nowrap">Status</th>
@@ -369,32 +368,53 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               </thead>
               <tbody>
                 {filteredTasks.map((tp, index) => (
-                  <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                    <td className="px-2 py-2 font-medium text-[#805232] max-w-20 truncate text-xs">{tp.task.title}</td>
-                    <td className="px-2 py-2 text-gray-600 text-xs capitalize">{tp.task.type}</td>
-                    <td className="px-2 py-2 text-gray-600 text-xs">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
-                    <td className="px-2 py-2">
-                      <div className="flex items-center gap-0.5">
-                        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-300 ${
-                              tp.status === 'completed' ? 'bg-green-500' :
-                              tp.status === 'on-track' ? 'bg-green-500' :
-                              tp.status === 'at-risk' ? 'bg-yellow-500' :
-                              'bg-orange-500'
-                            }`}
-                            style={{ width: `${Math.min(tp.progress, 100)}%` }}
-                          />
+                  <>
+                    <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <td className="px-2 py-2 font-medium text-[#805232] max-w-20 truncate text-xs">{tp.task.title}</td>
+                      <td className="px-2 py-2 text-gray-600 text-xs">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex items-center gap-0.5">
+                          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                tp.status === 'completed' ? 'bg-green-500' :
+                                tp.status === 'on-track' ? 'bg-green-500' :
+                                tp.status === 'at-risk' ? 'bg-yellow-500' :
+                                'bg-orange-500'
+                              }`}
+                              style={{ width: `${Math.min(tp.progress, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-gray-600 w-6 text-right">{tp.progress}%</span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-600 w-6 text-right">{tp.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>
-                        {getStatusLabel(tp.status)}
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-2 py-2">
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>
+                          {getStatusLabel(tp.status)}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr key={`${tp.task.id}-week`} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} h-12`}>
+                      <td colSpan={4} className="px-2 py-2 text-gray-600">
+                        <div className="flex gap-0.5 flex-wrap items-center h-full">
+                          <span className="text-xs font-semibold text-gray-700 mr-1">Week:</span>
+                          {dayNames.map((day, dayIndex) => (
+                            <span
+                              key={day}
+                              className={`w-5 h-5 flex items-center justify-center text-xs font-semibold rounded flex-shrink-0 ${
+                                tp.completedDays.includes(dayIndex)
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-400'
+                              }`}
+                              title={day}
+                            >
+                              {day.charAt(0)}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  </>
                 ))}
               </tbody>
             </table>
@@ -404,7 +424,6 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                 <tr>
                   <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Task</th>
                   <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Goal</th>
-                  <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Type</th>
                   <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Freq</th>
                   <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Progress</th>
                   <th className="px-3 md:px-4 py-2 md:py-3 text-left font-semibold text-[#805232] whitespace-nowrap">Week</th>
@@ -416,7 +435,6 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                   <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                     <td className="px-3 md:px-4 py-2 md:py-4 font-medium text-[#805232] max-w-32 truncate">{tp.task.title}</td>
                     <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600 max-w-24 truncate">{tp.goal?.title || '-'}</td>
-                    <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600 capitalize">{tp.task.type}</td>
                     <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
                     <td className="px-3 md:px-4 py-2 md:py-4">
                       <div className="flex items-center gap-1">
@@ -435,27 +453,21 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                       </div>
                     </td>
                     <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600">
-                      {tp.completedDays.length > 0 ? (
-                        <div className="flex gap-0.5">
-                          {visibleDayNames.map((day, i) => {
-                            const dayIndex = visibleDayIndices[i];
-                            return (
-                              <span
-                                key={day}
-                                className={`w-5 h-5 flex items-center justify-center text-xs font-semibold rounded ${
-                                  tp.completedDays.includes(dayIndex)
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-400'
-                                }`}
-                              >
-                                {day.charAt(0)}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      <div className="flex gap-0.5">
+                        {dayNames.map((day, dayIndex) => (
+                          <span
+                            key={day}
+                            className={`w-5 h-5 flex items-center justify-center text-xs font-semibold rounded ${
+                              tp.completedDays.includes(dayIndex)
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-400'
+                            }`}
+                            title={day}
+                          >
+                            {day.charAt(0)}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-3 md:px-4 py-2 md:py-4">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${getStatusColor(tp.status)}`}>

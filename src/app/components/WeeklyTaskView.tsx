@@ -27,6 +27,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   const [isDeleting, setIsDeleting] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [tempInputs, setTempInputs] = useState<Record<string, Record<number, string>>>({});
+  const [dayOffset, setDayOffset] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -62,8 +63,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
       return Array.from({ length: daysToShow }, (_, i) => i);
     }
 
-    // For mobile/tablet views, center around current day
-    const startIndex = Math.max(0, Math.min(currentDayIndex - Math.floor(daysToShow / 2), 7 - daysToShow));
+    // For mobile/tablet views with offset
+    const startIndex = Math.max(0, Math.min(currentDayIndex - Math.floor(daysToShow / 2) + dayOffset, 7 - daysToShow));
     return Array.from({ length: daysToShow }, (_, i) => startIndex + i);
   };
 
@@ -276,7 +277,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-2">
+    <div className="w-full mx-auto px-2 sm:px-4 md:px-6 py-2" style={{ maxWidth: 'fit-content' }}>
       <style>{`
         @keyframes celebrateNumber {
           0% {
@@ -441,14 +442,45 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
 
       {/* Tasks Grid with inline headers */}
       <div className="space-y-0 overflow-x-hidden">
-        {/* Day Names Row with Dates */}
-        <div className="flex gap-1 sm:gap-2 overflow-x-auto" style={{ paddingLeft: windowWidth < 500 ? '3.5rem' : windowWidth < 640 ? '5rem' : windowWidth < 1024 ? '10rem' : '15rem' }}>
-          {displayDayIndices.map((actualDayIndex) => (
-            <div key={dayNames[actualDayIndex]} className="flex-1 text-center">
-              <p className="text-xs font-bold text-amber-900">{dayNames[actualDayIndex]}</p>
-              <p className="text-xs text-gray-600">{weekDays[actualDayIndex].getDate()}</p>
-            </div>
-          ))}
+        {/* Day Names Row with Dates and Navigation */}
+        <div className="flex items-center gap-1 sm:gap-4">
+          {/* Progress Circle Space */}
+          {windowWidth >= 640 && <div className="flex-shrink-0 w-12"></div>}
+          
+          {/* Task Name Space */}
+          <div className={windowWidth < 500 ? 'flex-shrink-0 w-20' : windowWidth < 640 ? 'flex-shrink-0 w-24' : 'flex-shrink-0 w-40'}></div>
+          
+          {/* Left Arrow */}
+          {windowWidth < 1024 && daysToShow < 7 && (
+            <button
+              onClick={() => setDayOffset(Math.max(-Math.floor(7 / daysToShow), dayOffset - 1))}
+              disabled={dayOffset === -Math.floor(7 / daysToShow)}
+              className="p-1 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors flex-shrink-0"
+            >
+              <ChevronLeft className="w-4 h-4 text-amber-900" />
+            </button>
+          )}
+          
+          {/* Days */}
+          <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 108px))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
+            {displayDayIndices.map((actualDayIndex) => (
+              <div key={dayNames[actualDayIndex]} className="flex-1 text-center">
+                <p className="text-xs font-bold text-amber-900">{dayNames[actualDayIndex]}</p>
+                <p className="text-xs text-gray-600">{weekDays[actualDayIndex].getDate()}</p>
+              </div>
+            ))}
+          </div>
+          
+          {/* Right Arrow */}
+          {windowWidth < 1024 && daysToShow < 7 && (
+            <button
+              onClick={() => setDayOffset(Math.min(Math.floor(7 / daysToShow), dayOffset + 1))}
+              disabled={dayOffset === Math.floor(7 / daysToShow)}
+              className="p-1 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors flex-shrink-0"
+            >
+              <ChevronRight className="w-4 h-4 text-amber-900" />
+            </button>
+          )}
         </div>
 
         {tasks.map((task) => {
@@ -493,7 +525,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
 
                 {/* Task Name and Description */}
                 <div className={windowWidth < 500 ? 'flex-shrink-0 w-20' : windowWidth < 640 ? 'flex-shrink-0 w-24' : 'flex-shrink-0 w-40'}>
-                  <h3 className="font-semibold text-amber-900 text-base sm:text-base break-words line-clamp-1">{task.title}</h3>
+                  <h3 className="font-semibold text-amber-900 text-xs sm:text-sm break-words">{task.title}</h3>
                   {windowWidth >= 640 && (
                     <p className="text-xs text-gray-600 mt-0.5">
                       {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
