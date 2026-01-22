@@ -163,41 +163,37 @@ export function GoalsOverviewNew({
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-6 mb-6">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="bg-white border border-[#805232] p-3 rounded-lg">
+      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-3 sm:p-6 mb-6">
+        <div className="flex items-center justify-between gap-2 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
-            <div>
-              <div className="text-[#805232] text-sm">Total Goals</div>
-              <div className="text-xl text-[#805232]">{localGoals.length}</div>
+            <div className="min-w-0">
+              <div className="text-[#805232] text-xs sm:text-sm truncate">Total Goals</div>
+              <div className="text-lg sm:text-xl text-[#805232]">{localGoals.length}</div>
             </div>
           </div>
 
-          <div className="w-px h-16 bg-gray-400"></div>
-
-          <div className="flex items-center gap-3 flex-1">
-            <div className="bg-white border border-[#805232] p-3 rounded-lg">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
-            <div>
-              <div className="text-[#805232] text-sm">On Track</div>
-              <div className="text-xl text-[#805232]">
+            <div className="min-w-0">
+              <div className="text-[#805232] text-xs sm:text-sm truncate">On Track</div>
+              <div className="text-lg sm:text-xl text-[#805232]">
                 {localGoals.filter(g => g.status === 'on-track' || g.status === 'ahead').length}
               </div>
             </div>
           </div>
 
-          <div className="w-px h-16 bg-gray-400"></div>
-
-          <div className="flex items-center gap-3 flex-1">
-            <div className="bg-white border border-[#805232] p-3 rounded-lg">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
-            <div>
-              <div className="text-[#805232] text-sm">Avg. Progress</div>
-              <div className="text-xl text-[#805232]">
+            <div className="min-w-0">
+              <div className="text-[#805232] text-xs sm:text-sm truncate">Avg. Progress</div>
+              <div className="text-lg sm:text-xl text-[#805232]">
                 {localGoals.length > 0 ? Math.round(localGoals.reduce((sum, g) => sum + g.progress, 0) / localGoals.length) : 0}%
               </div>
             </div>
