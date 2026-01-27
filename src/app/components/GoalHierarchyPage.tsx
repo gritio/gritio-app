@@ -142,6 +142,28 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
     }
   };
 
+  const getNodeSpacing = (level: number) => {
+    return level === 0 ? 120 : level === 1 ? 100 : 80;
+  };
+
+  const getGapSize = (level: number) => {
+    // gap-12 = 3rem = 48px, gap-8 = 2rem = 32px, gap-6 = 1.5rem = 24px
+    return level === 0 ? 48 : level === 1 ? 32 : 24;
+  };
+
+  const calculateSubtreeWidth = (node: HierarchyNode, level: number): number => {
+    if (node.children.length === 0) {
+      return getNodeSpacing(level);
+    }
+    const gap = getGapSize(level);
+    const childrenWidth = node.children.reduce((sum, child, index) => {
+      const childWidth = calculateSubtreeWidth(child, level + 1);
+      const gapBetweenChildren = index > 0 ? gap : 0;
+      return sum + childWidth + gapBetweenChildren;
+    }, 0);
+    return childrenWidth;
+  };
+
   const FlowchartNode = ({ node, level }: { node: HierarchyNode; level: number }) => {
     const data = node.data as any;
     const nodeSize = level === 0 ? 'w-32 h-32' : level === 1 ? 'w-28 h-28' : 'w-24 h-24';
@@ -149,7 +171,7 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
     const subTextSize = level === 0 ? 'text-xs' : level === 1 ? 'text-[10px]' : 'text-[8px]';
     const spacing = level === 0 ? 'mt-8' : level === 1 ? 'mt-6' : 'mt-4';
     const gapSize = level === 0 ? 'gap-12' : level === 1 ? 'gap-8' : 'gap-6';
-    const connectorHeight = level === 0 ? 'h-8' : level === 1 ? 'h-6' : 'h-4';
+    const nodeSpacing = getNodeSpacing(level);
     
     return (
       <div className="flex flex-col items-center">
@@ -172,28 +194,63 @@ export function GoalHierarchyPage({ goals, monthlyGoals, tasks, lifeGoals }: Goa
 
         {/* Connector Lines and Child Nodes */}
         {node.children.length > 0 && (
-          <div className={`${spacing} relative`}>
-            {/* Vertical line from parent */}
-            <div className={`absolute -top-6 left-1/2 w-0.5 ${connectorHeight} bg-gray-400`} style={{ transform: 'translateX(-50%)' }} />
+          <div className={`${spacing} relative`} style={{ marginTop: '2rem' }}>
+            {/* SVG for diagonal lines */}
+            {(() => {
+              const childWidths = node.children.map(child => calculateSubtreeWidth(child, level + 1));
+              const gap = getGapSize(level);
+              let cumulativeX = 0;
+              const childPositions: number[] = [];
+              
+              for (let i = 0; i < node.children.length; i++) {
+                if (i > 0) {
+                  cumulativeX += gap;
+                }
+                const childWidth = childWidths[i];
+                const centerX = cumulativeX + childWidth / 2;
+                childPositions.push(centerX);
+                cumulativeX += childWidth;
+              }
+              
+              const totalWidth = cumulativeX;
 
-            {/* Horizontal line connecting children */}
-            {node.children.length > 1 && (
-              <div
-                className="absolute h-0.5 bg-gray-400"
-                style={{
-                  top: 0,
-                  left: `calc(50% - ${(node.children.length * (level === 0 ? 120 : level === 1 ? 100 : 80)) / 2}px)`,
-                  width: `${node.children.length * (level === 0 ? 120 : level === 1 ? 100 : 80)}px`,
-                }}
-              />
-            )}
+              return (
+                <svg
+                  style={{
+                    position: 'absolute',
+                    top: `-2rem`,
+                    left: '50%',
+                    transform: `translateX(-${totalWidth / 2}px)`,
+                    overflow: 'visible',
+                  }}
+                  width={totalWidth}
+                  height="2rem"
+                >
+                  {/* Vertical line from parent */}
+                  <line x1={totalWidth / 2} y1="0" x2={totalWidth / 2} y2="16" stroke="rgb(156, 163, 175)" strokeWidth="2" />
+                  
+                  {/* Diagonal lines to children */}
+                  {childPositions.map((childX) => {
+                    return (
+                      <line
+                        key={`diagonal-${childX}`}
+                        x1={totalWidth / 2}
+                        y1="16"
+                        x2={childX}
+                        y2="32"
+                        stroke="rgb(156, 163, 175)"
+                        strokeWidth="2"
+                      />
+                    );
+                  })}
+                </svg>
+              );
+            })()}
 
             {/* Child nodes */}
-            <div className={`flex ${gapSize} justify-center ${spacing}`}>
-              {node.children.map((child, index) => (
-                <div key={child.id} className="relative flex flex-col items-center">
-                  {/* Vertical line from connector to child */}
-                  <div className={`absolute -top-6 left-1/2 w-0.5 ${connectorHeight} bg-gray-400`} style={{ transform: 'translateX(-50%)' }} />
+            <div className={`flex ${gapSize} justify-center`}>
+              {node.children.map((child) => (
+                <div key={child.id} className="flex flex-col items-center">
                   <FlowchartNode node={child} level={level + 1} />
                 </div>
               ))}
