@@ -453,8 +453,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           {/* Left Arrow */}
           {windowWidth < 1024 && daysToShow < 7 && (
             <button
-              onClick={() => setDayOffset(Math.max(-Math.floor(7 / daysToShow), dayOffset - 1))}
-              disabled={dayOffset === -Math.floor(7 / daysToShow)}
+              onClick={() => setDayOffset(Math.max(-(7 - daysToShow), dayOffset - 1))}
+              disabled={dayOffset === -(7 - daysToShow)}
               className="p-1 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors flex-shrink-0"
             >
               <ChevronLeft className="w-4 h-4 text-amber-900" />
@@ -474,8 +474,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           {/* Right Arrow */}
           {windowWidth < 1024 && daysToShow < 7 && (
             <button
-              onClick={() => setDayOffset(Math.min(Math.floor(7 / daysToShow), dayOffset + 1))}
-              disabled={dayOffset === Math.floor(7 / daysToShow)}
+              onClick={() => setDayOffset(Math.min(7 - daysToShow, dayOffset + 1))}
+              disabled={dayOffset === 7 - daysToShow}
               className="p-1 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors flex-shrink-0"
             >
               <ChevronRight className="w-4 h-4 text-amber-900" />
