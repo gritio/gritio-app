@@ -105,7 +105,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
         newCompletions[task.id] = {};
         
         try {
-          const history = await tasksApi.getHistory(task.id, 7);
+          // Fetch history for 365 days to get any week's data
+          const history = await tasksApi.getHistory(task.id, 365);
           
           for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
             const date = new Date(weekStartDate);
