@@ -6,6 +6,7 @@ import { TodayView } from './components/TodayView';
 import { WeeklyTaskView } from './components/WeeklyTaskView';
 import { TaskTimelinePage } from './components/TaskTimelinePage';
 import { TodosPage } from './components/TodosPage';
+import { LifeGoalsPage } from './components/LifeGoalsPage';
 import { GoalEditPanel } from './components/GoalEditPanel';
 import { MonthlyGoalPanel } from './components/MonthlyGoalPanel';
 import { EditMonthlyGoalPanel } from './components/EditMonthlyGoalPanel';
@@ -17,12 +18,17 @@ import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './da
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
   const [showRegister, setShowRegister] = useState(false);
-  const [currentView, setCurrentView] = useState<View>('overview');
+  const [currentView, setCurrentView] = useState<View>(() => {
+    const savedView = localStorage.getItem('currentView') as View | null;
+    return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals'].includes(savedView)) 
+      ? savedView 
+      : 'overview';
+  });
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
   
@@ -83,6 +89,12 @@ export default function App() {
       setTasks(fetchedTasks);
       setTodos(fetchedTodos);
       setLifeGoals(fetchedLifeGoals || []);
+      
+      // If no life goals exist, redirect to life goals page
+      if (!fetchedLifeGoals || fetchedLifeGoals.length === 0) {
+        setCurrentView('life-goals');
+      }
+      
       setGoalsLoading(false);
     } catch (error: any) {
       const errorMsg = error?.message || error?.response?.data?.message || 'Unknown error fetching goals';
@@ -107,6 +119,11 @@ export default function App() {
       setGoalsLoading(false);
     }
   }, [isAuthenticated]);
+
+  // Save current view to localStorage
+  useEffect(() => {
+    localStorage.setItem('currentView', currentView);
+  }, [currentView]);
   
   const handleEditGoal = (goalId: string) => {
     setEditingGoalId(goalId);
@@ -420,6 +437,13 @@ export default function App() {
                 <TaskTimelinePage 
                   goals={goals}
                   tasks={tasks}
+                />
+              )}
+              
+              {currentView === 'life-goals' && (
+                <LifeGoalsPage 
+                  lifeGoals={lifeGoals}
+                  onRefresh={fetchGoals}
                 />
               )}
             </main>
