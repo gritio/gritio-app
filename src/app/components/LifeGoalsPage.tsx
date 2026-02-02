@@ -3,7 +3,11 @@ import { Plus, Edit2, Trash2, X } from 'lucide-react';
 import { LifeGoal } from '../types';
 import { lifeGoalsApi } from '../services/api';
 
-export function LifeGoalsPage() {
+interface LifeGoalsPageProps {
+  isKidsMode?: boolean;
+}
+
+export function LifeGoalsPage({ isKidsMode }: LifeGoalsPageProps = {}) {
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,8 +102,8 @@ export function LifeGoalsPage() {
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-8">
       <div className="mb-4 sm:mb-6 md:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#805232] mb-2">Life Goals</h1>
-        <p className="text-xs sm:text-sm md:text-base text-[#805232]">Define up to 5 life goals that guide your yearly objectives</p>
+        <h1 className={`text-2xl sm:text-3xl font-bold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Life Goals</h1>
+        <p className={`text-xs sm:text-sm md:text-base ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Define up to 5 life goals that guide your yearly objectives</p>
       </div>
 
       {error && (
@@ -169,7 +173,7 @@ export function LifeGoalsPage() {
         ) : (
           <>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3 sm:mb-4">
-              <p className="text-xs sm:text-sm text-[#805232] font-medium">
+              <p className={`text-xs sm:text-sm font-medium ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                 {lifeGoals.length} of 5 life goals created
               </p>
               {canAddMore && (
@@ -186,7 +190,11 @@ export function LifeGoalsPage() {
             {lifeGoals.map((goal) => (
               <div
                 key={goal.id}
-                className="p-3 sm:p-4 md:p-6 bg-white border-2 border-[#D0D0D0] rounded-lg hover:shadow-lg transition-shadow"
+                className={`p-3 sm:p-4 md:p-6 rounded-lg hover:shadow-lg transition-shadow ${
+                  isKidsMode
+                    ? 'bg-[#00FFFF] bg-opacity-60 border-2 border-[#0099FF]'
+                    : 'bg-white border-2 border-[#D0D0D0]'
+                }`}
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-2">
                   <h3 className="text-base sm:text-lg md:text-xl font-bold text-[#805232] flex-1">{goal.title}</h3>

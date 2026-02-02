@@ -6,6 +6,7 @@ import { tasksApi } from '../services/api';
 interface TaskTimelinePageProps {
   tasks: Task[];
   goals: Goal[];
+  isKidsMode?: boolean;
 }
 
 interface TaskProgress {
@@ -18,7 +19,7 @@ interface TaskProgress {
   status: 'on-track' | 'at-risk' | 'behind' | 'completed';
 }
 
-export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
+export function TaskTimelinePage({ tasks, goals, isKidsMode }: TaskTimelinePageProps) {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,19 +201,19 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
       <div className="mb-2 sm:mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
           <div>
-            <h1 className="text-xl sm:text-3xl font-bold text-[#805232] mb-1 sm:mb-2">Tasks</h1>
-            <p className="text-xs sm:text-base text-[#805232]">View all your tasks and their progress at a glance</p>
+            <h1 className={`text-xl sm:text-3xl font-bold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'} mb-1 sm:mb-2`}>Tasks</h1>
+            <p className={`text-xs sm:text-base ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>View all your tasks and their progress at a glance</p>
           </div>
           <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={handlePreviousWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
+              <ChevronLeft className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
             </button>
             <div className="text-center min-w-40 sm:min-w-64">
-              <p className="text-xs sm:text-sm text-gray-600">Week of</p>
-              <p className="text-sm sm:text-lg font-semibold text-[#805232]">
+              <p className={`text-xs sm:text-sm ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Week of</p>
+              <p className={`text-sm sm:text-lg font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
@@ -220,14 +221,14 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               onClick={handleNextWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
+              <ChevronRight className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-2 sm:p-4 mb-4 sm:mb-6">
+      <div className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-[#D0D0D0]'} border-2 rounded-lg p-2 sm:p-4 mb-4 sm:mb-6`}>
         <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
           <div className="flex-1 min-w-40 sm:min-w-64">
             <div className="relative">
@@ -273,8 +274,8 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
           onClick={() => setActiveTab('summary')}
           className={`hidden pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'summary'
-              ? 'text-[#805232] border-b-2 border-[#805232]'
-              : 'text-gray-600 hover:text-[#805232]'
+              ? isKidsMode ? 'text-[#00FF00] border-b-2 border-[#00FF00]' : 'text-[#805232] border-b-2 border-[#805232]'
+              : isKidsMode ? 'text-gray-600 hover:text-[#00FF00]' : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
           Summary
@@ -283,8 +284,8 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
           onClick={() => setActiveTab('table')}
           className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'table'
-              ? 'text-[#805232] border-b-2 border-[#805232]'
-              : 'text-gray-600 hover:text-[#805232]'
+              ? isKidsMode ? 'text-[#00FF00] border-b-2 border-[#00FF00]' : 'text-[#805232] border-b-2 border-[#805232]'
+              : isKidsMode ? 'text-gray-600 hover:text-[#00FF00]' : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
           Task Progress
@@ -307,7 +308,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
           {Object.entries(groupedByGoal).map(([goalId, goalTasks]) => {
             const goal = goals.find(g => g.id === goalId);
             return (
-              <div key={goalId} className="bg-white border-2 border-[#D0D0D0] rounded-lg p-2 sm:p-4 md:p-6">
+              <div key={goalId} className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-[#D0D0D0]'} border-2 rounded-lg p-2 sm:p-4 md:p-6`}>
                 <h2 className="text-sm sm:text-base md:text-xl font-bold text-[#805232] mb-2 sm:mb-3 md:mb-4">
                   {goal?.title || 'Unknown Goal'} ({goalTasks.length})
                 </h2>
@@ -355,7 +356,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
 
       {/* Table View */}
       {activeTab === 'table' && (
-        <div className="bg-white border-2 border-[#D0D0D0] rounded-lg overflow-x-auto">
+        <div className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-[#D0D0D0]'} border-2 rounded-lg overflow-x-auto`}>
           {windowWidth < 768 ? (
             <table className="w-full text-xs sm:text-sm">
               <thead className="bg-gray-50 border-b-2 border-[#D0D0D0]">
@@ -369,7 +370,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               <tbody>
                 {filteredTasks.map((tp, index) => (
                   <>
-                    <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <tr key={tp.task.id} className={`border-b ${isKidsMode ? 'border-[#0099FF]' : 'border-[#D0D0D0]'} ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <td className="px-2 py-2 font-medium text-[#805232] max-w-20 truncate text-xs">{tp.task.title}</td>
                       <td className="px-2 py-2 text-gray-600 text-xs">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>
                       <td className="px-2 py-2">
@@ -394,7 +395,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
                         </span>
                       </td>
                     </tr>
-                    <tr key={`${tp.task.id}-week`} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} h-12`}>
+                    <tr key={`${tp.task.id}-week`} className={`border-b ${isKidsMode ? 'border-[#0099FF]' : 'border-[#D0D0D0]'} ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} h-12`}>
                       <td colSpan={4} className="px-2 py-2 text-gray-600">
                         <div className="flex gap-0.5 flex-wrap items-center h-full">
                           <span className="text-xs font-semibold text-gray-700 mr-1">Week:</span>
@@ -432,7 +433,7 @@ export function TaskTimelinePage({ tasks, goals }: TaskTimelinePageProps) {
               </thead>
               <tbody>
                 {filteredTasks.map((tp, index) => (
-                  <tr key={tp.task.id} className={`border-b border-[#D0D0D0] ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <tr key={tp.task.id} className={`border-b ${isKidsMode ? 'border-[#0099FF]' : 'border-[#D0D0D0]'} ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                     <td className="px-3 md:px-4 py-2 md:py-4 font-medium text-[#805232] max-w-32 truncate">{tp.task.title}</td>
                     <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600 max-w-24 truncate">{tp.goal?.title || '-'}</td>
                     <td className="px-3 md:px-4 py-2 md:py-4 text-gray-600">{tp.task.frequency?.toLowerCase() === 'daily' ? 'Daily' : `${tp.task.timesPerWeek || 0}x/wk`}</td>

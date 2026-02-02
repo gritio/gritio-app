@@ -17,6 +17,7 @@ interface GoalsPageProps {
   onUpdateGoal?: (updatedGoal: Goal) => void;
   onDeleteGoal?: (goalId: string) => void;
   onRefreshGoals?: () => void;
+  isKidsMode?: boolean;
 }
 
 export function GoalsPage({
@@ -31,19 +32,26 @@ export function GoalsPage({
   onEditMonthlyGoal,
   onUpdateGoal,
   onDeleteGoal,
-  onRefreshGoals
+  onRefreshGoals,
+  isKidsMode
 }: GoalsPageProps) {
   const [activeTab, setActiveTab] = useState<'goals' | 'life-goals' | 'hierarchy'>('goals');
 
   return (
     <div className="w-full h-full flex flex-col">
       {/* Tabs */}
-      <div className="flex gap-2 sm:gap-4 border-b-2 border-[#D0D0D0] px-2 sm:px-4 md:px-6 overflow-x-auto">
+      <div className={`flex gap-2 sm:gap-4 border-b-2 px-2 sm:px-4 md:px-6 overflow-x-auto ${
+        isKidsMode ? 'border-[#0099FF]' : 'border-[#D0D0D0]'
+      }`}>
         <button
           onClick={() => setActiveTab('goals')}
           className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'goals'
-              ? 'text-[#805232] border-b-2 border-[#805232]'
+              ? isKidsMode
+                ? 'text-[#00FF00] border-b-2 border-[#00FF00]'
+                : 'text-[#805232] border-b-2 border-[#805232]'
+              : isKidsMode
+              ? 'text-[#00FF00] hover:text-[#00FF00]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
@@ -53,7 +61,11 @@ export function GoalsPage({
           onClick={() => setActiveTab('life-goals')}
           className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'life-goals'
-              ? 'text-[#805232] border-b-2 border-[#805232]'
+              ? isKidsMode
+                ? 'text-[#00FF00] border-b-2 border-[#00FF00]'
+                : 'text-[#805232] border-b-2 border-[#805232]'
+              : isKidsMode
+              ? 'text-[#00FF00] hover:text-[#00FF00]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
@@ -63,7 +75,11 @@ export function GoalsPage({
           onClick={() => setActiveTab('hierarchy')}
           className={`pb-2 sm:pb-3 px-2 sm:px-4 font-semibold text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'hierarchy'
-              ? 'text-[#805232] border-b-2 border-[#805232]'
+              ? isKidsMode
+                ? 'text-[#00FF00] border-b-2 border-[#00FF00]'
+                : 'text-[#805232] border-b-2 border-[#805232]'
+              : isKidsMode
+              ? 'text-[#00FF00] hover:text-[#00FF00]'
               : 'text-gray-600 hover:text-[#805232]'
           }`}
         >
@@ -87,13 +103,14 @@ export function GoalsPage({
               onUpdateGoal={onUpdateGoal}
               onDeleteGoal={onDeleteGoal}
               onRefreshGoals={onRefreshGoals}
+              isKidsMode={isKidsMode}
             />
           </div>
         )}
 
         {activeTab === 'life-goals' && (
           <div className="h-full overflow-y-auto">
-            <LifeGoalsPage />
+            <LifeGoalsPage isKidsMode={isKidsMode} />
           </div>
         )}
 

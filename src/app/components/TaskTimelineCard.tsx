@@ -55,7 +55,7 @@ export function TaskTimelineCard({
     : 'Monthly Goal';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 pointer-events-none">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 pointer-events-none">
       <div className="pointer-events-auto bg-white rounded-xl shadow-2xl w-96 max-h-[90vh] overflow-y-auto border-2 border-[#805232]">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#805232] to-[#6b4427] text-white p-6 flex items-center justify-between sticky top-0">
