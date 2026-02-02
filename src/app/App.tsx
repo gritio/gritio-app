@@ -20,9 +20,28 @@ import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } 
 
 type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals';
 
+// Helper function to check if user is under 18
+const isUserKid = (dob?: string): boolean => {
+  if (!dob) return false;
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age < 18;
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
   const [showRegister, setShowRegister] = useState(false);
+  const [isKidsMode, setIsKidsMode] = useState(() => {
+    const savedKidsMode = localStorage.getItem('isKidsMode');
+    return savedKidsMode === 'true';
+  });
   const [currentView, setCurrentView] = useState<View>(() => {
     const savedView = localStorage.getItem('currentView') as View | null;
     return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals'].includes(savedView)) 
@@ -90,6 +109,20 @@ export default function App() {
       setTodos(fetchedTodos);
       setLifeGoals(fetchedLifeGoals || []);
       
+      // Check if user is in kids mode
+      console.log('=== CHECKING KIDS MODE IN FETCH GOALS ===');
+      const userDOB = authApi.getUserDOB();
+      console.log('User DOB from localStorage in fetchGoals:', userDOB);
+      console.log('All localStorage keys:', Object.keys(localStorage));
+      console.log('userDOB value:', localStorage.getItem('userDOB'));
+      if (userDOB) {
+        const isKid = isUserKid(userDOB);
+        console.log('Is user a kid?', isKid);
+        setIsKidsMode(isKid);
+      } else {
+        console.log('NO DOB FOUND - Kids mode NOT activated');
+      }
+      
       // If no life goals exist, redirect to life goals page
       if (!fetchedLifeGoals || fetchedLifeGoals.length === 0) {
         setCurrentView('life-goals');
@@ -113,10 +146,21 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated) {
       console.log('isAuthenticated is true, fetching goals');
+      
+      // Check kids mode from stored DOB (extracted from JWT during login)
+      const userDOB = authApi.getUserDOB();
+      console.log('Checking kids mode - User DOB:', userDOB);
+      if (userDOB) {
+        const isKid = isUserKid(userDOB);
+        console.log('Is user a kid?', isKid);
+        setIsKidsMode(isKid);
+      }
+      
       fetchGoals();
     } else {
       console.log('isAuthenticated is false, skipping goal fetch');
       setGoalsLoading(false);
+      setIsKidsMode(false);
     }
   }, [isAuthenticated]);
 
@@ -124,6 +168,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('currentView', currentView);
   }, [currentView]);
+
+  // Save kids mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('isKidsMode', isKidsMode.toString());
+  }, [isKidsMode]);
   
   const handleEditGoal = (goalId: string) => {
     setEditingGoalId(goalId);
@@ -364,9 +413,9 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex font-bold overflow-hidden">
+        <div className={`min-h-screen flex font-bold overflow-hidden ${isKidsMode ? '' : 'bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4]'}`} style={{ backgroundImage: isKidsMode ? 'url(public/assets/background.jpg)' : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} />
+          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} />
           
           {/* Main Content Area with Panel */}
           <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'mr-96' : ''}`}>
@@ -386,6 +435,7 @@ export default function App() {
                   onUpdateGoal={handleSaveEditedGoal}
                   onDeleteGoal={handleDeleteGoal}
                   onRefreshGoals={fetchGoals}
+                  isKidsMode={isKidsMode}
                 />
               )}
               
@@ -426,6 +476,7 @@ export default function App() {
                 <WeeklyTaskView 
                   goals={goals}
                   tasks={tasks}
+                  isKidsMode={isKidsMode}
                   onGoalClick={(goalId) => {
                     setSelectedGoalId(goalId);
                     setCurrentView('overview');

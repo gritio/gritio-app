@@ -80,11 +80,17 @@ export class AuthController {
       credentials.password,
     );
 
+    console.log('LOGIN - User object returned from validateCredentials:', user);
+    console.log('LOGIN - User DOB value:', user.dob);
+
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
       name: user.name,
+      dob: user.dob,
     });
+
+    console.log('LOGIN - Token payload created with DOB:', user.dob);
 
     return {
       access_token: token,

@@ -8,9 +8,10 @@ interface SidebarProps {
   currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos';
   onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos') => void;
   onLogout?: () => void;
+  isKidsMode?: boolean;
 }
 
-export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
+export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: SidebarProps) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const user = authApi.getStoredUser();
 
@@ -57,11 +58,14 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
     }
   ];
 
+  const bgColor = isKidsMode ? 'bg-[#FFCB61]' : 'bg-[#DCDCDC]';
+  const borderColor = isKidsMode ? 'border-[#FFB84D]' : 'border-[#B8B9BA]';
+
   return (
-    <div className={`${isIconOnly ? 'w-16' : 'w-48'} bg-[#DCDCDC] min-h-screen shadow-lg flex flex-col flex-shrink-0 transition-all duration-300`}>
+    <div className={`${isIconOnly ? 'w-16' : 'w-48'} ${bgColor} min-h-screen shadow-lg flex flex-col flex-shrink-0 transition-all duration-300`}>
       {/* Logo/Brand + Menu - Fixed at top */}
-      <div className="sticky top-0 z-10 bg-[#DCDCDC]">
-        <div className="p-3 border-b border-[#B8B9BA]">
+      <div className={`sticky top-0 z-10 ${bgColor}`}>
+        <div className={`p-3 border-b ${borderColor}`}>
           <div className="flex items-center gap-2 justify-center">
             <div className="w-8 h-8 flex items-center justify-center">
               <AllyLogo size={32} />
@@ -116,7 +120,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
       </div>
 
       {/* Footer Section - Sticks to bottom when scrolling */}
-      <div className="sticky bottom-0 p-2 border-t border-[#B8B9BA] space-y-1 bg-[#DCDCDC] mt-auto">
+      <div className={`sticky bottom-0 p-2 border-t ${borderColor} space-y-1 ${bgColor} mt-auto`}>
         {user && !isIconOnly && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -135,7 +139,7 @@ export function Sidebar({ currentView, onNavigate, onLogout }: SidebarProps) {
             <TooltipTrigger asChild>
               <button
                 onClick={onLogout}
-                className={`w-full flex items-center gap-2 px-2 py-1 bg-[#DCDCDC] text-[#805232] rounded text-xs hover:bg-[#C0C0C0] transition-colors font-medium border border-[#805232] ${isIconOnly ? 'justify-center' : ''}`}
+                className={`w-full flex items-center gap-2 px-2 py-1 ${isKidsMode ? 'bg-[#FFCB61] hover:bg-[#FFB84D]' : 'bg-[#DCDCDC] hover:bg-[#C0C0C0]'} text-[#805232] rounded text-xs transition-colors font-medium border border-[#805232] ${isIconOnly ? 'justify-center' : ''}`}
                 title={isIconOnly ? 'Logout' : undefined}
               >
                 <LogOut className="w-3 h-3" />

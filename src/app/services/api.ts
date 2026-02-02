@@ -42,6 +42,29 @@ export const authApi = {
       localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userId', user.id);
+      
+      // Try to get DOB from JWT token
+      try {
+        const base64Url = access_token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const tokenData = JSON.parse(jsonPayload);
+        console.log('API: JWT decoded:', tokenData);
+        
+        // If DOB is in JWT, store it
+        if (tokenData.dob) {
+          console.log('API: Storing user DOB from JWT:', tokenData.dob);
+          localStorage.setItem('userDOB', tokenData.dob);
+        }
+      } catch (tokenError) {
+        console.log('API: Could not decode JWT for DOB');
+      }
+      
       return { access_token, user };
     } catch (error) {
       console.error('API: Login request failed:', error);
@@ -60,6 +83,10 @@ export const authApi = {
       console.log('API: Sending register request to /auth/register');
       const response = await apiClient.post('/auth/register', data);
       console.log('API: Register response received:', response.data);
+      // Store DOB in localStorage since backend might not return it
+      if (data.dob) {
+        localStorage.setItem('userDOB', data.dob);
+      }
       return response.data;
     } catch (error) {
       console.error('API: Register request failed:', error);
@@ -96,6 +123,26 @@ export const authApi = {
 
   getUserId: (): string | null => {
     return localStorage.getItem('userId');
+  },
+
+  getUserDOB: (): string | null => {
+    return localStorage.getItem('userDOB');
+  },
+
+  getUserProfile: async (): Promise<any> => {
+    try {
+      console.log('API: Fetching user profile');
+      const response = await apiClient.get('/auth/profile');
+      console.log('API: User profile received:', response.data);
+      if (response.data.dob) {
+        localStorage.setItem('userDOB', response.data.dob);
+        console.log('API: Stored user DOB from profile:', response.data.dob);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('API: Failed to fetch user profile:', error);
+      throw error;
+    }
   },
 };
 
