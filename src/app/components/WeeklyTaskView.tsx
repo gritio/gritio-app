@@ -9,9 +9,10 @@ interface WeeklyTaskViewProps {
   goals: any[];
   onGoalClick?: (goalId: string) => void;
   onTasksUpdate?: () => void;
+  isKidsMode?: boolean;
 }
 
-export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: WeeklyTaskViewProps) {
+export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKidsMode }: WeeklyTaskViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [completions, setCompletions] = useState<Record<string, Record<number, number>>>(
@@ -28,6 +29,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [tempInputs, setTempInputs] = useState<Record<string, Record<number, string>>>({});
   const [dayOffset, setDayOffset] = useState(0);
+  const [confetti, setConfetti] = useState<Array<{ id: string; left: number; top: number; tx: number; ty: number; color: string }>>([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -70,21 +72,51 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
 
   const displayDayIndices = getDisplayDayIndices();
 
+  const createConfetti = () => {
+    if (!isKidsMode) return;
+    
+    const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCB77', '#FF69B4', '#4D96FF', '#FFB347'];
+    const confettiPieces = [];
+    
+    for (let i = 0; i < 20; i++) {
+      const tx = (Math.random() - 0.5) * 200;
+      const ty = Math.random() * 200 + 100;
+      confettiPieces.push({
+        id: `confetti-${Date.now()}-${i}`,
+        left: 50,
+        top: 50,
+        tx,
+        ty,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+    
+    setConfetti(confettiPieces);
+    setTimeout(() => setConfetti([]), 2000);
+  };
+
   const triggerCelebration = (taskId: string, dayIndex: number) => {
     const key = `${taskId}-${dayIndex}`;
     console.log('🎉 Triggering celebration for:', key);
     setCelebrations(prev => new Set(prev).add(key));
-    setGlobalCelebration(true);
+    createConfetti();
+    
+    // Show dancing numbers after confetti (0.2s delay)
+    setTimeout(() => {
+      setGlobalCelebration(true);
+    }, 200);
+    
     setTimeout(() => {
       setCelebrations(prev => {
         const newSet = new Set(prev);
         newSet.delete(key);
         return newSet;
       });
-    }, 4000);
+    }, 11200);
+    
     setTimeout(() => {
       setGlobalCelebration(false);
-    }, 4000);
+    }, 11200);
   };
 
   const getWeekStart = (date: Date) => {
@@ -298,6 +330,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           0% {
             opacity: 1;
           }
+          85% {
+            opacity: 1;
+          }
           100% {
             opacity: 0;
           }
@@ -305,9 +340,11 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
         @keyframes moveToTop {
           0% {
             transform: translateY(300px);
+            opacity: 1;
           }
           100% {
             transform: translateY(0);
+            opacity: 1;
           }
         }
         @keyframes dance {
@@ -324,6 +361,47 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
             transform: translateY(-8px) rotate(-5deg);
           }
         }
+        @keyframes danceUpFromBottom {
+          0% {
+            transform: translateY(300px) rotate(0deg);
+            opacity: 1;
+          }
+          10% {
+            transform: translateY(250px) rotate(-5deg);
+          }
+          30% {
+            transform: translateY(150px) rotate(10deg);
+          }
+          50% {
+            transform: translateY(0px) rotate(-10deg);
+          }
+          70% {
+            transform: translateY(-100px) rotate(15deg);
+          }
+          90% {
+            transform: translateY(-200px) rotate(-5deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-250px) rotate(10deg);
+            opacity: 0;
+          }
+        }
+        @keyframes confetti {
+          0% {
+            transform: translate(0, 0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--tx), var(--ty)) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .confetti-piece {
+          position: absolute;
+          pointer-events: none;
+          animation: confetti 2s ease-out forwards;
+        }
         .celebrate-emoji {
           animation: celebrateNumber 4.5s ease-out forwards;
           pointer-events: none;
@@ -337,7 +415,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           left: 50%;
           transform: translateX(-50%);
           z-index: 9999;
-          animation: moveToTop 0.8s ease-out forwards, globalCelebrate 4s ease-out forwards;
+          animation: moveToTop 7s ease-out forwards 2s, globalCelebrate 7s ease-out forwards 2s;
+          animation-fill-mode: both;
           pointer-events: none;
         }
         .celebration-tile {
@@ -395,33 +474,109 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
         .celebration-character {
           font-size: 5rem;
         }
+        @keyframes rainbowColor {
+          0% {
+            -webkit-text-fill-color: #FF0000;
+            color: #FF0000;
+          }
+          16% {
+            -webkit-text-fill-color: #FF7F00;
+            color: #FF7F00;
+          }
+          33% {
+            -webkit-text-fill-color: #FFFF00;
+            color: #FFFF00;
+          }
+          50% {
+            -webkit-text-fill-color: #00FF00;
+            color: #00FF00;
+          }
+          66% {
+            -webkit-text-fill-color: #0000FF;
+            color: #0000FF;
+          }
+          83% {
+            -webkit-text-fill-color: #4B0082;
+            color: #4B0082;
+          }
+          100% {
+            -webkit-text-fill-color: #9400D3;
+            color: #9400D3;
+          }
+        }
+        .dancing-number {
+          position: fixed;
+          font-size: 4rem;
+          font-weight: bold;
+          -webkit-text-stroke: 2px white;
+          text-stroke: 2px white;
+          pointer-events: none;
+          animation: danceUpFromBottom 11s ease-out forwards, rainbowColor 11s ease-out forwards;
+        }
+        .dancing-number-6 {
+          left: 35%;
+          bottom: 20px;
+          animation-delay: 0s, 0s;
+        }
+        .dancing-number-7 {
+          right: 35%;
+          bottom: 20px;
+          animation-delay: 0.3s, 0.3s;
+        }
       `}</style>
       
       {/* Global Celebration Tile */}
       {globalCelebration && (
-        <div className="global-celebration">
-          <div className="celebration-tile">
-            <div className="celebration-character">
-              🎉
+        <>
+          {isKidsMode ? (
+            <>
+              <div className="dancing-number dancing-number-6">6</div>
+              <div className="dancing-number dancing-number-7">7</div>
+            </>
+          ) : (
+            <div className="global-celebration">
+              <div className="celebration-tile">
+                <div className="celebration-character">
+                  <div>🎉</div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
+
+      {/* Confetti */}
+      {confetti.map(piece => (
+        <div
+          key={piece.id}
+          className="confetti-piece"
+          style={{
+            left: `${piece.left}%`,
+            top: `${piece.top}%`,
+            backgroundColor: piece.color,
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            '--tx': `${piece.tx}px`,
+            '--ty': `${piece.ty}px`,
+          } as React.CSSProperties & { '--tx': string; '--ty': string }}
+        />
+      ))}
       
       {/* Header */}
       <div className="mb-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold text-[#805232]">Weekly Tasks</h1>
+          <h1 className={`text-xl sm:text-2xl font-bold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Weekly Tasks</h1>
           <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={handlePreviousWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
+              <ChevronLeft className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
             </button>
             <div className="text-center min-w-40 sm:min-w-64">
-              <p className="text-xs sm:text-sm text-gray-600">Week of</p>
-              <p className="text-sm sm:text-lg font-semibold text-[#805232]">
+              <p className={`text-xs sm:text-sm ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Week of</p>
+              <p className={`text-sm sm:text-lg font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {
                   new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
                     month: 'short',
@@ -435,7 +590,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
               onClick={handleNextWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6 text-[#805232]" />
+              <ChevronRight className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
             </button>
           </div>
         </div>
@@ -466,8 +621,8 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 108px))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
             {displayDayIndices.map((actualDayIndex) => (
               <div key={dayNames[actualDayIndex]} className="flex-1 text-center">
-                <p className="text-xs font-bold text-amber-900">{dayNames[actualDayIndex]}</p>
-                <p className="text-xs text-gray-600">{weekDays[actualDayIndex].getDate()}</p>
+                <p className={`text-xs font-bold ${isKidsMode ? 'text-[#00FF00]' : 'text-amber-900'}`}>{dayNames[actualDayIndex]}</p>
+                <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{weekDays[actualDayIndex].getDate()}</p>
               </div>
             ))}
           </div>
@@ -492,7 +647,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-2 sm:p-3 flex items-center overflow-x-auto">
+            <div key={task.id} className={`${isKidsMode ? 'bg-[#00FFFF] border-[#0099FF]' : 'bg-white border-gray-200'} rounded-lg border p-2 sm:p-3 flex items-center overflow-x-auto`}>
               <div className="flex gap-1 sm:gap-4 items-center w-full min-w-0">
                 {/* Progress Circle and Buttons - Hidden on mobile */}
                 {windowWidth >= 640 && (
@@ -501,7 +656,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                       style={{ 
                         background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
                       }}>
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                      <div className={`w-10 h-10 rounded-full ${isKidsMode ? 'bg-[#00FFFF]' : 'bg-white'} flex items-center justify-center`}>
                         <span className="text-xs font-bold text-amber-900">{progress}%</span>
                       </div>
                     </div>
@@ -552,16 +707,16 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate }: Wee
                       disabled={loading}
                       className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-hidden ${
                         isCompleted
-                          ? 'border-amber-900 bg-amber-900'
+                          ? isKidsMode ? 'border-[#00FF00] bg-black' : 'border-amber-900 bg-amber-900'
                           : isToday
-                          ? 'border-amber-900 bg-orange-50 hover:bg-orange-100'
-                          : 'border-gray-200 bg-gray-50 hover:border-amber-900 hover:bg-gray-100'
+                          ? isKidsMode ? 'border-[#00FFFF] bg-[#00FFFF] hover:bg-[#00CCCC]' : 'border-amber-900 bg-orange-50 hover:bg-orange-100'
+                          : isKidsMode ? 'border-gray-300 bg-gray-100 hover:border-[#00FFFF] hover:bg-gray-200' : 'border-gray-200 bg-gray-50 hover:border-amber-900 hover:bg-gray-100'
                       } disabled:opacity-50`}
                     >
                       {isCompleted ? (
-                        <Check className="w-4 h-4 text-white" />
+                        <Check className={`w-4 h-4 ${isKidsMode ? 'text-[#00FF00]' : 'text-white'}`} />
                       ) : (
-                        <X className={`w-4 h-4 ${isToday ? 'text-amber-900' : 'text-gray-400'}`} />
+                        <X className={`w-4 h-4 ${isToday ? isKidsMode ? 'text-black' : 'text-amber-900' : 'text-gray-400'}`} />
                       )}
                     </button>
                   ) : task.type?.toLowerCase() === 'steps' ? (
