@@ -16,6 +16,7 @@ interface CollapsibleGoalRowProps {
   onAddTask?: (goalId: string) => void;
   onGenerateMonthlyGoals?: (goalId: string) => void;
   tasks?: any[];
+  isKidsMode?: boolean;
 }
 
 export function CollapsibleGoalRow({
@@ -30,6 +31,7 @@ export function CollapsibleGoalRow({
   onAddTask,
   onGenerateMonthlyGoals,
   tasks = [],
+  isKidsMode,
 }: CollapsibleGoalRowProps) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -301,7 +303,11 @@ export function CollapsibleGoalRow({
       )}
 
       {/* Goal Header */}
-      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-3 mb-4 hover:shadow-xl transition-all duration-200 border-l-4 border-l-[#805232] hover:scale-105 hover:-translate-y-1">
+      <div className={`rounded-lg p-3 mb-4 hover:shadow-xl transition-all duration-200 border-l-4 border-l-[#805232] hover:scale-105 hover:-translate-y-1 ${
+        isKidsMode
+          ? 'bg-[#00FFFF] bg-opacity-60 border-2 border-[#0099FF]'
+          : 'bg-white border-2 border-[#D0D0D0]'
+      }`}>
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button
@@ -422,24 +428,24 @@ export function CollapsibleGoalRow({
               
               return (
                 <div className="flex items-center gap-2 flex-1 justify-end">
-                  <span className="text-xs font-semibold text-[#805232]">
+                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                     {goal.weightGoal.startWeight}kg
                   </span>
-                  <span className="text-xs font-semibold text-[#805232]">
+                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                     →
                   </span>
-                  <span className="text-xs font-semibold text-[#805232]">
+                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                     {goal.weightGoal.targetWeight}kg
                   </span>
-                  <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
+                  <div className={`relative h-2 rounded-full overflow-hidden w-24 ${isKidsMode ? 'bg-[#0099FF]' : 'bg-gray-200'}`}>
                     <div
-                      className="h-full bg-cyan-500 transition-all duration-300"
+                      className={`h-full transition-all duration-300 ${isKidsMode ? 'bg-[#00FF00]' : 'bg-cyan-500'}`}
                       style={{
                         width: `${progressPercent}%`,
                       }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-[#805232]">
+                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                     {currentWeightDisplay}kg
                   </span>
                 </div>
@@ -447,9 +453,10 @@ export function CollapsibleGoalRow({
             })()
           ) : (
             <div className="flex items-center gap-2 flex-1 justify-end">
-              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden w-24">
+              <div className={`relative h-2 rounded-full overflow-hidden w-24 ${isKidsMode ? 'bg-[#0099FF]' : 'bg-gray-200'}`}>
                 <div
                   className={`h-full transition-all duration-300 ${
+                    isKidsMode ? 'bg-[#00FF00]' :
                     goal.progress >= 100 ? 'bg-green-500' :
                     goal.progress >= 70 ? 'bg-green-500' :
                     goal.progress >= 50 ? 'bg-yellow-500' :
@@ -460,7 +467,7 @@ export function CollapsibleGoalRow({
                   }}
                 />
               </div>
-              <span className="text-xs font-semibold text-[#805232] flex-shrink-0">
+              <span className={`text-xs font-semibold flex-shrink-0 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                 {goal.progress}%
               </span>
             </div>

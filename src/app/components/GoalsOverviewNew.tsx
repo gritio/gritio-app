@@ -18,6 +18,7 @@ interface GoalsOverviewNewProps {
   onUpdateGoal?: (updatedGoal: Goal) => void;
   onDeleteGoal?: (goalId: string) => void;
   onRefreshGoals?: () => void;
+  isKidsMode?: boolean;
 }
 
 export function GoalsOverviewNew({
@@ -32,6 +33,7 @@ export function GoalsOverviewNew({
   onUpdateGoal,
   onDeleteGoal,
   onRefreshGoals,
+  isKidsMode,
 }: GoalsOverviewNewProps) {
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
   const [deleteConfirmGoalId, setDeleteConfirmGoalId] = useState<string | null>(null);
@@ -159,28 +161,36 @@ export function GoalsOverviewNew({
     <div className="w-full max-w-7xl mx-auto px-6 py-6">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="mb-2 text-[#805232]">Goals Overview</h1>
+        <h1 className={`mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Goals Overview</h1>
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-white border-2 border-[#D0D0D0] rounded-lg p-3 sm:p-6 mb-6">
+      <div className={`rounded-lg p-3 sm:p-6 mb-6 ${
+        isKidsMode 
+          ? 'bg-[#00FFFF] bg-opacity-60 border-2 border-[#0099FF]' 
+          : 'bg-white border-2 border-[#D0D0D0]'
+      }`}>
         <div className="flex items-center justify-between gap-2 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
+            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
+              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
+            }`}>
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[#805232] text-xs sm:text-sm truncate">Total Goals</div>
+              <div className="text-xs sm:text-sm truncate text-[#805232]">Total Goals</div>
               <div className="text-lg sm:text-xl text-[#805232]">{localGoals.length}</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
+            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
+              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
+            }`}>
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[#805232] text-xs sm:text-sm truncate">On Track</div>
+              <div className="text-xs sm:text-sm truncate text-[#805232]">On Track</div>
               <div className="text-lg sm:text-xl text-[#805232]">
                 {localGoals.filter(g => g.status === 'on-track' || g.status === 'ahead').length}
               </div>
@@ -188,11 +198,13 @@ export function GoalsOverviewNew({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="hidden sm:flex bg-white border border-[#805232] p-3 rounded-lg flex-shrink-0">
+            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
+              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
+            }`}>
               <Target className="w-6 h-6 text-[#805232]" />
             </div>
             <div className="min-w-0">
-              <div className="text-[#805232] text-xs sm:text-sm truncate">Avg. Progress</div>
+              <div className="text-xs sm:text-sm truncate text-[#805232]">Avg. Progress</div>
               <div className="text-lg sm:text-xl text-[#805232]">
                 {localGoals.length > 0 ? Math.round(localGoals.reduce((sum, g) => sum + g.progress, 0) / localGoals.length) : 0}%
               </div>
@@ -228,7 +240,7 @@ export function GoalsOverviewNew({
             onAddTask={handleOpenAddTaskPanel}
             onGenerateMonthlyGoals={handleOpenGenerateMonthlyGoalsPanel}
             tasks={tasks}
-            onRefreshGoals={onRefreshGoals}
+            isKidsMode={isKidsMode}
           />
         ))}
       </div>

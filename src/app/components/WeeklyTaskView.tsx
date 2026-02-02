@@ -647,7 +647,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className={`${isKidsMode ? 'bg-[#00FFFF] border-[#0099FF]' : 'bg-white border-gray-200'} rounded-lg border p-2 sm:p-3 flex items-center overflow-x-auto`}>
+            <div key={task.id} className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'} rounded-lg border p-2 sm:p-3 flex items-center overflow-x-auto`}>
               <div className="flex gap-1 sm:gap-4 items-center w-full min-w-0">
                 {/* Progress Circle and Buttons - Hidden on mobile */}
                 {windowWidth >= 640 && (
@@ -656,7 +656,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                       style={{ 
                         background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
                       }}>
-                      <div className={`w-10 h-10 rounded-full ${isKidsMode ? 'bg-[#00FFFF]' : 'bg-white'} flex items-center justify-center`}>
+                      <div className={`w-10 h-10 rounded-full ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'} flex items-center justify-center`}>
                         <span className="text-xs font-bold text-amber-900">{progress}%</span>
                       </div>
                     </div>

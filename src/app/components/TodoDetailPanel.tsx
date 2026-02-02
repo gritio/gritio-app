@@ -71,7 +71,7 @@ export function TodoDetailPanel({
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay: Semi-transparent dark background that dismisses the panel on click */}
       <div
-        className="flex-1 bg-black bg-opacity-40"
+        className="flex-1 bg-black bg-opacity-60"
         onClick={onClose}
       />
 
