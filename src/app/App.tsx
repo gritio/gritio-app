@@ -413,7 +413,7 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div className={`min-h-screen flex font-bold overflow-hidden ${isKidsMode ? '' : 'bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4]'}`} style={{ backgroundImage: isKidsMode ? 'url(public/assets/background.jpg)' : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
+        <div className={`min-h-screen flex font-bold overflow-hidden ${isKidsMode ? '' : 'bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4]'}`} style={{ backgroundImage: isKidsMode ? 'url(/assets/background.jpg)' : 'none', backgroundSize: 'cover', backgroundPosition: 'center', fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
           <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} />
           
