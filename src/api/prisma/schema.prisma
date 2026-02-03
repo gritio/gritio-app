@@ -17,6 +17,7 @@ model User {
   name            String?
   dob             DateTime?  // Date of birth
   phone           String?    // Phone number
+  coins           Int        @default(0) // Gamification: coins earned from completing tasks
   emailVerified   Boolean    @default(false) // Email verification status
   emailVerificationToken String? @unique // Token for email verification
   emailVerificationExpires DateTime? // Token expiration time

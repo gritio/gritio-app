@@ -13,6 +13,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: SidebarProps) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [coins, setCoins] = useState(0);
   const user = authApi.getStoredUser();
 
   useEffect(() => {
@@ -21,6 +22,27 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const fetchCoins = async () => {
+      try {
+        const storedCoins = localStorage.getItem('userCoins');
+        if (storedCoins) {
+          setCoins(parseInt(storedCoins));
+        }
+      } catch (error) {
+        console.error('Failed to fetch coins:', error);
+      }
+    };
+    fetchCoins();
+
+    const handleCoinsUpdate = (event: any) => {
+      setCoins(event.detail.coins);
+    };
+
+    window.addEventListener('coinsUpdated', handleCoinsUpdate);
+    return () => window.removeEventListener('coinsUpdated', handleCoinsUpdate);
   }, []);
 
   const isIconOnly = windowWidth < 768;
@@ -63,8 +85,8 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
 
   return (
     <div className={`${isIconOnly ? 'w-16' : 'w-48'} ${bgColor} min-h-screen shadow-lg flex flex-col flex-shrink-0 transition-all duration-300`}>
-      {/* Logo/Brand + Menu - Fixed at top */}
-      <div className={`sticky top-0 z-10 ${bgColor}`}>
+      {/* Logo/Brand */}
+      <div className={`${bgColor}`}>
         <div className={`p-3 border-b ${borderColor}`}>
           <div className="flex items-center gap-2 justify-center">
             <div className="w-8 h-8 flex items-center justify-center">
@@ -78,49 +100,55 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
             )}
           </div>
         </div>
-
-        {/* Menu Items - Sticky */}
-        <nav className="p-2 space-y-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.view;
-
-          const button = (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.view)}
-              className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-all text-sm ${
-                isActive
-                  ? 'bg-[#805232] text-white shadow-md'
-                  : 'text-[#805232] hover:bg-[#805232] hover:text-white'
-              } ${isIconOnly ? 'justify-center' : ''}`}
-              title={isIconOnly ? item.label : undefined}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {!isIconOnly && <span className="font-bold text-sm">{item.label}</span>}
-            </button>
-          );
-
-          if (isIconOnly) {
-            return (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  {button}
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-[#805232] text-white">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return button;
-        })}
-        </nav>
+        {!isIconOnly && (
+          <div className={`p-3 border-b ${borderColor} text-center ${isKidsMode ? 'bg-[#FFE680]' : 'bg-white'}`}>
+            <p className="text-[#805232] text-xs font-semibold">Coins</p>
+            <p className="text-[#805232] text-2xl font-bold">{coins} 🪙</p>
+          </div>
+        )}
       </div>
 
-      {/* Footer Section - Sticks to bottom when scrolling */}
-      <div className={`sticky bottom-0 p-2 border-t ${borderColor} space-y-1 ${bgColor} mt-auto`}>
+      {/* Menu Items */}
+      <nav className="p-2 space-y-1 pb-28">
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentView === item.view;
+
+        const button = (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.view)}
+            className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-all text-sm ${
+              isActive
+                ? 'bg-[#805232] text-white shadow-md'
+                : 'text-[#805232] hover:bg-[#805232] hover:text-white'
+            } ${isIconOnly ? 'justify-center' : ''}`}
+            title={isIconOnly ? item.label : undefined}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            {!isIconOnly && <span className="font-bold text-sm">{item.label}</span>}
+          </button>
+        );
+
+        if (isIconOnly) {
+          return (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                {button}
+              </TooltipTrigger>
+              <TooltipContent side="right" className="bg-[#805232] text-white">
+                {item.label}
+              </TooltipContent>
+            </Tooltip>
+          );
+        }
+
+        return button;
+      })}
+      </nav>
+
+      {/* Footer Section - Fixed at bottom */}
+      <div className={`fixed bottom-0 p-2 border-t ${borderColor} space-y-1 ${bgColor} ${isIconOnly ? 'w-16' : 'w-48'}`}>
         {user && !isIconOnly && (
           <Tooltip>
             <TooltipTrigger asChild>
