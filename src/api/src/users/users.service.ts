@@ -118,4 +118,34 @@ export class UsersService {
       },
     });
   }
+
+  async addCoins(userId: string, amount: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        coins: user.coins + amount,
+      },
+    });
+  }
+
+  async getUserCoins(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { coins: true },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return { coins: user.coins };
+  }
 }

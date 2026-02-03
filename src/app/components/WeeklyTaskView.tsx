@@ -3,6 +3,7 @@ import { Task } from '../types';
 import { ChevronLeft, ChevronRight, Check, Plus, Minus, X, ThumbsUp, Edit2, Trash2 } from 'lucide-react';
 import { tasksApi } from '../services/api';
 import { EditTaskPanel } from './EditTaskPanel';
+import { GAMIFICATION } from '../constants/gamification';
 
 interface WeeklyTaskViewProps {
   tasks: Task[];
@@ -187,6 +188,13 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
 
   const isSimpleTask = (task: Task) => task.type?.toLowerCase() === 'number';
 
+  const updateCoins = (amount: number) => {
+    const currentCoins = parseInt(localStorage.getItem('userCoins') || '0');
+    const newCoins = Math.max(0, currentCoins + amount);
+    localStorage.setItem('userCoins', newCoins.toString());
+    window.dispatchEvent(new CustomEvent('coinsUpdated', { detail: { coins: newCoins } }));
+  };
+
   const toggleCompletion = async (taskId: string, dayIndex: number) => {
     setLoading(true);
     try {
@@ -205,6 +213,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
       if (newValue === 1) {
         console.log('Calling triggerCelebration because newValue is 1');
         triggerCelebration(taskId, dayIndex);
+        updateCoins(GAMIFICATION.COINS_PER_TASK_COMPLETION);
+      } else if (currentValue === 1 && newValue === 0) {
+        updateCoins(-GAMIFICATION.COINS_PER_TASK_COMPLETION);
       }
     } catch (error) {
       console.error('Failed to log completion:', error);
@@ -233,6 +244,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
 
       if (wasNotCompleted && isNowCompleted) {
         triggerCelebration(taskId, dayIndex);
+        updateCoins(GAMIFICATION.COINS_PER_TASK_COMPLETION);
+      } else if (!wasNotCompleted && !isNowCompleted) {
+        updateCoins(-GAMIFICATION.COINS_PER_TASK_COMPLETION);
       }
     } catch (error) {
       console.error('Failed to log value:', error);
