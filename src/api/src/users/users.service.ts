@@ -148,4 +148,45 @@ export class UsersService {
 
     return { coins: user.coins };
   }
+
+  async getUserProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        dob: true,
+        phone: true,
+        coins: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateUserProfile(userId: string, data: { name?: string; phone?: string; dob?: string }) {
+    const updateData: any = {};
+    
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.dob !== undefined) updateData.dob = data.dob ? new Date(data.dob) : null;
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        dob: true,
+        phone: true,
+        coins: true,
+      },
+    });
+  }
 }

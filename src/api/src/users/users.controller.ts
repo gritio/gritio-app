@@ -1,11 +1,23 @@
-import { Controller, Get, Post, Body, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getProfile(@CurrentUser() user: any) {
+    return this.usersService.getUserProfile(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  async updateProfile(@CurrentUser() user: any, @Body() data: any) {
+    return this.usersService.updateUserProfile(user.userId, data);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('me/coins')

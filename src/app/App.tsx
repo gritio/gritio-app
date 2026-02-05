@@ -7,6 +7,7 @@ import { WeeklyTaskView } from './components/WeeklyTaskView';
 import { TaskTimelinePage } from './components/TaskTimelinePage';
 import { TodosPage } from './components/TodosPage';
 import { LifeGoalsPage } from './components/LifeGoalsPage';
+import { ProfilePage } from './components/ProfilePage';
 import { GoalEditPanel } from './components/GoalEditPanel';
 import { MonthlyGoalPanel } from './components/MonthlyGoalPanel';
 import { EditMonthlyGoalPanel } from './components/EditMonthlyGoalPanel';
@@ -18,7 +19,7 @@ import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './da
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile';
 
 // Helper function to check if user is under 18
 const isUserKid = (dob?: string): boolean => {
@@ -496,6 +497,13 @@ export default function App() {
                 <LifeGoalsPage 
                   lifeGoals={lifeGoals}
                   onRefresh={fetchGoals}
+                />
+              )}
+              
+              {currentView === 'profile' && (
+                <ProfilePage
+                  onBack={() => setCurrentView('overview')}
+                  isKidsMode={isKidsMode}
                 />
               )}
             </main>

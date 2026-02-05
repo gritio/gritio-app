@@ -188,11 +188,30 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
 
   const isSimpleTask = (task: Task) => task.type?.toLowerCase() === 'number';
 
-  const updateCoins = (amount: number) => {
+  const updateCoins = async (amount: number) => {
     const currentCoins = parseInt(localStorage.getItem('userCoins') || '0');
     const newCoins = Math.max(0, currentCoins + amount);
     localStorage.setItem('userCoins', newCoins.toString());
     window.dispatchEvent(new CustomEvent('coinsUpdated', { detail: { coins: newCoins } }));
+    
+    try {
+      const apiUrl = (import.meta.env as any).VITE_API_URL || 'http://localhost:3000';
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      
+      if (token && userId) {
+        await fetch(`${apiUrl}/users/${userId}/coins/add`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ amount }),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to sync coins to backend:', error);
+    }
   };
 
   const toggleCompletion = async (taskId: string, dayIndex: number) => {
