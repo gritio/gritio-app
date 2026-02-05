@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Target, LogOut, CheckSquare, BarChart3, Zap } from 'lucide-react';
+import { Calendar, Target, LogOut, CheckSquare, BarChart3, Zap, User } from 'lucide-react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
-  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos';
-  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos') => void;
+  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile';
+  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile') => void;
   onLogout?: () => void;
   isKidsMode?: boolean;
 }
@@ -27,12 +27,24 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
   useEffect(() => {
     const fetchCoins = async () => {
       try {
+        const apiUrl = (import.meta.env as any).VITE_API_URL || 'http://localhost:3000';
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${apiUrl}/users/me/coins`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCoins(data.coins);
+          localStorage.setItem('userCoins', data.coins.toString());
+        }
+      } catch (error) {
+        console.error('Failed to fetch coins:', error);
         const storedCoins = localStorage.getItem('userCoins');
         if (storedCoins) {
           setCoins(parseInt(storedCoins));
         }
-      } catch (error) {
-        console.error('Failed to fetch coins:', error);
       }
     };
     fetchCoins();
@@ -77,6 +89,12 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
       label: 'Todos',
       icon: CheckSquare,
       view: 'todos' as const
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      view: 'profile' as const
     }
   ];
 
