@@ -96,6 +96,11 @@ export function GoalsOverviewNew({
         );
         setLocalGoals(updatedGoals);
       }
+      
+      // Refresh goals to get updated status from backend
+      if (onRefreshGoals) {
+        await onRefreshGoals();
+      }
     } catch (error: any) {
       console.error('Failed to update progress:', error);
       console.error('Error details:', error?.response?.data || error?.message || error);

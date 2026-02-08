@@ -6,6 +6,58 @@ import { CreateGoalDto, UpdateGoalDto } from './dto/goal.dto';
 export class GoalsService {
   constructor(private prisma: PrismaService) {}
 
+  private calculateGoalStatus(monthlyGoals: any[]): 'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND' {
+    const currentMonth = new Date();
+    currentMonth.setHours(0, 0, 0, 0);
+    
+    let cumulativeProgress = 0;
+    let cumulativeTarget = 0;
+    let totalYearlyTarget = 0;
+    let monthsCompletedUpToCurrent = 0;
+    
+    monthlyGoals.forEach(mg => {
+      const mgDate = new Date(mg.monthDate);
+      mgDate.setHours(0, 0, 0, 0);
+      
+      totalYearlyTarget += Number(mg.target);
+      
+      if (mgDate <= currentMonth) {
+        cumulativeProgress += Number(mg.currentProgress);
+        cumulativeTarget += Number(mg.target);
+        monthsCompletedUpToCurrent++;
+      }
+    });
+    
+    if (cumulativeTarget === 0) {
+      return 'BEHIND';
+    }
+    
+    // Calculate pace: if we maintain current progress rate, will we hit the yearly target?
+    const progressPerMonth = monthsCompletedUpToCurrent > 0 ? cumulativeProgress / monthsCompletedUpToCurrent : 0;
+    const projectedYearlyProgress = progressPerMonth * 12;
+    const pacePercentage = (projectedYearlyProgress / totalYearlyTarget) * 100;
+    
+    // If we've completed the full year
+    if (monthsCompletedUpToCurrent === 12) {
+      if (cumulativeProgress >= totalYearlyTarget) {
+        return 'COMPLETED';
+      } else {
+        return 'BEHIND';
+      }
+    }
+    
+    // Based on pace, determine status
+    if (pacePercentage >= 100) {
+      return 'ON_TRACK';
+    } else if (pacePercentage >= 70) {
+      return 'ON_TRACK';
+    } else if (pacePercentage >= 50) {
+      return 'AT_RISK';
+    } else {
+      return 'BEHIND';
+    }
+  }
+
   private calculateMonthlyDistribution(
     target: number,
     strategy: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE',
@@ -197,11 +249,17 @@ export class GoalsService {
       orderBy: { createdAt: 'desc' },
     });
     console.log('GoalsService.getGoalsByUser - found goals count:', goals.length);
-    return goals;
+    
+    const goalsWithStatus = goals.map(goal => ({
+      ...goal,
+      status: this.calculateGoalStatus(goal.monthlyGoals),
+    }));
+    
+    return goalsWithStatus;
   }
 
   async getGoalById(id: string) {
-    return this.prisma.goal.findUnique({
+    const goal = await this.prisma.goal.findUnique({
       where: { id },
       include: {
         weightGoal: true,
@@ -211,6 +269,13 @@ export class GoalsService {
         lifeGoal: true,
       },
     });
+    
+    if (!goal) return null;
+    
+    return {
+      ...goal,
+      status: this.calculateGoalStatus(goal.monthlyGoals),
+    };
   }
 
   async updateGoal(id: string, userId: string, dto: UpdateGoalDto) {
