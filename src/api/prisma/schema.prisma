@@ -225,9 +225,10 @@ model Todo {
 
 // Enums
 enum GoalStatus {
+  COMPLETED
   ON_TRACK
+  AT_RISK
   BEHIND
-  AHEAD
 }
 
 enum Frequency {

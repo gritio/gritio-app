@@ -394,17 +394,23 @@ export function CollapsibleGoalRow({
             <span className="text-xs font-semibold px-2 py-1 rounded-full bg-[#E8D5C4] text-[#805232]">
               {goal.area}
             </span>
-            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-              goal.progress >= 100 ? 'bg-green-100 text-green-700' :
-              goal.progress >= 70 ? 'bg-green-100 text-green-700' :
-              goal.progress >= 50 ? 'bg-yellow-100 text-yellow-700' :
-              'bg-orange-100 text-orange-700'
-            }`}>
-              {goal.progress >= 100 ? 'Completed' :
-               goal.progress >= 70 ? 'On Track' :
-               goal.progress >= 50 ? 'At Risk' :
-               'Behind'}
-            </span>
+            {(() => {
+              const statusMapping: { [key: string]: { color: string; text: string } } = {
+                COMPLETED: { color: 'bg-green-100 text-green-700', text: 'Completed' },
+                ON_TRACK: { color: 'bg-green-100 text-green-700', text: 'On Track' },
+                AT_RISK: { color: 'bg-yellow-100 text-yellow-700', text: 'At Risk' },
+                BEHIND: { color: 'bg-orange-100 text-orange-700', text: 'Behind' },
+              };
+              
+              const status = goal.status || 'BEHIND';
+              const mapping = statusMapping[status] || statusMapping['BEHIND'];
+              
+              return (
+                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${mapping.color}`}>
+                  {mapping.text}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Progress Bar */}
