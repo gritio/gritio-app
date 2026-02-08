@@ -6,20 +6,17 @@ import { CreateGoalDto, UpdateGoalDto } from './dto/goal.dto';
 export class GoalsService {
   constructor(private prisma: PrismaService) {}
 
-  private calculateGoalStatus(monthlyGoals: any[]): 'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND' {
+  private calculateGoalStatus(goal: any, monthlyGoals: any[]): 'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND' {
     const currentMonth = new Date();
     currentMonth.setHours(0, 0, 0, 0);
     
     let cumulativeProgress = 0;
     let cumulativeTarget = 0;
-    let totalYearlyTarget = 0;
     let monthsCompletedUpToCurrent = 0;
     
     monthlyGoals.forEach(mg => {
       const mgDate = new Date(mg.monthDate);
       mgDate.setHours(0, 0, 0, 0);
-      
-      totalYearlyTarget += Number(mg.target);
       
       if (mgDate <= currentMonth) {
         cumulativeProgress += Number(mg.currentProgress);
@@ -32,14 +29,17 @@ export class GoalsService {
       return 'BEHIND';
     }
     
+    // Use the goal's yearly target (finalTarget for progressive, or sum for others)
+    const yearlyTarget = goal.finalTarget || goal.target || 0;
+    
     // Calculate pace: if we maintain current progress rate, will we hit the yearly target?
     const progressPerMonth = monthsCompletedUpToCurrent > 0 ? cumulativeProgress / monthsCompletedUpToCurrent : 0;
     const projectedYearlyProgress = progressPerMonth * 12;
-    const pacePercentage = (projectedYearlyProgress / totalYearlyTarget) * 100;
+    const pacePercentage = (projectedYearlyProgress / yearlyTarget) * 100;
     
     // If we've completed the full year
     if (monthsCompletedUpToCurrent === 12) {
-      if (cumulativeProgress >= totalYearlyTarget) {
+      if (cumulativeProgress >= yearlyTarget) {
         return 'COMPLETED';
       } else {
         return 'BEHIND';
@@ -252,7 +252,7 @@ export class GoalsService {
     
     const goalsWithStatus = goals.map(goal => ({
       ...goal,
-      status: this.calculateGoalStatus(goal.monthlyGoals),
+      status: this.calculateGoalStatus(goal, goal.monthlyGoals),
     }));
     
     return goalsWithStatus;
@@ -274,7 +274,7 @@ export class GoalsService {
     
     return {
       ...goal,
-      status: this.calculateGoalStatus(goal.monthlyGoals),
+      status: this.calculateGoalStatus(goal, goal.monthlyGoals),
     };
   }
 

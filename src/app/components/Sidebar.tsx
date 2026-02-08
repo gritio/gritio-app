@@ -118,8 +118,8 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
             )}
           </div>
         </div>
-        {!isIconOnly && (
-          <div className={`p-3 border-b ${borderColor} text-center ${isKidsMode ? 'bg-[#FFE680]' : 'bg-white'}`}>
+        {!isIconOnly && isKidsMode && (
+          <div className={`p-3 border-b ${borderColor} text-center bg-[#FFE680]`}>
             <p className="text-[#805232] text-xs font-semibold">Coins</p>
             <p className="text-[#805232] text-2xl font-bold">{coins} 🪙</p>
           </div>
