@@ -197,7 +197,7 @@ export function GoalsOverviewNew({
             <div className="min-w-0">
               <div className="text-xs sm:text-sm truncate text-[#805232]">On Track</div>
               <div className="text-lg sm:text-xl text-[#805232]">
-                {localGoals.filter(g => g.status === 'on-track' || g.status === 'ahead').length}
+                {localGoals.filter(g => g.status === 'ON_TRACK' || g.status === 'COMPLETED').length}
               </div>
             </div>
           </div>
