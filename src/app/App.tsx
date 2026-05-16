@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast, Toaster } from 'sonner';
 import { Sidebar } from './components/Sidebar';
 import { GoalsPage } from './components/GoalsPage';
 import { GoalDetail } from './components/GoalDetail';
@@ -258,17 +259,22 @@ export default function App() {
   };
 
   const handleAddTodo = async (title: string) => {
+    console.log('handleAddTodo called with:', title);
     try {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
+      const dueDate = tomorrow.toISOString().split('T')[0];
+      console.log('Creating todo with dueDate:', dueDate);
       const newTodo = await todosApi.createTodo({
         title,
-        dueDate: tomorrow.toISOString().split('T')[0],
+        dueDate,
         priority: false,
       });
+      console.log('Todo created successfully:', newTodo);
       setTodos([...todos, newTodo]);
     } catch (error: any) {
       console.error('Failed to create todo:', error);
+      toast.error('Failed to add todo: ' + (error?.response?.data?.message || error?.message || 'Unknown error'));
     }
   };
 
@@ -393,6 +399,7 @@ export default function App() {
 
   return (
     <>
+      <Toaster position="top-right" richColors />
       {!isAuthenticated ? (
         showRegister ? (
           <RegisterPage 

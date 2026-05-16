@@ -41,6 +41,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       console.error('No userId (sub) found in JWT payload!');
     }
     return {
+      id: userId,
       userId: userId,
       email: payload.email,
       name: payload.name,
