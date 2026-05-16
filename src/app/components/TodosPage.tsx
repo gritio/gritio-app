@@ -1,7 +1,87 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Todo } from '../types';
-import { CheckCircle, Circle, Star, Plus, X } from 'lucide-react';
+import { CheckCircle, Circle, Plus, X, GripVertical } from 'lucide-react';
 import { TodoDetailPanel } from './TodoDetailPanel';
+
+const DRAG_TYPE = 'TODO_ITEM';
+
+function DraggableTodoItem({
+  todo,
+  index,
+  moveItem,
+  onToggleDone,
+  onDelete,
+  onSelect,
+}: {
+  todo: Todo;
+  index: number;
+  moveItem: (from: number, to: number) => void;
+  onToggleDone: (id: string, done: boolean) => void;
+  onDelete: (id: string) => void;
+  onSelect: (todo: Todo) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gripRef = useRef<HTMLDivElement>(null);
+
+  const [{ isDragging }, drag] = useDrag({
+    type: DRAG_TYPE,
+    item: { index },
+    collect: monitor => ({ isDragging: monitor.isDragging() }),
+  });
+
+  const [, drop] = useDrop<{ index: number }>({
+    accept: DRAG_TYPE,
+    hover(item) {
+      if (!containerRef.current || item.index === index) return;
+      moveItem(item.index, index);
+      item.index = index;
+    },
+  });
+
+  drag(gripRef);
+  drop(containerRef);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`flex items-center gap-3 p-3 bg-white border rounded-lg group transition-all ${
+        isDragging ? 'opacity-40 shadow-lg border-[#805232]' : 'border-gray-200 hover:shadow-sm'
+      }`}
+    >
+      <div
+        ref={gripRef}
+        className="flex-shrink-0 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      <button
+        onClick={() => onToggleDone(todo.id, true)}
+        className="flex-shrink-0 text-gray-300 hover:text-[#805232] transition-colors"
+        title="Mark as done"
+      >
+        <Circle className="w-5 h-5" />
+      </button>
+
+      <span
+        onClick={() => onSelect(todo)}
+        className="flex-1 min-w-0 text-sm text-gray-800 cursor-pointer hover:text-[#805232] truncate"
+      >
+        {todo.title}
+      </span>
+
+      <button
+        onClick={() => onDelete(todo.id)}
+        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+        title="Delete"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 interface TodosPageProps {
   todos: Todo[];
@@ -18,262 +98,150 @@ export function TodosPage({
   onUpdateTodo,
   onDeleteTodo,
   onToggleDone,
-  onTogglePriority,
 }: TodosPageProps) {
+  const [newTitle, setNewTitle] = useState('');
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
-  const [newTodoTitle, setNewTodoTitle] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [inProgressOrder, setInProgressOrder] = useState<string[]>([]);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  // Section 1: Today's tasks (not done)
-  const todayTodos = todos
-    .filter(t => {
-      const todoDate = new Date(t.dueDate);
-      todoDate.setHours(0, 0, 0, 0);
-      return todoDate.getTime() === today.getTime() && !t.done;
-    })
-    .sort((a, b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
-
-  // Section 2: All tasks (including overdue, excluding today, not done)
-  const allTodos = todos
-    .filter(t => {
-      const todoDate = new Date(t.dueDate);
-      todoDate.setHours(0, 0, 0, 0);
-      return todoDate.getTime() >= tomorrow.getTime() && !t.done;
-    })
-    .sort((a, b) => {
-      // Sort by priority first, then by date
-      if (a.priority !== b.priority) {
-        return b.priority ? 1 : -1;
-      }
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  useEffect(() => {
+    const inProgressIds = todos.filter(t => !t.done).map(t => t.id);
+    setInProgressOrder(prev => {
+      const kept = prev.filter(id => inProgressIds.includes(id));
+      const added = inProgressIds.filter(id => !prev.includes(id));
+      return [...kept, ...added];
     });
+  }, [todos]);
 
-  // Section 3: Completed tasks
-  const completedTodos = todos
+  const inProgressTodos = inProgressOrder
+    .map(id => todos.find(t => t.id === id && !t.done))
+    .filter((t): t is Todo => !!t);
+
+  const doneTodos = todos
     .filter(t => t.done)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-  const handleAddTodo = () => {
-    if (newTodoTitle.trim()) {
-      onAddTodo(newTodoTitle);
-      setNewTodoTitle('');
-    }
-  };
-
-  const handleBulkMarkDone = () => {
-    selectedIds.forEach(id => {
-      onToggleDone(id, true);
+  const moveItem = useCallback((from: number, to: number) => {
+    setInProgressOrder(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
     });
-    setSelectedIds(new Set());
-  };
+  }, []);
 
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+  const handleAdd = () => {
+    console.log('Add button clicked. Title:', newTitle);
+    if (newTitle.trim()) {
+      console.log('Calling onAddTodo with:', newTitle.trim());
+      onAddTodo(newTitle.trim());
+      setNewTitle('');
     } else {
-      newSelected.add(id);
+      console.warn('Title is empty');
     }
-    setSelectedIds(newSelected);
   };
-
-  /**
-   * TodoItem: A reusable component for rendering individual todo items
-   * 
-   * This demonstrates:
-   * - Component composition (nested components)
-   * - Conditional rendering with ternary operators
-   * - Icon components from lucide-react
-   * - Tailwind CSS for styling and hover effects
-   */
-  const TodoItem = ({ todo, isSelected = false }: { todo: Todo; isSelected?: boolean }) => (
-    <div
-      key={todo.id}
-      className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all group"
-    >
-      {/* Checkbox for bulk select */}
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => toggleSelect(todo.id)}
-        className="w-4 h-4 cursor-pointer accent-[#805232]"
-      />
-
-      {/* Done/Not Done Toggle - Shows different icon based on todo.done state */}
-      <button
-        onClick={() => onToggleDone(todo.id, !todo.done)}
-        className="flex-shrink-0 text-[#805232] hover:text-[#805232] transition-colors"
-      >
-        {todo.done ? (
-          <CheckCircle className="w-5 h-5" />
-        ) : (
-          <Circle className="w-5 h-5" />
-        )}
-      </button>
-
-      {/* Priority Star - TODO for you */}
-      {/*
-       * TASK: Implement the priority star button
-       * Current state: Empty button with Star icon
-       * Requirements:
-       * 1. onClick should call: onTogglePriority(todo.id, !todo.priority)
-       * 2. Show filled star when todo.priority is true (use fill="#805232")
-       * 3. Show empty star when todo.priority is false (use fill="none")
-       * 4. Use same className styling for consistency
-       * 
-       * Hint: Look at the "Done/Not Done Toggle" button above for the pattern
-       * The Star icon already has fill and stroke props available
-       */}
-      {/* START YOUR CODE HERE */}
-      <button
-        className="flex-shrink-0 text-gray-400 hover:text-[#805232] transition-colors"
-      >
-        {/* TODO: Add Star icon with conditional fill here */}
-      </button>
-      {/* END YOUR CODE HERE */}
-
-      {/* Todo Title and Date - Clickable to open detail panel */}
-      <div
-        onClick={() => setSelectedTodo(todo)}
-        className="flex-1 min-w-0 cursor-pointer"
-      >
-        <h3
-          className={`text-sm font-medium ${
-            todo.done
-              ? 'line-through text-gray-400'
-              : 'text-gray-900'
-          }`}
-        >
-          {todo.title}
-        </h3>
-        <p className="text-xs text-gray-500 mt-1">
-          {new Date(todo.dueDate).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </p>
-      </div>
-
-      {/* Delete Button - appears on hover */}
-      <button
-        onClick={() => onDeleteTodo(todo.id)}
-        className="flex-shrink-0 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
-      >
-        <X className="w-5 h-5" />
-      </button>
-    </div>
-  );
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#805232] mb-2">My Todos</h1>
-        <p className="text-gray-600">Stay organized and productive</p>
-      </div>
+    <DndProvider backend={HTML5Backend}>
+      <div className="w-full max-w-2xl mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-[#805232] mb-6">My Todos</h1>
 
-      {/* Quick Add Input */}
-      <div className="mb-6 flex gap-2">
-        <input
-          type="text"
-          value={newTodoTitle}
-          onChange={(e) => setNewTodoTitle(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleAddTodo()}
-          placeholder="Add a new todo..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-        />
-        <button
-          onClick={handleAddTodo}
-          className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add
-        </button>
-      </div>
-
-      {/* Bulk Actions */}
-      {selectedIds.size > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-          <span className="text-sm font-medium text-blue-900">
-            {selectedIds.size} selected
-          </span>
+        {/* Add Todo */}
+        <div className="flex gap-2 mb-8">
+          <input
+            type="text"
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="Add a new todo..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] focus:border-transparent"
+          />
           <button
-            onClick={handleBulkMarkDone}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+            onClick={handleAdd}
+            className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-1.5 text-sm font-medium"
           >
-            Mark as Done
+            <Plus className="w-4 h-4" />
+            Add
           </button>
         </div>
-      )}
 
-      {/* Today Section */}
-      {todayTodos.length > 0 && (
+        {/* In Progress */}
         <div className="mb-8">
-          <h2 className="text-lg font-bold text-[#805232] mb-4">Today</h2>
-          <div className="space-y-3">
-            {todayTodos.map(todo => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-                isSelected={selectedIds.has(todo.id)}
-              />
-            ))}
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">In Progress</h2>
+            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+              {inProgressTodos.length}
+            </span>
           </div>
-        </div>
-      )}
 
-      {/* All Tasks Section */}
-      {allTodos.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-[#805232] mb-4">All Tasks</h2>
-          <div className="space-y-3">
-            {allTodos.map(todo => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-                isSelected={selectedIds.has(todo.id)}
-              />
-            ))}
+          {inProgressTodos.length === 0 ? (
+            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-400">No tasks in progress. Add one above!</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {inProgressTodos.map((todo, index) => (
+                <DraggableTodoItem
+                  key={todo.id}
+                  todo={todo}
+                  index={index}
+                  moveItem={moveItem}
+                  onToggleDone={onToggleDone}
+                  onDelete={onDeleteTodo}
+                  onSelect={setSelectedTodo}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Done */}
+        {doneTodos.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Done</h2>
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                {doneTodos.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {doneTodos.map(todo => (
+                <div
+                  key={todo.id}
+                  className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-lg group"
+                >
+                  <button
+                    onClick={() => onToggleDone(todo.id, false)}
+                    className="flex-shrink-0 text-[#805232] transition-colors"
+                    title="Move back to in progress"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                  </button>
+                  <span
+                    onClick={() => setSelectedTodo(todo)}
+                    className="flex-1 min-w-0 text-sm text-gray-400 line-through cursor-pointer hover:text-gray-600 truncate"
+                  >
+                    {todo.title}
+                  </span>
+                  <button
+                    onClick={() => onDeleteTodo(todo.id)}
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+                    title="Delete"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Completed Section */}
-      {completedTodos.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-[#805232] mb-4">Completed</h2>
-          <div className="space-y-3">
-            {completedTodos.map(todo => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {todayTodos.length === 0 && allTodos.length === 0 && completedTodos.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No todos yet. Add one to get started!</p>
-        </div>
-      )}
-
-      {/* Todo Detail Panel */}
       {selectedTodo && (
         <TodoDetailPanel
           todo={selectedTodo}
           onClose={() => setSelectedTodo(null)}
-          onUpdate={(updatedTodo) => {
-            onUpdateTodo(updatedTodo);
+          onUpdate={updated => {
+            onUpdateTodo(updated);
             setSelectedTodo(null);
           }}
           onDelete={() => {
@@ -282,6 +250,6 @@ export function TodosPage({
           }}
         />
       )}
-    </div>
+    </DndProvider>
   );
 }
