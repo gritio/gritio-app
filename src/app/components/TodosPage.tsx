@@ -142,11 +142,11 @@ export function TodosPage({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="w-full max-w-2xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-[#805232] mb-6">My Todos</h1>
+      <div className="w-full max-w-2xl mx-auto px-6 py-4">
+        <h1 className="text-2xl font-bold text-[#805232] mb-4">My Todos</h1>
 
         {/* Add Todo */}
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-4">
           <input
             type="text"
             value={newTitle}
@@ -165,8 +165,8 @@ export function TodosPage({
         </div>
 
         {/* In Progress */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">In Progress</h2>
             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               {inProgressTodos.length}
@@ -174,7 +174,7 @@ export function TodosPage({
           </div>
 
           {inProgressTodos.length === 0 ? (
-            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+            <div className="text-center py-3 border-2 border-dashed border-gray-200 rounded-lg">
               <p className="text-sm text-gray-400">No tasks in progress. Add one above!</p>
             </div>
           ) : (

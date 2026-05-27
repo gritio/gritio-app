@@ -1,0 +1,259 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.app{display:flex;height:640px;border-radius:12px;overflow:hidden;border:0.5px solid var(--color-border-tertiary)}
+.sb{width:168px;background:#3d2210;display:flex;flex-direction:column;flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:9px;padding:14px 12px 12px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.sb-logo-ic{width:30px;height:30px;border-radius:7px;background:#805232;display:flex;align-items:center;justify-content:center}
+.sb-logo-name{font-size:13px;font-weight:500;color:#fff}
+.sb-logo-tag{font-size:9px;color:rgba(255,255,255,0.4)}
+.sb-nav{flex:1;padding:10px 8px}
+.sb-sec{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:.07em;text-transform:uppercase;padding:8px 6px 4px}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:7px;cursor:pointer;margin-bottom:1px}
+.sbi span{font-size:12px;color:rgba(255,255,255,0.55)}
+.sbi i{font-size:15px;color:rgba(255,255,255,0.4)}
+.sbi.on{background:rgba(255,255,255,0.11)}
+.sbi.on span{color:#fff;font-weight:500}
+.sbi.on i{color:#e8c89a}
+.sbi.dim span{color:rgba(255,255,255,0.25)}
+.sbi.dim i{color:rgba(255,255,255,0.2)}
+.sb-hr{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:6px 8px}
+.sb-foot{padding:10px 10px 12px;border-top:1px solid rgba(255,255,255,0.08)}
+.sb-user{display:flex;align-items:center;gap:8px}
+.sb-av{width:26px;height:26px;border-radius:50%;background:#805232;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#fff;flex-shrink:0}
+.sb-uname{font-size:11px;color:rgba(255,255,255,0.75);font-weight:500}
+.sb-uact{font-size:10px;color:rgba(255,255,255,0.3)}
+.content{flex:1;background:#f5f0eb;overflow-y:auto}
+.pg{display:none;padding:22px 24px}
+.pg.on{display:block}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.08);border-radius:11px}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid rgba(0,0,0,0.08)}
+.tab{padding:8px 0;margin-right:20px;font-size:13px;cursor:pointer;color:#7a6a5a;border-bottom:2px solid transparent}
+.tab.on{color:#805232;font-weight:500;border-bottom-color:#805232}
+.step-card{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-bottom:0.5px solid rgba(0,0,0,0.07)}
+.step-card:last-child{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;margin-top:1px}
+.step-done{background:#e6f5ef;color:#1a6b52}
+.step-active{background:#805232;color:#fff}
+.step-todo{background:#ede8e2;color:#7a6a5a}
+.step-body{flex:1}
+.step-title{font-size:13px;font-weight:500;color:#1a1009}
+.step-desc{font-size:11px;color:#7a6a5a;margin-top:2px;line-height:1.5}
+.step-cta{display:inline-flex;align-items:center;gap:5px;margin-top:8px;background:#805232;color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:500}
+.step-cta.ghost{background:transparent;color:#805232;border:0.5px solid #805232}
+.chain{display:flex;align-items:center;gap:0;margin-bottom:20px}
+.chain-item{flex:1;text-align:center;padding:12px 6px;background:#fff;border:0.5px solid rgba(0,0,0,0.08);position:relative}
+.chain-item:first-child{border-radius:10px 0 0 10px}
+.chain-item:last-child{border-radius:0 10px 10px 0}
+.chain-item.done{background:#f0e8d4}
+.chain-item.active{background:#805232}
+.chain-arrow{color:rgba(0,0,0,0.2);font-size:12px;flex-shrink:0;z-index:1}
+.chain-icon{font-size:18px;margin-bottom:4px}
+.chain-lbl{font-size:10px;font-weight:500}
+.chain-sub{font-size:9px;margin-top:1px}
+</style>
+
+<h2 class="sr-only">Gritio new user onboarding — two views: empty state and setup checklist</h2>
+
+<div style="margin-bottom:12px">
+  <div style="display:flex;gap:8px">
+    <button onclick="switchView('new')" id="btn-new" style="background:#805232;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer">New user view</button>
+    <button onclick="switchView('partial')" id="btn-partial" style="background:#fff;color:#805232;border:0.5px solid #805232;border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer">After life goal set</button>
+  </div>
+</div>
+
+<div id="view-new" class="app">
+  <div class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-ic"><i class="ti ti-target" style="font-size:15px;color:#e8c89a" aria-hidden="true"></i></div>
+      <div><div class="sb-logo-name">Gritio</div><div class="sb-logo-tag">Small Steps, Big Results</div></div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec">Setup</div>
+      <div class="sbi on"><i class="ti ti-rocket" aria-hidden="true"></i><span>Get started</span></div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">Goals</div>
+      <div class="sbi dim"><i class="ti ti-heart" aria-hidden="true"></i><span>Life goals</span></div>
+      <div class="sbi dim"><i class="ti ti-target" aria-hidden="true"></i><span>Yearly goals</span></div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">Daily</div>
+      <div class="sbi dim"><i class="ti ti-calendar-week" aria-hidden="true"></i><span>This week</span></div>
+      <div class="sbi dim"><i class="ti ti-sun" aria-hidden="true"></i><span>Today</span></div>
+      <div class="sb-hr"></div>
+      <div class="sbi"><i class="ti ti-checkbox" aria-hidden="true"></i><span>Todos</span></div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-av">SN</div>
+        <div><div class="sb-uname">Sharath</div><div class="sb-uact">Settings · Logout</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="pg on" style="padding:22px 24px">
+      <div style="font-size:17px;font-weight:500;color:#1a1009;margin-bottom:4px">Welcome to Gritio</div>
+      <div style="font-size:12px;color:#7a6a5a;margin-bottom:20px">Everything connects — set up in order and your daily tasks will make sense.</div>
+
+      <div class="chain">
+        <div class="chain-item active" style="border-radius:10px 0 0 10px">
+          <div class="chain-icon"><i class="ti ti-heart" style="color:#fff;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#fff">Life goals</div>
+          <div class="chain-sub" style="color:rgba(255,255,255,0.6)">Your why</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid #805232;flex-shrink:0"></div>
+        <div class="chain-item">
+          <div class="chain-icon"><i class="ti ti-target" style="color:#ede8e2;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#b0a090">Yearly goals</div>
+          <div class="chain-sub" style="color:#c0b0a0">What this year</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid rgba(0,0,0,0.07);flex-shrink:0"></div>
+        <div class="chain-item">
+          <div class="chain-icon"><i class="ti ti-calendar-week" style="color:#ede8e2;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#b0a090">Weekly tasks</div>
+          <div class="chain-sub" style="color:#c0b0a0">How to get there</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid rgba(0,0,0,0.07);flex-shrink:0"></div>
+        <div class="chain-item" style="border-radius:0 10px 10px 0">
+          <div class="chain-icon"><i class="ti ti-sun" style="color:#ede8e2;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#b0a090">Today</div>
+          <div class="chain-sub" style="color:#c0b0a0">Log &amp; track</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="step-card">
+          <div class="step-num step-active">1</div>
+          <div class="step-body">
+            <div class="step-title">Define your life goals</div>
+            <div class="step-desc">What are the big areas of life you want to invest in? Health, family, finances, growth. Up to 5.</div>
+            <button class="step-cta"><i class="ti ti-heart" style="font-size:12px" aria-hidden="true"></i> Set life goals</button>
+          </div>
+        </div>
+        <div class="step-card" style="opacity:0.45">
+          <div class="step-num step-todo">2</div>
+          <div class="step-body">
+            <div class="step-title">Create a yearly goal</div>
+            <div class="step-desc">Pick something measurable for this year, linked to a life goal. E.g. "Reach 90 kg by December."</div>
+          </div>
+        </div>
+        <div class="step-card" style="opacity:0.45">
+          <div class="step-num step-todo">3</div>
+          <div class="step-body">
+            <div class="step-title">Add a weekly task</div>
+            <div class="step-desc">What will you do each week to hit that goal? E.g. "Log daily steps — 10,000 per day."</div>
+          </div>
+        </div>
+        <div class="step-card" style="opacity:0.45">
+          <div class="step-num step-todo">4</div>
+          <div class="step-body">
+            <div class="step-title">Start logging on Today</div>
+            <div class="step-desc">Once your task is set up, Today becomes your daily dashboard. Log and build your streak.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-partial" class="app" style="display:none">
+  <div class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-ic"><i class="ti ti-target" style="font-size:15px;color:#e8c89a" aria-hidden="true"></i></div>
+      <div><div class="sb-logo-name">Gritio</div><div class="sb-logo-tag">Small Steps, Big Results</div></div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec">Setup</div>
+      <div class="sbi on"><i class="ti ti-rocket" aria-hidden="true"></i><span>Get started</span><span style="margin-left:auto;font-size:9px;background:rgba(128,82,50,0.3);color:#e8c89a;border-radius:8px;padding:1px 6px">1/4</span></div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">Goals</div>
+      <div class="sbi"><i class="ti ti-heart" aria-hidden="true"></i><span>Life goals</span><span style="margin-left:auto;font-size:10px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);border-radius:9px;padding:1px 6px">4</span></div>
+      <div class="sbi dim"><i class="ti ti-target" aria-hidden="true"></i><span>Yearly goals</span></div>
+      <div class="sb-hr"></div>
+      <div class="sb-sec">Daily</div>
+      <div class="sbi dim"><i class="ti ti-calendar-week" aria-hidden="true"></i><span>This week</span></div>
+      <div class="sbi dim"><i class="ti ti-sun" aria-hidden="true"></i><span>Today</span></div>
+      <div class="sb-hr"></div>
+      <div class="sbi"><i class="ti ti-checkbox" aria-hidden="true"></i><span>Todos</span></div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-av">SN</div>
+        <div><div class="sb-uname">Sharath</div><div class="sb-uact">Settings · Logout</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="pg on" style="padding:22px 24px">
+      <div style="font-size:17px;font-weight:500;color:#1a1009;margin-bottom:4px">Good progress, Sharath</div>
+      <div style="font-size:12px;color:#7a6a5a;margin-bottom:20px">1 of 4 steps done — next up: create your first yearly goal.</div>
+
+      <div class="chain" style="margin-bottom:20px">
+        <div class="chain-item done" style="border-radius:10px 0 0 10px">
+          <div class="chain-icon"><i class="ti ti-circle-check" style="color:#1a6b52;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#1a6b52">Life goals</div>
+          <div class="chain-sub" style="color:#2a8b62">4 created</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid #f0e8d4;flex-shrink:0"></div>
+        <div class="chain-item active">
+          <div class="chain-icon"><i class="ti ti-target" style="color:#fff;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#fff">Yearly goals</div>
+          <div class="chain-sub" style="color:rgba(255,255,255,0.6)">What this year</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid #805232;flex-shrink:0"></div>
+        <div class="chain-item">
+          <div class="chain-icon"><i class="ti ti-calendar-week" style="color:#ede8e2;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#b0a090">Weekly tasks</div>
+          <div class="chain-sub" style="color:#c0b0a0">How to get there</div>
+        </div>
+        <div style="width:0;height:0;border-top:20px solid transparent;border-bottom:20px solid transparent;border-left:10px solid rgba(0,0,0,0.07);flex-shrink:0"></div>
+        <div class="chain-item" style="border-radius:0 10px 10px 0">
+          <div class="chain-icon"><i class="ti ti-sun" style="color:#ede8e2;font-size:18px" aria-hidden="true"></i></div>
+          <div class="chain-lbl" style="color:#b0a090">Today</div>
+          <div class="chain-sub" style="color:#c0b0a0">Log &amp; track</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="step-card">
+          <div class="step-num step-done"><i class="ti ti-check" style="font-size:13px" aria-hidden="true"></i></div>
+          <div class="step-body">
+            <div class="step-title" style="color:#7a6a5a;text-decoration:line-through">Define your life goals</div>
+            <div class="step-desc">4 life goals created.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num step-active">2</div>
+          <div class="step-body">
+            <div class="step-title">Create a yearly goal</div>
+            <div class="step-desc">Pick something measurable for this year, linked to one of your life goals.</div>
+            <button class="step-cta"><i class="ti ti-target" style="font-size:12px" aria-hidden="true"></i> Create yearly goal</button>
+          </div>
+        </div>
+        <div class="step-card" style="opacity:0.45">
+          <div class="step-num step-todo">3</div>
+          <div class="step-body">
+            <div class="step-title">Add a weekly task</div>
+            <div class="step-desc">What will you do each week to hit that goal?</div>
+          </div>
+        </div>
+        <div class="step-card" style="opacity:0.45">
+          <div class="step-num step-todo">4</div>
+          <div class="step-body">
+            <div class="step-title">Start logging on Today</div>
+            <div class="step-desc">Once your task is set up, Today becomes your daily dashboard.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchView(v) {
+  document.getElementById('view-new').style.display = v==='new' ? 'flex' : 'none';
+  document.getElementById('view-partial').style.display = v==='partial' ? 'flex' : 'none';
+  document.getElementById('btn-new').style.background = v==='new' ? '#805232' : '#fff';
+  document.getElementById('btn-new').style.color = v==='new' ? '#fff' : '#805232';
+  document.getElementById('btn-partial').style.background = v==='partial' ? '#805232' : '#fff';
+  document.getElementById('btn-partial').style.color = v==='partial' ? '#fff' : '#805232';
+}
+</script>

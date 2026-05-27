@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Target, LogOut, CheckSquare, BarChart3, Zap, User } from 'lucide-react';
+import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Sun, Zap } from 'lucide-react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
-  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile';
-  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile') => void;
+  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding';
+  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding') => void;
   onLogout?: () => void;
   isKidsMode?: boolean;
+  onboardingStep?: number;
+  lifeGoalsCount?: number;
+  goalsCount?: number;
+  tasksCount?: number;
+  todosCount?: number;
 }
 
-export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: SidebarProps) {
+export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboardingStep = 0, lifeGoalsCount = 0, goalsCount = 0, tasksCount = 0, todosCount = 0 }: SidebarProps) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
-  const [coins, setCoins] = useState(0);
   const user = authApi.getStoredUser();
 
   useEffect(() => {
@@ -24,180 +28,132 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode }: Sideb
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const fetchCoins = async () => {
-      try {
-        const apiUrl = (import.meta.env as any).VITE_API_URL || 'http://localhost:3000';
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`${apiUrl}/users/me/coins`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCoins(data.coins);
-          localStorage.setItem('userCoins', data.coins.toString());
-        }
-      } catch (error) {
-        console.error('Failed to fetch coins:', error);
-        const storedCoins = localStorage.getItem('userCoins');
-        if (storedCoins) {
-          setCoins(parseInt(storedCoins));
-        }
-      }
-    };
-    fetchCoins();
-
-    const handleCoinsUpdate = (event: any) => {
-      setCoins(event.detail.coins);
-    };
-
-    window.addEventListener('coinsUpdated', handleCoinsUpdate);
-    return () => window.removeEventListener('coinsUpdated', handleCoinsUpdate);
-  }, []);
-
   const isIconOnly = windowWidth < 768;
 
-  const menuItems = [
-    {
-      id: 'overview',
-      label: 'Goals',
-      icon: Target,
-      view: 'overview' as const
-    },
-    {
-      id: 'weekly',
-      label: 'Weekly Check-in',
-      icon: BarChart3,
-      view: 'weekly' as const
-    },
-    {
-      id: 'task-timeline',
-      label: 'Task Timeline',
-      icon: Zap,
-      view: 'task-timeline' as const
-    },
-    {
-      id: 'today',
-      label: 'Today Tasks',
-      icon: Calendar,
-      view: 'today' as const
-    },
-    {
-      id: 'todos',
-      label: 'Todos',
-      icon: CheckSquare,
-      view: 'todos' as const
-    },
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: User,
-      view: 'profile' as const
-    }
-  ];
+  // Determine if user is in onboarding
+  const isOnboarding = onboardingStep < 4;
 
-  const bgColor = isKidsMode ? 'bg-[#FFCB61]' : 'bg-[#DCDCDC]';
-  const borderColor = isKidsMode ? 'border-[#FFB84D]' : 'border-[#B8B9BA]';
+  const NavItem = ({ label, icon: Icon, view, isDimmed = false, count }: { label: string; icon: any; view: typeof currentView; isDimmed?: boolean; count?: number }) => {
+    const isActive = currentView === view;
+    const button = (
+      <button
+        onClick={() => onNavigate(view)}
+        disabled={isDimmed}
+        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-md transition-all text-sm font-medium ${
+          isDimmed
+            ? 'opacity-70 cursor-not-allowed text-white/50'
+            : isActive
+            ? 'bg-white/10 text-white'
+            : 'text-white/60 hover:text-white'
+        }`}
+        title={isIconOnly ? label : undefined}
+      >
+        <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#e8c89a]' : isDimmed ? 'text-white/35' : 'text-white/40'}`} />
+        {!isIconOnly && <span className="flex-1 text-left">{label}</span>}
+        {count !== undefined && count > 0 && (
+          <span className="text-xs bg-white/20 text-white px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium">{count}</span>
+        )}
+      </button>
+    );
+
+    if (isIconOnly) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side="right" className="bg-[#805232] text-white">{label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+    return button;
+  };
+
+  const SectionLabel = ({ label }: { label: string }) => (
+    <div className="text-xs uppercase tracking-widest text-white/30 px-3 py-3 font-medium">{label}</div>
+  );
 
   return (
-    <div className={`${isIconOnly ? 'w-16' : 'w-48'} ${bgColor} min-h-screen shadow-lg flex flex-col flex-shrink-0 transition-all duration-300`}>
+    <div className="w-44 bg-[#3d2210] min-h-screen shadow-lg flex flex-col flex-shrink-0">
       {/* Logo/Brand */}
-      <div className={`${bgColor}`}>
-        <div className={`p-3 border-b ${borderColor}`}>
-          <div className="flex items-center gap-2 justify-center">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <AllyLogo size={32} />
-            </div>
-            {!isIconOnly && (
-              <div>
-                <h1 className="text-[#805232] font-bold text-sm">Gritio</h1>
-                <p className="text-[#805232] text-xs leading-none">Small Steps, Big Results</p>
-              </div>
-            )}
+      <div className="p-3 border-b border-white/10">
+        <div className="flex items-center gap-2 justify-center">
+          <div className="w-8 h-8 flex items-center justify-center">
+            <AllyLogo size={32} />
+          </div>
+          <div>
+            <h1 className="text-white font-bold text-sm">Gritio</h1>
           </div>
         </div>
-        {!isIconOnly && isKidsMode && (
-          <div className={`p-3 border-b ${borderColor} text-center bg-[#FFE680]`}>
-            <p className="text-[#805232] text-xs font-semibold">Coins</p>
-            <p className="text-[#805232] text-2xl font-bold">{coins} 🪙</p>
-          </div>
-        )}
       </div>
 
       {/* Menu Items */}
-      <nav className="p-2 space-y-1 pb-28">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentView === item.view;
+      <nav className="flex-1 p-2 overflow-y-auto">
+        {/* SETUP Section */}
+        {isOnboarding && (
+          <>
+            <SectionLabel label="Setup" />
+            <div className="relative mb-2">
+              <button
+                onClick={() => onNavigate('onboarding')}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-md transition-all text-sm font-medium ${
+                  currentView === 'onboarding'
+                    ? 'bg-white/10 text-white'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Rocket className={`w-4 h-4 flex-shrink-0 ${currentView === 'onboarding' ? 'text-[#e8c89a]' : 'text-white/40'}`} />
+                <span className="flex-1 text-left">Get started</span>
+                <span className="text-xs font-bold bg-[#805232] text-white px-2 py-1 rounded-full">{onboardingStep}/4</span>
+              </button>
+            </div>
+            <div className="border-t border-white/10 my-2"></div>
+          </>
+        )}
 
-        const button = (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.view)}
-            className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-all text-sm ${
-              isActive
-                ? 'bg-[#805232] text-white shadow-md'
-                : 'text-[#805232] hover:bg-[#805232] hover:text-white'
-            } ${isIconOnly ? 'justify-center' : ''}`}
-            title={isIconOnly ? item.label : undefined}
-          >
-            <Icon className="w-4 h-4 flex-shrink-0" />
-            {!isIconOnly && <span className="font-bold text-sm">{item.label}</span>}
-          </button>
-        );
+        {/* GOALS Section */}
+        <SectionLabel label="Goals" />
+        <NavItem label="Life goals" icon={Heart} view="life-goals" isDimmed={false} count={lifeGoalsCount} />
+        <NavItem label="Yearly goals" icon={Target} view="overview" isDimmed={isOnboarding && lifeGoalsCount === 0} count={goalsCount} />
+        <div className="border-t border-white/10 my-2"></div>
 
-        if (isIconOnly) {
-          return (
-            <Tooltip key={item.id}>
-              <TooltipTrigger asChild>
-                {button}
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-[#805232] text-white">
-                {item.label}
-              </TooltipContent>
-            </Tooltip>
-          );
-        }
+        {/* DAILY Section */}
+        <SectionLabel label="Daily" />
+        <NavItem label="This week" icon={Calendar} view="weekly" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
+        <NavItem label="Today" icon={Sun} view="today" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
+        <div className="border-t border-white/10 my-2"></div>
 
-        return button;
-      })}
+        {/* OTHERS Section */}
+        <SectionLabel label="Others" />
+        <NavItem label="Todos" icon={CheckSquare} view="todos" isDimmed={false} count={todosCount} />
+        <div className="border-t border-white/10 my-2"></div>
+
+        {/* REPORTS Section */}
+        <SectionLabel label="Reports" />
+        <NavItem label="Task Timeline" icon={Zap} view="task-timeline" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
       </nav>
 
-      {/* Footer Section - Fixed at bottom */}
-      <div className={`fixed bottom-0 p-2 border-t ${borderColor} space-y-1 ${bgColor} ${isIconOnly ? 'w-16' : 'w-48'}`}>
-        {user && !isIconOnly && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="p-2 cursor-help text-center">
-                <p className="text-[#805232] text-xs font-medium">Logged in as</p>
-                <p className="text-[#805232] text-xs font-bold truncate">{user.name || user.email}</p>
+      {/* Footer Section */}
+      <div className="p-3 border-t border-white/10">
+        {user && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-[#805232] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {(user.name || user.email)?.substring(0, 2).toUpperCase()}
               </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="bg-[#805232] text-white">
-              {user.name || user.email}
-            </TooltipContent>
-          </Tooltip>
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-xs font-medium truncate">{user.name || user.email}</p>
+                <p className="text-white/40 text-xs">Settings · Logout</p>
+              </div>
+            </div>
+          </div>
         )}
         {onLogout && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onLogout}
-                className={`w-full flex items-center gap-2 px-2 py-1 ${isKidsMode ? 'bg-[#FFCB61] hover:bg-[#FFB84D]' : 'bg-[#DCDCDC] hover:bg-[#C0C0C0]'} text-[#805232] rounded text-xs transition-colors font-medium border border-[#805232] ${isIconOnly ? 'justify-center' : ''}`}
-                title={isIconOnly ? 'Logout' : undefined}
-              >
-                <LogOut className="w-3 h-3" />
-                {!isIconOnly && 'Logout'}
-              </button>
-            </TooltipTrigger>
-            {isIconOnly && (
-              <TooltipContent side="right" className="bg-[#805232] text-white">
-                Logout
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-2 px-3 py-2 text-white/60 hover:text-white text-sm rounded-md transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </button>
         )}
       </div>
     </div>

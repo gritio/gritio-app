@@ -24,33 +24,40 @@ async function main() {
     const password1Hash = await argon2.hash('password123');
     const password2Hash = await argon2.hash('password123');
 
-    // User 1: Sowmya Sharath
-    const user1 = await prisma.user.upsert({
-      where: { email: 'sowmyasniyer@gmail.com' },
-      update: { auth0Id: 'user1', name: 'Sowmya Sharath', password: password1Hash },
-      create: {
+    const testUsers = [
+      {
         email: 'sowmyasniyer@gmail.com',
         auth0Id: 'user1',
         name: 'Sowmya Sharath',
         password: password1Hash,
       },
-    });
-
-    console.log('User 1 created or updated:', user1.email);
-
-    // User 2: Sharath Nataraj
-    const user2 = await prisma.user.upsert({
-      where: { email: 'sharathnatraj@gmail.com' },
-      update: { auth0Id: 'user2', name: 'Sharath Nataraj', password: password2Hash },
-      create: {
+      {
         email: 'sharathnatraj@gmail.com',
         auth0Id: 'user2',
         name: 'Sharath Nataraj',
         password: password2Hash,
       },
-    });
+    ];
 
-    console.log('User 2 created or updated:', user2.email);
+    for (const userData of testUsers) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: userData.email },
+      });
+
+      if (existingUser) {
+        await prisma.user.update({
+          where: { email: userData.email },
+          data: { password: userData.password },
+        });
+        console.log(`User exists: ${userData.email} (password updated)`);
+      } else {
+        const newUser = await prisma.user.create({
+          data: userData,
+        });
+        console.log(`User created: ${newUser.email}`);
+      }
+    }
+
     console.log('Seeding completed successfully!');
   } catch (error) {
     console.error('Error seeding database:', error);

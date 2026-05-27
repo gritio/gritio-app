@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Task } from '../types';
-import { ChevronLeft, ChevronRight, Check, Plus, Minus, X, ThumbsUp, Edit2, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, Minus, X, ThumbsUp, Pen, Trash2 } from 'lucide-react';
 import { tasksApi } from '../services/api';
 import { EditTaskPanel } from './EditTaskPanel';
 import { GAMIFICATION } from '../constants/gamification';
+import { COLORS, PROGRESS_BAR, RING_COLORS } from '../constants/colors';
 
 interface WeeklyTaskViewProps {
   tasks: Task[];
@@ -599,16 +600,16 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
       {/* Header */}
       <div className="mb-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
-          <h1 className={`text-xl sm:text-2xl font-bold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Weekly Tasks</h1>
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }}>Weekly Tasks</h1>
           <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={handlePreviousWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronLeft className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
+              <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }} />
             </button>
             <div className="text-center min-w-40 sm:min-w-64">
-              <p className={`text-xs sm:text-sm ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Week of</p>
+              <p className={`text-xs sm:text-sm ${isKidsMode ? 'text-green-400' : 'text-gray-600'}`} style={!isKidsMode ? {} : { color: COLORS.kidsGreen }}>Week of</p>
               <p className={`text-sm sm:text-lg font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
                 {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {
                   new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
@@ -623,7 +624,7 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
               onClick={handleNextWeek}
               className="p-1 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              <ChevronRight className={`w-5 sm:w-6 h-5 sm:h-6 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`} />
+              <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }} />
             </button>
           </div>
         </div>
@@ -653,9 +654,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
           {/* Days */}
           <div className="flex-1 grid gap-1 sm:gap-2" style={{ gridTemplateColumns: `repeat(${daysToShow}, minmax(0, 108px))`, paddingLeft: windowWidth < 640 ? '0.25rem' : '1rem' }}>
             {displayDayIndices.map((actualDayIndex) => (
-              <div key={dayNames[actualDayIndex]} className="flex-1 text-center">
-                <p className={`text-xs font-bold ${isKidsMode ? 'text-[#00FF00]' : 'text-amber-900'}`}>{dayNames[actualDayIndex]}</p>
-                <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{weekDays[actualDayIndex].getDate()}</p>
+              <div key={dayNames[actualDayIndex]} className="text-center">
+                <p className="text-xs font-bold" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }}>{dayNames[actualDayIndex]}</p>
+                <p className="text-xs" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.textSecondary }}>{weekDays[actualDayIndex].getDate()}</p>
               </div>
             ))}
           </div>
@@ -680,26 +681,38 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
           const isSimple = isSimpleTask(task);
 
           return (
-            <div key={task.id} className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'} rounded-lg border p-2 sm:p-3 flex items-center overflow-x-auto`}>
-              <div className="flex gap-1 sm:gap-4 items-center w-full min-w-0">
-                {/* Progress Circle and Buttons - Hidden on mobile */}
+            <div key={task.id} className={`${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'} rounded-lg border p-2 sm:p-3 flex items-start overflow-x-auto`}>
+              <div className="flex gap-1 sm:gap-4 items-start w-full min-w-0">
+                {/* Progress Circle - Hidden on mobile */}
                 {windowWidth >= 640 && (
-                  <div className="flex-shrink-0 flex flex-col items-center w-12">
+                  <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 relative">
                     <div className="relative w-12 h-12 rounded-full border-4 border-amber-100 flex items-center justify-center"
-                      style={{ 
-                        background: `conic-gradient(rgb(217, 119, 6) ${progress}%, transparent ${progress}%)`
+                      style={{
+                        background: `conic-gradient(${RING_COLORS.fill} ${progress}%, transparent ${progress}%)`
                       }}>
                       <div className={`w-10 h-10 rounded-full ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'} flex items-center justify-center`}>
-                        <span className="text-xs font-bold text-amber-900">{progress}%</span>
+                        <span className="text-xs font-bold" style={{ color: COLORS.primary }}>{progress}%</span>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Task Name and Description with Buttons */}
+                <div className={windowWidth < 500 ? 'flex-shrink-0 w-20' : windowWidth < 640 ? 'flex-shrink-0 w-24' : 'flex-shrink-0 w-40'}>
+                  <h3 className="font-semibold text-xs sm:text-sm break-words" style={{ color: COLORS.primary }}>{task.title}</h3>
+                  {windowWidth >= 640 && (
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      {task.type?.toLowerCase() === 'steps' ? `${task.target.toLocaleString()} steps` : task.type?.toLowerCase() === 'distance' ? `${task.target} km` : task.type?.toLowerCase() === 'time' ? `${task.target} min` : ''} · {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
+                    </p>
+                  )}
+                  {windowWidth >= 640 && (
                     <div className="flex gap-1 mt-2">
                       <button
                         onClick={() => setEditingTaskId(task.id)}
                         className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-amber-900"
                         title="Edit task"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Pen className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirmTaskId(task.id)}
@@ -709,16 +722,6 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Task Name and Description */}
-                <div className={windowWidth < 500 ? 'flex-shrink-0 w-20' : windowWidth < 640 ? 'flex-shrink-0 w-24' : 'flex-shrink-0 w-40'}>
-                  <h3 className="font-semibold text-amber-900 text-xs sm:text-sm break-words">{task.title}</h3>
-                  {windowWidth >= 640 && (
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      {task.type?.toLowerCase() === 'number' ? '' : task.target}{task.type?.toLowerCase() === 'steps' ? 'K' : task.type?.toLowerCase() === 'distance' ? 'km' : task.type?.toLowerCase() === 'time' ? 'min' : ''} {task.frequency?.toLowerCase() === 'daily' ? 'daily' : `${task.timesPerWeek || 0}x/week`}
-                    </p>
                   )}
                 </div>
 
@@ -756,21 +759,15 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                     // Steps input with text field
                     <div
                       key={actualDayIndex}
-                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
-                        isCompleted
-                          ? 'border-amber-900 bg-amber-50'
-                          : isToday
-                          ? 'border-amber-900 bg-orange-50'
-                          : 'border-gray-200 bg-gray-50'
-                      }`}
+                      className={`rounded-lg transition-all flex flex-col items-center justify-center relative overflow-visible`}
                     >
                       <input
                         type="text"
                         inputMode="numeric"
                         placeholder="0"
                         value={
-                          tempInputs[task.id]?.[actualDayIndex] !== undefined 
-                            ? tempInputs[task.id][actualDayIndex] 
+                          tempInputs[task.id]?.[actualDayIndex] !== undefined
+                            ? tempInputs[task.id][actualDayIndex]
                             : dayValue > 0 ? Math.round(dayValue) : ''
                         }
                         onChange={(e) => {
@@ -807,23 +804,24 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                           }
                         }}
                         disabled={loading}
-                        className="w-12 px-1 py-0.5 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900"
+                        className="w-20 py-2 text-center border-2 rounded-lg focus:outline-none focus:ring-1 text-sm font-semibold transition-colors border-gray-300 bg-white text-gray-900"
+                        style={{ borderColor: COLORS.borderDefault, focusColor: COLORS.primary }}
                       />
-                      <p className="text-xs text-gray-600">steps</p>
+                      <div className="w-full h-1 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ backgroundColor: dayValue >= task.target ? PROGRESS_BAR.complete : PROGRESS_BAR.empty }}
+                          style={{ width: `${dayValue >= task.target ? 100 : 0}%` }}
+                        ></div>
+                      </div>
                     </div>
                   ) : task.type?.toLowerCase() === 'time' ? (
                     // Time input with hours and minutes
                     <div
                       key={actualDayIndex}
-                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
-                        isCompleted
-                          ? 'border-amber-900 bg-amber-50'
-                          : isToday
-                          ? 'border-amber-900 bg-orange-50'
-                          : 'border-gray-200 bg-gray-50'
-                      }`}
+                      className={`rounded-lg transition-all flex flex-col items-center justify-center relative overflow-visible`}
                     >
-                      <div className="flex items-center justify-center gap-1 text-xs w-full">
+                      <div className="flex items-center justify-center gap-1 px-2 py-2 border-2 rounded-lg transition-colors bg-white" style={{ borderColor: COLORS.borderDefault }}>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -871,9 +869,9 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                             }
                           }}
                           disabled={loading}
-                          className="w-7 h-6 px-1 py-0.5 text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900 text-xs"
+                          className={`w-8 text-center border-0 rounded focus:outline-none focus:ring-1 focus:ring-[#805232] text-sm font-semibold bg-transparent text-gray-900`}
                         />
-                        <span className="text-xs font-bold">h</span>
+                        <span className={`text-sm font-bold text-gray-900`}>h</span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -921,30 +919,31 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                             }
                           }}
                           disabled={loading}
-                          className="w-7 h-6 px-1 py-0.5 text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900 text-xs"
+                          className={`w-8 text-center border-0 rounded focus:outline-none focus:ring-1 focus:ring-[#805232] text-sm font-semibold bg-transparent text-gray-900`}
                         />
-                        <span className="text-xs font-bold">m</span>
+                        <span className={`text-sm font-bold text-gray-900`}>m</span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ backgroundColor: dayValue >= task.target ? PROGRESS_BAR.complete : PROGRESS_BAR.empty }}
+                          style={{ width: `${dayValue >= task.target ? 100 : 0}%` }}
+                        ></div>
                       </div>
                     </div>
                   ) : (
                     // Distance input with text field
                     <div
                       key={actualDayIndex}
-                      className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center justify-center h-16 relative overflow-visible ${
-                        isCompleted
-                          ? 'border-amber-900 bg-amber-50'
-                          : isToday
-                          ? 'border-amber-900 bg-orange-50'
-                          : 'border-gray-200 bg-gray-50'
-                      }`}
+                      className={`rounded-lg transition-all flex flex-col items-center justify-center relative overflow-visible`}
                     >
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={
-                          tempInputs[task.id]?.[actualDayIndex] !== undefined 
-                            ? tempInputs[task.id][actualDayIndex] 
+                          tempInputs[task.id]?.[actualDayIndex] !== undefined
+                            ? tempInputs[task.id][actualDayIndex]
                             : dayValue > 0 ? dayValue.toFixed(1) : ''
                         }
                         onChange={(e) => {
@@ -981,9 +980,16 @@ export function WeeklyTaskView({ tasks, goals, onGoalClick, onTasksUpdate, isKid
                           }
                         }}
                         disabled={loading}
-                        className="w-12 px-1 py-0.5 text-xs text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-amber-900"
+                        className="w-20 py-2 text-center border-2 rounded-lg focus:outline-none focus:ring-1 text-sm font-semibold transition-colors border-gray-300 bg-white text-gray-900"
+                        style={{ borderColor: COLORS.borderDefault, focusColor: COLORS.primary }}
                       />
-                      <p className="text-xs text-gray-600">km</p>
+                      <div className="w-full h-1 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ backgroundColor: dayValue >= task.target ? PROGRESS_BAR.complete : PROGRESS_BAR.empty }}
+                          style={{ width: `${dayValue >= task.target ? 100 : 0}%` }}
+                        ></div>
+                      </div>
                     </div>
                   );
                 })}

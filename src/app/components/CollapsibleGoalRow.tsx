@@ -1,8 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Goal, MonthlyGoal } from '../types';
-import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowLeft, ArrowRight, Edit, Trash2, Plus, Eye, X, Zap, Heart, Building2, Users, Star } from 'lucide-react';
 import { ProgressBar } from './ProgressBar';
 import { tasksApi } from '../services/api';
+import { COLORS } from '../constants/colors';
+
+function getIconForGoal(goal: Goal): { Icon: React.ReactNode; bgColor: string; iconColor: string } {
+  const title = goal.title.toLowerCase();
+  const area = goal.area?.toLowerCase() || '';
+
+  if (area.includes('health') || title.includes('health') || title.includes('fitness') || title.includes('weight')) {
+    return { Icon: <Heart className="w-4 h-4" />, bgColor: '#fde8e0', iconColor: '#d85a30' };
+  }
+  if (area.includes('financial') || area.includes('money') || title.includes('financial') || title.includes('retire')) {
+    return { Icon: <Building2 className="w-4 h-4" />, bgColor: '#fdf8e0', iconColor: '#854f0b' };
+  }
+  if (area.includes('family') || title.includes('family') || title.includes('nandu') || title.includes('child')) {
+    return { Icon: <Users className="w-4 h-4" />, bgColor: COLORS.successLight, iconColor: COLORS.success };
+  }
+  return { Icon: <Star className="w-4 h-4" />, bgColor: '#ede9fe', iconColor: '#6d28d9' };
+}
+
+function getStatusColor(status: string, colors: typeof COLORS): { bg: string; text: string } {
+  const s = status?.toUpperCase() || '';
+  if (s.includes('ON_TRACK') || s.includes('COMPLETED')) return { bg: colors.successLight, text: colors.success };
+  if (s.includes('BEHIND')) return { bg: colors.warningLight, text: colors.warning };
+  if (s.includes('AT_RISK')) return { bg: colors.dangerLight, text: colors.danger };
+  return { bg: colors.gray[100], text: colors.textSecondary };
+}
 
 interface CollapsibleGoalRowProps {
   goal: Goal;
@@ -303,181 +328,149 @@ export function CollapsibleGoalRow({
       )}
 
       {/* Goal Header */}
-      <div className={`rounded-lg p-3 mb-4 hover:shadow-xl transition-all duration-200 border-l-4 border-l-[#805232] hover:scale-105 hover:-translate-y-1 ${
+      <div className={`rounded-lg mb-4 hover:shadow-lg transition-all duration-200 ${
         isKidsMode
           ? 'bg-[#00FFFF] bg-opacity-60 border-2 border-[#0099FF]'
-          : 'bg-white border-2 border-[#D0D0D0]'
+          : 'bg-white border border-[#E8E8E8]'
       }`}>
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <button
-              onClick={onToggle}
-              className="text-[#805232] hover:text-[#805232] flex-shrink-0 mt-0.5"
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-5 h-5" />
-              ) : (
-                <ChevronRight className="w-5 h-5" />
-              )}
-            </button>
+        {/* Header row - matches mockup layout */}
+        <div className="flex items-center gap-3 p-3.5">
+          {/* Chevron */}
+          <button
+            onClick={onToggle}
+            className="text-[#805232] hover:text-[#805232] flex-shrink-0 transition-transform"
+            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-[#805232] mb-1">{goal.title}</h3>
-              <p className="text-xs text-[#805232] mb-2">{goal.lifeGoal?.title || 'No Life Goal'}</p>
+          {/* Icon Box */}
+          {(() => {
+            const { Icon, bgColor, iconColor } = getIconForGoal(goal);
+            return (
+              <div className="rounded-lg w-9 h-9 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bgColor }}>
+                <div style={{ color: iconColor }}>{Icon}</div>
+              </div>
+            );
+          })()}
+
+          {/* Goal Main - name and tags */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-semibold text-[#805232] mb-1">{goal.title}</h3>
+            <div className="flex gap-1.5 flex-wrap">
+              {goal.area && (
+                <span className="text-xs px-2 py-1 rounded-full font-medium" style={{
+                  backgroundColor: goal.area?.toLowerCase().includes('health') ? '#fde8e0' :
+                                  goal.area?.toLowerCase().includes('financial') ? '#fdf8e0' :
+                                  goal.area?.toLowerCase().includes('family') ? '#e8f4e8' : '#ede9fe',
+                  color: goal.area?.toLowerCase().includes('health') ? '#993c1d' :
+                        goal.area?.toLowerCase().includes('financial') ? '#854f0b' :
+                        goal.area?.toLowerCase().includes('family') ? '#3b6d11' : '#6d28d9'
+                }}>
+                  {goal.area}
+                </span>
+              )}
+              {(() => {
+                const status = goal.status?.toUpperCase() || '';
+                let tagStyle = { backgroundColor: '#f0f0f0', color: '#666' };
+                if (status.includes('ON_TRACK') || status.includes('COMPLETED')) {
+                  tagStyle = { backgroundColor: '#e8f4e8', color: '#3b6d11' };
+                } else if (status.includes('BEHIND')) {
+                  tagStyle = { backgroundColor: '#faf0d8', color: '#854f0b' };
+                } else if (status.includes('AT_RISK')) {
+                  tagStyle = { backgroundColor: '#fce8d8', color: '#9d4a1f' };
+                }
+                return (
+                  <span className="text-xs px-2 py-1 rounded-full font-medium" style={tagStyle}>
+                    {goal.status?.replace('_', ' ') || 'Pending'}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 flex-shrink-0">
-            {onAddTask && (
-              <div className="tooltip-container">
+          {/* Goal Right - percentage and action buttons */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="text-right">
+              <div className="text-base font-semibold" style={{
+                color: goal.status?.toUpperCase().includes('ON_TRACK') ? '#3b6d11' : '#805232'
+              }}>
+                {Math.round(goal.progress || 0)}%
+              </div>
+              <div className="text-xs text-[#999] font-medium">of year</div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {onAddTask && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddTask(goal.id);
                   }}
-                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-bounce"
+                  className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
+                  title="Add task"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
-                <span className="tooltip-text">Add Task</span>
-              </div>
-            )}
-            {onGenerateMonthlyGoals && (
-              <div className="tooltip-container">
+              )}
+              {onGenerateMonthlyGoals && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onGenerateMonthlyGoals(goal.id);
                   }}
-                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-rotate"
+                  className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
+                  title="Generate monthly"
                 >
                   <Zap className="w-4 h-4" />
                 </button>
-                <span className="tooltip-text">Generate Monthly Goals</span>
-              </div>
-            )}
-            {onEditGoal && (
-              <div className="tooltip-container">
+              )}
+              {onEditGoal && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onEditGoal(goal.id);
                   }}
-                  className="p-1 text-[#805232] hover:text-[#805232] transition-colors icon-pulse"
+                  className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
+                  title="Edit goal"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
-                <span className="tooltip-text">Edit Goal</span>
-              </div>
-            )}
-            {onDeleteGoal && (
-              <div className="tooltip-container">
+              )}
+              {onDeleteGoal && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteGoal(goal.id);
                   }}
-                  className="p-1 text-[#805232] hover:text-red-600 transition-colors icon-bounce"
+                  className="p-1.5 text-[#999] hover:text-red-600 hover:bg-[#f5f5f5] rounded transition-colors"
+                  title="Delete goal"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <span className="tooltip-text">Delete Goal</span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tags and Progress Row */}
-        <div className="flex items-center justify-between gap-4 mt-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-1 rounded-full bg-[#E8D5C4] text-[#805232]">
-              {goal.area}
-            </span>
-            {(() => {
-              const statusMapping: { [key: string]: { color: string; text: string } } = {
-                COMPLETED: { color: 'bg-green-100 text-green-700', text: 'Completed' },
-                ON_TRACK: { color: 'bg-green-100 text-green-700', text: 'On Track' },
-                AT_RISK: { color: 'bg-yellow-100 text-yellow-700', text: 'At Risk' },
-                BEHIND: { color: 'bg-orange-100 text-orange-700', text: 'Behind' },
-              };
-              
-              const status = goal.status || 'BEHIND';
-              const mapping = statusMapping[status] || statusMapping['BEHIND'];
-              
-              return (
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${mapping.color}`}>
-                  {mapping.text}
-                </span>
-              );
-            })()}
+        {/* Progress bar row - below header */}
+        <div className="flex items-center gap-2.5 px-3.5 pb-3.5">
+          <div className="flex-1 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${Math.round(goal.progress || 0)}%`,
+                backgroundColor: goal.status?.toUpperCase().includes('ON_TRACK') ? '#3b6d11' : '#805232'
+              }}
+            />
           </div>
-
-          {/* Progress Bar */}
-          {goal.unit === 'Kilogram' && goal.weightGoal ? (
-            (() => {
-              let currentWeightDisplay = goal.weightGoal.currentWeight;
-              if (goalMonthlyGoals.length > 0) {
-                for (let i = goalMonthlyGoals.length - 1; i >= 0; i--) {
-                  const progress = Number(goalMonthlyGoals[i].currentProgress);
-                  if (progress !== 0) {
-                    currentWeightDisplay = progress;
-                    break;
-                  }
-                }
-              }
-              
-              const progressPercent = Math.min(Math.max(
-                ((goal.weightGoal.startWeight - currentWeightDisplay) / (goal.weightGoal.startWeight - goal.weightGoal.targetWeight)) * 100, 
-                0
-              ), 100);
-              
-              return (
-                <div className="flex items-center gap-2 flex-1 justify-end">
-                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
-                    {goal.weightGoal.startWeight}kg
-                  </span>
-                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
-                    →
-                  </span>
-                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
-                    {goal.weightGoal.targetWeight}kg
-                  </span>
-                  <div className={`relative h-2 rounded-full overflow-hidden w-24 ${isKidsMode ? 'bg-[#0099FF]' : 'bg-gray-200'}`}>
-                    <div
-                      className={`h-full transition-all duration-300 ${isKidsMode ? 'bg-[#00FF00]' : 'bg-cyan-500'}`}
-                      style={{
-                        width: `${progressPercent}%`,
-                      }}
-                    />
-                  </div>
-                  <span className={`text-xs font-semibold ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
-                    {currentWeightDisplay}kg
-                  </span>
-                </div>
-              );
-            })()
-          ) : (
-            <div className="flex items-center gap-2 flex-1 justify-end">
-              <div className={`relative h-2 rounded-full overflow-hidden w-24 ${isKidsMode ? 'bg-[#0099FF]' : 'bg-gray-200'}`}>
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    isKidsMode ? 'bg-[#00FF00]' :
-                    goal.progress >= 100 ? 'bg-green-500' :
-                    goal.progress >= 70 ? 'bg-green-500' :
-                    goal.progress >= 50 ? 'bg-yellow-500' :
-                    'bg-red-500'
-                  }`}
-                  style={{
-                    width: `${Math.min(goal.progress, 100)}%`,
-                  }}
-                />
-              </div>
-              <span className={`text-xs font-semibold flex-shrink-0 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>
-                {goal.progress}%
-              </span>
-            </div>
-          )}
+          <div className="text-xs text-[#999] font-medium whitespace-nowrap">
+            {Math.round(goal.progress || 0)}% of year
+            {goal.unit === 'Kilogram' && goal.weightGoal ?
+              ` · ${(goal.weightGoal.startWeight - goal.weightGoal.targetWeight).toFixed(1)} ${goal.unit?.toLowerCase() || 'units'} to go`
+              : goal.unit ? ` · ${goal.unit}` : ''}
+          </div>
         </div>
       </div>
 
@@ -730,7 +723,7 @@ export function CollapsibleGoalRow({
                                       </div>
                                       <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
                                         <div
-                                          className="h-full bg-amber-900 transition-all duration-300"
+                                          className="h-full bg-[#805232] transition-all duration-300"
                                           style={{ width: `${Math.min(progress, 100)}%` }}
                                         />
                                       </div>
