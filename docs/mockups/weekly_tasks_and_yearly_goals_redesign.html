@@ -1,0 +1,383 @@
+
+<style>
+:root { --brand:#805232; --brand-bg:#f5efe8; --brand-mid:#c49a72; --brand-light:#e8d8c8; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);}
+
+.tabs{display:flex;gap:2px;background:var(--color-background-secondary);border-radius:10px;padding:3px;margin-bottom:1.5rem;width:fit-content;}
+.tab{padding:6px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--color-text-secondary);transition:all .15s;}
+.tab.active{background:var(--color-background-primary);color:var(--brand);border:0.5px solid var(--color-border-tertiary);}
+
+.screen{display:none;} .screen.visible{display:block;}
+
+/* ── WEEKLY TASKS ── */
+.week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;}
+.week-title{font-size:22px;font-weight:500;color:var(--color-text-primary);}
+.week-nav{display:flex;align-items:center;gap:8px;}
+.week-nav button{background:none;border:0.5px solid var(--color-border-secondary);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--color-text-secondary);font-size:16px;display:flex;align-items:center;justify-content:center;}
+.week-range{font-size:13px;font-weight:500;color:var(--brand);min-width:160px;text-align:center;}
+
+.task-table{width:100%;border-collapse:separate;border-spacing:0;}
+.task-table th{font-size:12px;color:var(--color-text-tertiary);font-weight:500;text-align:center;padding:0 4px 8px;width:calc((100% - 200px)/7);}
+.task-table th.today-col{color:var(--brand);}
+.day-num{display:block;font-size:16px;font-weight:500;color:var(--color-text-primary);}
+.today-col .day-num{color:var(--brand);}
+.task-table th .today-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--brand);margin-bottom:2px;}
+
+.task-row{border-radius:var(--border-radius-lg);}
+.task-info{width:200px;padding:10px 10px 10px 4px;vertical-align:middle;}
+.task-info-inner{display:flex;align-items:center;gap:10px;}
+.prog-ring{flex-shrink:0;position:relative;width:38px;height:38px;}
+.prog-ring svg{transform:rotate(-90deg);}
+.prog-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--brand);}
+.task-name{font-size:13px;font-weight:500;color:var(--color-text-primary);line-height:1.3;}
+.task-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:1px;}
+.task-actions{display:flex;gap:4px;margin-top:4px;}
+.task-act-btn{background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:14px;padding:1px 3px;}
+.task-act-btn:hover{color:var(--brand);}
+
+.day-cell{padding:4px;vertical-align:middle;text-align:center;}
+.day-input-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.day-input{
+  width:100%;height:44px;border-radius:8px;text-align:center;font-size:14px;font-weight:500;
+  border:0.5px solid var(--color-border-tertiary);
+  background:var(--color-background-primary);color:var(--color-text-primary);
+  transition:border-color .15s;
+}
+.day-input:focus{outline:none;border-color:var(--brand);}
+.day-input.has-value{border-color:var(--brand-light);background:var(--brand-bg);}
+.day-input.today{border-color:var(--brand);}
+.unit-label{font-size:10px;color:var(--color-text-tertiary);}
+.week-bar{height:3px;border-radius:2px;background:var(--color-background-secondary);margin-top:4px;overflow:hidden;width:100%;}
+.week-bar-fill{height:100%;background:var(--brand);border-radius:2px;transition:width .3s;}
+
+.add-task-row td{padding:8px 4px 0;}
+.add-task-btn{background:none;border:0.5px dashed var(--color-border-secondary);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;color:var(--color-text-tertiary);display:flex;align-items:center;gap:6px;width:100%;}
+.add-task-btn:hover{border-color:var(--brand-mid);color:var(--brand);background:var(--brand-bg);}
+.task-divider{height:6px;}
+
+/* ── YEARLY GOALS ── */
+.goals-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;}
+.goals-title-area{}
+.goals-title{font-size:22px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;}
+.goals-meta{font-size:13px;color:var(--color-text-secondary);}
+.goals-meta span{color:var(--brand);font-weight:500;}
+.add-goal-btn{padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.add-goal-btn:hover{opacity:.9;}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;}
+.stat-label{font-size:12px;color:var(--color-text-tertiary);margin-bottom:4px;}
+.stat-val{font-size:20px;font-weight:500;color:var(--color-text-primary);}
+.stat-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+
+.goal-card{
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);
+  margin-bottom:10px;
+  overflow:hidden;
+  cursor:pointer;
+  transition:border-color .15s;
+}
+.goal-card:hover{border-color:var(--brand-light);}
+.goal-card-header{display:flex;align-items:center;padding:14px 16px;gap:12px;}
+.goal-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.goal-main{flex:1;min-width:0;}
+.goal-name{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;}
+.goal-tags{display:flex;gap:6px;align-items:center;}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.tag-health{background:#fde8e0;color:#993c1d;}
+.tag-behind{background:#faf0d8;color:#854f0b;}
+.tag-on-track{background:#e8f4e8;color:#3b6d11;}
+.goal-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.goal-pct{font-size:18px;font-weight:500;color:var(--brand);}
+.goal-pct-sub{font-size:11px;color:var(--color-text-tertiary);}
+
+.goal-progress-row{padding:0 16px 14px;display:flex;align-items:center;gap:10px;}
+.goal-prog-track{flex:1;height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;}
+.goal-prog-fill{height:100%;border-radius:3px;background:var(--brand);}
+.goal-prog-label{font-size:12px;color:var(--color-text-secondary);white-space:nowrap;}
+
+.goal-months{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:0 16px 14px;}
+.month-tile{
+  border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:500;position:relative;
+  border:0.5px solid var(--color-border-tertiary);
+  color:var(--color-text-tertiary);flex-direction:column;gap:1px;
+}
+.month-tile.done{background:var(--brand-bg);border-color:var(--brand-light);color:var(--brand);}
+.month-tile.current{background:var(--brand);border-color:var(--brand);color:#fff;}
+.month-tile.future{background:transparent;}
+.month-abbr{font-size:8px;}
+
+.goal-card .menu-btn{background:none;border:none;cursor:pointer;color:var(--color-text-tertiary);font-size:18px;padding:4px;border-radius:6px;}
+.goal-card .menu-btn:hover{background:var(--color-background-secondary);}
+
+.chevron{font-size:14px;color:var(--color-text-tertiary);transition:transform .2s;}
+.goal-card.expanded .chevron{transform:rotate(90deg);}
+.goal-body{display:none;border-top:0.5px solid var(--color-border-tertiary);}
+.goal-card.expanded .goal-body{display:block;}
+</style>
+
+<h2 class="sr-only">Weekly tasks and yearly goals redesign mockup</h2>
+
+<div style="padding:1rem 0;">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('weekly')">Weekly tasks</button>
+    <button class="tab" onclick="switchTab('yearly')">Yearly goals</button>
+  </div>
+
+  <!-- WEEKLY TASKS -->
+  <div class="screen visible" id="screen-weekly">
+    <div class="week-header">
+      <div class="week-title">Weekly tasks</div>
+      <div class="week-nav">
+        <button><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        <span class="week-range">May 25 – May 31, 2026</span>
+        <button><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+      </div>
+    </div>
+
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="text-align:left; width:200px;"></th>
+          <th class="today-col"><span class="today-dot"></span><span class="day-num">25</span>Mon</th>
+          <th><span class="day-num">26</span>Tue</th>
+          <th><span class="day-num">27</span>Wed</th>
+          <th><span class="day-num">28</span>Thu</th>
+          <th><span class="day-num">29</span>Fri</th>
+          <th><span class="day-num">30</span>Sat</th>
+          <th><span class="day-num">31</span>Sun</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="task-row">
+          <td class="task-info">
+            <div class="task-info-inner">
+              <div class="prog-ring">
+                <svg width="38" height="38" viewBox="0 0 38 38">
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="var(--color-background-secondary)" stroke-width="3"/>
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="#805232" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="75" stroke-linecap="round"/>
+                </svg>
+                <div class="pct">20%</div>
+              </div>
+              <div>
+                <div class="task-name">Daily steps</div>
+                <div class="task-sub">10,000 steps · daily</div>
+                <div class="task-actions">
+                  <button class="task-act-btn" title="Edit"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                  <button class="task-act-btn" title="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="day-cell">
+            <div class="day-input-wrap">
+              <input class="day-input today has-value" type="number" value="10000" />
+              <div class="week-bar"><div class="week-bar-fill" style="width:100%"></div></div>
+            </div>
+          </td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+        </tr>
+        <tr class="task-divider"><td colspan="8"></td></tr>
+        <tr class="task-row">
+          <td class="task-info">
+            <div class="task-info-inner">
+              <div class="prog-ring">
+                <svg width="38" height="38" viewBox="0 0 38 38">
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="var(--color-background-secondary)" stroke-width="3"/>
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="#805232" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="47" stroke-linecap="round"/>
+                </svg>
+                <div class="pct">50%</div>
+              </div>
+              <div>
+                <div class="task-name">Morning run</div>
+                <div class="task-sub">5 km · daily</div>
+                <div class="task-actions">
+                  <button class="task-act-btn"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                  <button class="task-act-btn"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input today has-value" type="number" value="5.2" /><div class="week-bar"><div class="week-bar-fill" style="width:100%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input has-value" type="number" value="4.8" /><div class="week-bar"><div class="week-bar-fill" style="width:96%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input has-value" type="number" value="5.0" /><div class="week-bar"><div class="week-bar-fill" style="width:100%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" value="" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+        </tr>
+        <tr class="task-divider"><td colspan="8"></td></tr>
+        <tr class="task-row">
+          <td class="task-info">
+            <div class="task-info-inner">
+              <div class="prog-ring">
+                <svg width="38" height="38" viewBox="0 0 38 38">
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="var(--color-background-secondary)" stroke-width="3"/>
+                  <circle cx="19" cy="19" r="15" fill="none" stroke="#805232" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="28" stroke-linecap="round"/>
+                </svg>
+                <div class="pct">70%</div>
+              </div>
+              <div>
+                <div class="task-name">Gym session</div>
+                <div class="task-sub">3× per week</div>
+                <div class="task-actions">
+                  <button class="task-act-btn"><i class="ti ti-edit" aria-hidden="true"></i></button>
+                  <button class="task-act-btn"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input today has-value" type="number" value="1" /><div class="week-bar"><div class="week-bar-fill" style="width:100%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input has-value" type="number" value="1" /><div class="week-bar"><div class="week-bar-fill" style="width:100%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+          <td class="day-cell"><div class="day-input-wrap"><input class="day-input" type="number" placeholder="—" /><div class="week-bar"><div class="week-bar-fill" style="width:0%"></div></div></div></td>
+        </tr>
+        <tr class="add-task-row">
+          <td colspan="8">
+            <button class="add-task-btn"><i class="ti ti-plus" aria-hidden="true"></i> Add task</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- YEARLY GOALS -->
+  <div class="screen" id="screen-yearly">
+    <div class="goals-header">
+      <div class="goals-title-area">
+        <div class="goals-title">Yearly goals</div>
+        <div class="goals-meta">2026 · <span>1</span> goal · <span>0</span> on track</div>
+      </div>
+      <button class="add-goal-btn"><i class="ti ti-plus" aria-hidden="true"></i> Add goal</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Goals total</div>
+        <div class="stat-val">1</div>
+        <div class="stat-sub">across 3 life goals</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg progress</div>
+        <div class="stat-val" style="color:var(--brand)">20%</div>
+        <div class="stat-sub">Jan – May 2026</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">On track</div>
+        <div class="stat-val" style="color:#3b6d11">0</div>
+        <div class="stat-sub">1 behind</div>
+      </div>
+    </div>
+
+    <div class="goal-card" id="gc1" onclick="toggleGoal('gc1')">
+      <div class="goal-card-header">
+        <i class="ti ti-chevron-right chevron" aria-hidden="true"></i>
+        <div class="goal-icon" style="background:#fde8e0;"><i class="ti ti-heart" style="color:#d85a30;font-size:18px;" aria-hidden="true"></i></div>
+        <div class="goal-main">
+          <div class="goal-name">Reach target weight</div>
+          <div class="goal-tags">
+            <span class="tag tag-health">Health</span>
+            <span class="tag tag-behind">Behind</span>
+          </div>
+        </div>
+        <div class="goal-right">
+          <div class="goal-pct">20%</div>
+          <div class="goal-pct-sub">94.5 → 90 kg</div>
+        </div>
+        <button class="menu-btn" onclick="event.stopPropagation()"><i class="ti ti-dots" aria-hidden="true"></i></button>
+      </div>
+      <div class="goal-progress-row">
+        <div class="goal-prog-track"><div class="goal-prog-fill" style="width:20%"></div></div>
+        <div class="goal-prog-label">20% of year · 4.5 kg to go</div>
+      </div>
+      <div class="goal-body">
+        <div class="goal-months" style="padding:12px 16px;">
+          <div class="month-tile done"><span class="month-abbr">Jan</span></div>
+          <div class="month-tile done"><span class="month-abbr">Feb</span></div>
+          <div class="month-tile done"><span class="month-abbr">Mar</span></div>
+          <div class="month-tile done"><span class="month-abbr">Apr</span></div>
+          <div class="month-tile current"><span class="month-abbr">May</span></div>
+          <div class="month-tile future"><span class="month-abbr">Jun</span></div>
+          <div class="month-tile future"><span class="month-abbr">Jul</span></div>
+          <div class="month-tile future"><span class="month-abbr">Aug</span></div>
+          <div class="month-tile future"><span class="month-abbr">Sep</span></div>
+          <div class="month-tile future"><span class="month-abbr">Oct</span></div>
+          <div class="month-tile future"><span class="month-abbr">Nov</span></div>
+          <div class="month-tile future"><span class="month-abbr">Dec</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="goal-card" id="gc2" onclick="toggleGoal('gc2')">
+      <div class="goal-card-header">
+        <i class="ti ti-chevron-right chevron" aria-hidden="true"></i>
+        <div class="goal-icon" style="background:#e8f4e8;"><i class="ti ti-run" style="color:#3b6d11;font-size:18px;" aria-hidden="true"></i></div>
+        <div class="goal-main">
+          <div class="goal-name">Run a half marathon</div>
+          <div class="goal-tags">
+            <span class="tag tag-health">Health</span>
+            <span class="tag tag-on-track">On track</span>
+          </div>
+        </div>
+        <div class="goal-right">
+          <div class="goal-pct" style="color:#3b6d11">65%</div>
+          <div class="goal-pct-sub">target: Oct 2026</div>
+        </div>
+        <button class="menu-btn" onclick="event.stopPropagation()"><i class="ti ti-dots" aria-hidden="true"></i></button>
+      </div>
+      <div class="goal-progress-row">
+        <div class="goal-prog-track"><div class="goal-prog-fill" style="width:65%;background:#3b6d11;"></div></div>
+        <div class="goal-prog-label">Running 18 km · 3 km to goal distance</div>
+      </div>
+      <div class="goal-body">
+        <div class="goal-months" style="padding:12px 16px;">
+          <div class="month-tile done"><span class="month-abbr">Jan</span></div>
+          <div class="month-tile done"><span class="month-abbr">Feb</span></div>
+          <div class="month-tile done"><span class="month-abbr">Mar</span></div>
+          <div class="month-tile done"><span class="month-abbr">Apr</span></div>
+          <div class="month-tile current"><span class="month-abbr">May</span></div>
+          <div class="month-tile future"><span class="month-abbr">Jun</span></div>
+          <div class="month-tile future"><span class="month-abbr">Jul</span></div>
+          <div class="month-tile future"><span class="month-abbr">Aug</span></div>
+          <div class="month-tile future"><span class="month-abbr">Sep</span></div>
+          <div class="month-tile future"><span class="month-abbr">Oct</span></div>
+          <div class="month-tile future"><span class="month-abbr">Nov</span></div>
+          <div class="month-tile future"><span class="month-abbr">Dec</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById('screen-' + name).classList.add('visible');
+  event.target.classList.add('active');
+}
+function toggleGoal(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+document.querySelectorAll('.day-input').forEach(inp => {
+  inp.addEventListener('input', function() {
+    const wrap = this.closest('.day-input-wrap');
+    const bar = wrap.querySelector('.week-bar-fill');
+    const val = parseFloat(this.value) || 0;
+    this.classList.toggle('has-value', val > 0);
+    bar.style.width = val > 0 ? '100%' : '0%';
+  });
+});
+</script>

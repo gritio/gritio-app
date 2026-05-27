@@ -16,11 +16,12 @@ import { UpdateProgressPanel } from './components/UpdateProgressPanel';
 import { AddGoalModal } from './components/AddGoalModal';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
+import { OnboardingPage } from './components/OnboardingPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding';
 
 // Helper function to check if user is under 18
 const isUserKid = (dob?: string): boolean => {
@@ -46,8 +47,8 @@ export default function App() {
   });
   const [currentView, setCurrentView] = useState<View>(() => {
     const savedView = localStorage.getItem('currentView') as View | null;
-    return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals'].includes(savedView)) 
-      ? savedView 
+    return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals', 'onboarding'].includes(savedView))
+      ? savedView
       : 'overview';
   });
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
@@ -78,6 +79,16 @@ export default function App() {
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  // Calculate onboarding step (0-4) based on fetched data
+  const calculateOnboardingStep = (fetchedLifeGoals: LifeGoal[], fetchedGoals: Goal[], fetchedTasks: Task[]): number => {
+    if (!fetchedLifeGoals || fetchedLifeGoals.length === 0) return 0;
+    if (!fetchedGoals || fetchedGoals.length === 0) return 1;
+    if (!fetchedTasks || fetchedTasks.length === 0) return 2;
+    return 3; // Tasks exist, but might not have logged today
+  };
+
+  const onboardingStep = calculateOnboardingStep(lifeGoals, goals, tasks);
 
   // Fetch goals on component mount
   const fetchGoals = async () => {
@@ -125,9 +136,9 @@ export default function App() {
         console.log('NO DOB FOUND - Kids mode NOT activated');
       }
       
-      // If no life goals exist, redirect to life goals page
+      // If no life goals exist, redirect to onboarding page
       if (!fetchedLifeGoals || fetchedLifeGoals.length === 0) {
-        setCurrentView('life-goals');
+        setCurrentView('onboarding');
       }
       
       setGoalsLoading(false);
@@ -413,7 +424,7 @@ export default function App() {
           />
         )
       ) : goalsLoading ? (
-        <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex items-center justify-center">
+        <div className="min-h-screen bg-[#f5f0eb] flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#805232] mb-4"></div>
             <p className="text-[#805232] font-medium">Loading your goals...</p>
@@ -421,9 +432,9 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div className={`min-h-screen flex font-bold ${isKidsMode ? '' : 'bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4]'}`} style={{ ...(isKidsMode && { backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/assets/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }), fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
+        <div className={`min-h-screen flex font-bold ${isKidsMode ? '' : 'bg-[#f5f0eb]'}`} style={{ ...(isKidsMode && { backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/assets/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }), fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} />
+          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} />
           
           {/* Main Content Area with Panel */}
           <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'mr-96' : ''}`}>
@@ -462,13 +473,22 @@ export default function App() {
               )}
               
               {currentView === 'today' && (
-                <TodayView 
+                <TodayView
                   tasks={tasks}
                   goals={goals}
                   onUpdateProgress={handleUpdateProgress}
                 />
               )}
-              
+
+              {currentView === 'onboarding' && (
+                <OnboardingPage
+                  lifeGoals={lifeGoals}
+                  goals={goals}
+                  tasks={tasks}
+                  onNavigate={setCurrentView}
+                />
+              )}
+
               {currentView === 'todos' && (
                 <TodosPage
                   todos={todos}

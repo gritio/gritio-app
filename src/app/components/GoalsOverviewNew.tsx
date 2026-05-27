@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Goal, MonthlyGoal, Task } from '../types';
-import { Target, Plus, Trash2, Edit, X } from 'lucide-react';
+import { Target, Trash2, Edit, X } from 'lucide-react';
 import { CollapsibleGoalRow } from './CollapsibleGoalRow';
 import { AddTaskPanel } from './AddTaskPanel';
 import { GenerateMonthlyGoalsPanel } from './GenerateMonthlyGoalsPanel';
 import { monthlyGoalsApi, goalsApi } from '../services/api';
+import { COLORS } from '../constants/colors';
 
 interface GoalsOverviewNewProps {
   goals: Goal[];
@@ -162,59 +163,43 @@ export function GoalsOverviewNew({
     }
   };
 
+  const onTrackCount = localGoals.filter(g => g.status === 'ON_TRACK' || g.status === 'COMPLETED').length;
+  const behindCount = localGoals.length - onTrackCount;
+  const avgProgress = localGoals.length > 0 ? Math.round(localGoals.reduce((sum, g) => sum + g.progress, 0) / localGoals.length) : 0;
+
+  // Calculate the month range for the summary
+  const today = new Date();
+  const startMonth = new Date(today.getFullYear(), 0, 1);
+  const endMonth = today;
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dateRange = `${monthNames[startMonth.getMonth()]} – ${monthNames[endMonth.getMonth()]} ${endMonth.getFullYear()}`;
+
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-6">
-      {/* Header */}
-      <div className="mb-4">
-        <h1 className={`mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>Goals Overview</h1>
-      </div>
+      {/* Header with title */}
+      <h1 className="text-3xl font-bold mb-6" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }}>Yearly goals</h1>
 
-      {/* Stats Summary */}
-      <div className={`rounded-lg p-3 sm:p-6 mb-6 ${
-        isKidsMode 
-          ? 'bg-[#00FFFF] bg-opacity-60 border-2 border-[#0099FF]' 
-          : 'bg-white border-2 border-[#D0D0D0]'
-      }`}>
-        <div className="flex items-center justify-between gap-2 sm:gap-6">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
-              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
-            }`}>
-              <Target className="w-6 h-6 text-[#805232]" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm truncate text-[#805232]">Total Goals</div>
-              <div className="text-lg sm:text-xl text-[#805232]">{localGoals.length}</div>
-            </div>
-          </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* Goals Total Card */}
+        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Goals total</p>
+          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{localGoals.length}</p>
+          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>across 3 life goals</p>
+        </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
-              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
-            }`}>
-              <Target className="w-6 h-6 text-[#805232]" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm truncate text-[#805232]">On Track</div>
-              <div className="text-lg sm:text-xl text-[#805232]">
-                {localGoals.filter(g => g.status === 'ON_TRACK' || g.status === 'COMPLETED').length}
-              </div>
-            </div>
-          </div>
+        {/* Avg Progress Card */}
+        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Avg progress</p>
+          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{avgProgress}%</p>
+          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{dateRange}</p>
+        </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className={`hidden sm:flex border border-[#805232] p-3 rounded-lg flex-shrink-0 ${
-              isKidsMode ? 'bg-[#00FFFF] bg-opacity-60' : 'bg-white'
-            }`}>
-              <Target className="w-6 h-6 text-[#805232]" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm truncate text-[#805232]">Avg. Progress</div>
-              <div className="text-lg sm:text-xl text-[#805232]">
-                {localGoals.length > 0 ? Math.round(localGoals.reduce((sum, g) => sum + g.progress, 0) / localGoals.length) : 0}%
-              </div>
-            </div>
-          </div>
+        {/* On Track Card */}
+        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>On track</p>
+          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#3b6d11]'}`}>{onTrackCount}</p>
+          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{behindCount} behind</p>
         </div>
       </div>
 
