@@ -102,7 +102,6 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 
   // Today tab inputs: { taskId: string (number input) | boolean (checkbox) }
   const [todayInputs, setTodayInputs] = useState<Record<string, string | boolean>>({});
-  const [saving, setSaving] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
 
   const weekDates = getWeekDates(weekOffset);
@@ -216,32 +215,14 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
     }, 0) / tasks.length * 100
   );
 
-  // --- Save today ---
-  const handleSaveToday = async () => {
-    setSaving(true);
-    const dateStr = todayKey();
+  // --- Auto-save today (checkbox toggle or numeric blur) ---
+  const handleTodaySave = async (task: Task, value: number) => {
     try {
-      await Promise.all(
-        tasks.map(async (task) => {
-          const raw = todayInputs[task.id];
-          let value: number;
-          if (isCheckbox(task)) {
-            value = raw ? 1 : 0;
-          } else {
-            value = parseFloat(String(raw)) || 0;
-          }
-          if (value > 0) {
-            await tasksApi.logCompletion(task.id, dateStr, value);
-          }
-        })
-      );
-      toast.success('Saved!');
+      await tasksApi.logCompletion(task.id, todayKey(), value);
       await fetchWeekCompletions();
       onTasksUpdate?.();
     } catch {
-      toast.error('Failed to save. Please try again.');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to save.');
     }
   };
 
@@ -286,10 +267,10 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
       {/* Persistent Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem', gap: 16 }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--color-text-primary)' }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>
             {today.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#6b7280', marginTop: 3 }}>
             {today.toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </div>
         </div>
@@ -301,25 +282,24 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '0.5px solid var(--color-border-tertiary)', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: 10, padding: 3, marginBottom: '1.5rem', gap: 2 }}>
         {(['today', 'weekly', 'monthly'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              padding: '8px 20px',
-              fontSize: 14,
+              flex: 1,
+              padding: '7px 0',
+              fontSize: 13,
+              fontWeight: activeTab === tab ? 600 : 500,
               cursor: 'pointer',
-              borderBottom: `2px solid ${activeTab === tab ? '#185FA5' : 'transparent'}`,
-              color: activeTab === tab ? '#185FA5' : 'var(--color-text-secondary)',
-              fontWeight: activeTab === tab ? 500 : 400,
-              background: 'none',
+              background: activeTab === tab ? '#fff' : 'transparent',
+              color: activeTab === tab ? '#185FA5' : '#6b7280',
               border: 'none',
-              borderBottomWidth: 2,
-              borderBottomStyle: 'solid',
-              borderBottomColor: activeTab === tab ? '#185FA5' : 'transparent',
+              borderRadius: 8,
+              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               outline: 'none',
-              borderRadius: 0,
+              transition: 'all 0.15s',
             }}
           >
             {tab === 'today' ? 'Today' : tab === 'weekly' ? 'This week' : 'This month'}
@@ -352,61 +332,80 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 
                   return (
                     <div key={task.id} style={{
-                      background: 'var(--color-background-primary)',
-                      border: '0.5px solid var(--color-border-tertiary)',
-                      borderRadius: 'var(--border-radius-lg)',
-                      padding: '11px 14px',
+                      background: '#ffffff',
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      borderRadius: 12,
+                      padding: '12px 16px',
                       marginBottom: 8,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 14,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                     }}>
                       <RingProgress value={ringVal} max={ringMax} size="lg" />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-primary)', marginBottom: 2 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>
                           {task.title}
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                        <div style={{ fontSize: 12, color: '#6b7280' }}>
                           {checkbox
                             ? `${doneCount} done this week · target ${ringMax}`
                             : `${ringVal} ${task.unit || ''} logged · target ${ringMax}`}
                         </div>
                       </div>
                       {checkbox ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                           <button
-                            onClick={() => setTodayInputs(prev => ({ ...prev, [task.id]: !isChecked }))}
+                            onClick={async () => {
+                              const newChecked = !isChecked;
+                              setTodayInputs(prev => ({ ...prev, [task.id]: newChecked }));
+                              await handleTodaySave(task, newChecked ? 1 : 0);
+                            }}
                             style={{
-                              width: 30, height: 30, borderRadius: '50%',
-                              border: isChecked ? 'none' : `1.5px solid var(--color-border-secondary)`,
-                              background: isChecked ? TRACKING_COLORS.ringGreen : 'none',
+                              width: 34, height: 34, borderRadius: '50%',
+                              border: isChecked ? 'none' : '2px solid #d1d5db',
+                              background: isChecked ? TRACKING_COLORS.ringGreen : '#f9fafb',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               cursor: 'pointer', flexShrink: 0,
-                              color: isChecked ? '#fff' : 'var(--color-text-tertiary)',
+                              color: isChecked ? '#fff' : '#9ca3af',
+                              transition: 'all 0.15s',
                             }}
                           >
-                            {isChecked && <Check size={13} />}
+                            <Check size={15} strokeWidth={isChecked ? 2.5 : 1.5} />
                           </button>
-                          <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>today</span>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: isChecked ? TRACKING_COLORS.ringGreen : '#6b7280' }}>
+                            {isChecked ? 'Done' : 'Mark done'}
+                          </span>
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                           <input
                             type="number"
                             value={String(inputVal || '')}
                             onChange={e => setTodayInputs(prev => ({ ...prev, [task.id]: e.target.value }))}
+                            onBlur={async e => {
+                              const n = parseFloat(e.target.value);
+                              if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                            }}
+                            onKeyDown={async e => {
+                              if (e.key === 'Enter') {
+                                const n = parseFloat(String(inputVal || ''));
+                                if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
                             placeholder="0"
                             style={{
-                              width: 64, height: 30, fontSize: 13,
+                              width: 72, height: 34, fontSize: 14, fontWeight: 500,
                               textAlign: 'center',
-                              border: '0.5px solid var(--color-border-secondary)',
-                              borderRadius: 'var(--border-radius-md)',
-                              background: 'var(--color-background-primary)',
-                              color: 'var(--color-text-primary)',
+                              border: '1.5px solid #e5e7eb',
+                              borderRadius: 8,
+                              background: '#f9fafb',
+                              color: '#1f2937',
                               outline: 'none',
                             }}
                           />
-                          <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: '#6b7280' }}>
                             {task.unit || 'units'}
                           </span>
                         </div>
@@ -416,27 +415,6 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                 })}
               </div>
             ))
-          )}
-          {tasks.length > 0 && (
-            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-              <button
-                onClick={handleSaveToday}
-                disabled={saving}
-                style={{
-                  background: '#185FA5',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 'var(--border-radius-md)',
-                  padding: '10px 32px',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                {saving ? 'Saving…' : 'Save today ↗'}
-              </button>
-            </div>
           )}
         </div>
       )}
@@ -695,13 +673,15 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 function MetricCard({ label, value, suffix }: { label: string; value: string; suffix: string }) {
   return (
     <div style={{
-      background: 'var(--color-background-secondary)',
-      borderRadius: 'var(--border-radius-md)',
-      padding: '10px 12px',
+      background: '#fff',
+      borderRadius: 10,
+      padding: '10px 14px',
+      border: '1px solid rgba(0,0,0,0.08)',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
     }}>
-      <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-        {value}<span style={{ fontSize: 13, fontWeight: 400, color: 'var(--color-text-secondary)' }}>{suffix}</span>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
+        {value}<span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>{suffix}</span>
       </div>
     </div>
   );
@@ -710,14 +690,17 @@ function MetricCard({ label, value, suffix }: { label: string; value: string; su
 function GoalGroupHeader({ goal, color }: { goal: Goal; color: string }) {
   return (
     <div style={{
-      fontSize: 11, fontWeight: 500, color: 'var(--color-text-tertiary)',
-      textTransform: 'uppercase', letterSpacing: '0.05em',
-      padding: '12px 0 5px',
-      display: 'flex', alignItems: 'center', gap: 6,
-      borderBottom: '0.5px solid var(--color-border-tertiary)',
+      display: 'flex', alignItems: 'center', gap: 8,
+      margin: '20px 0 6px',
+      padding: '6px 10px',
+      background: 'rgba(0,0,0,0.03)',
+      borderRadius: 8,
+      borderLeft: `3px solid ${color}`,
     }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      {goal.title}
+      <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        {goal.title}
+      </span>
     </div>
   );
 }
