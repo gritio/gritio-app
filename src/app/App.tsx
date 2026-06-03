@@ -3,8 +3,7 @@ import { toast, Toaster } from 'sonner';
 import { Sidebar } from './components/Sidebar';
 import { GoalsPage } from './components/GoalsPage';
 import { GoalDetail } from './components/GoalDetail';
-import { TodayView } from './components/TodayView';
-import { WeeklyTaskView } from './components/WeeklyTaskView';
+import { TaskTrackingView } from './components/TaskTrackingView';
 import { TaskTimelinePage } from './components/TaskTimelinePage';
 import { TodosPage } from './components/TodosPage';
 import { LifeGoalsPage } from './components/LifeGoalsPage';
@@ -47,6 +46,8 @@ export default function App() {
   });
   const [currentView, setCurrentView] = useState<View>(() => {
     const savedView = localStorage.getItem('currentView') as View | null;
+    // 'weekly' redirects to 'today' since they're now the same tabbed view
+    if (savedView === 'weekly') return 'today';
     return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals', 'onboarding'].includes(savedView))
       ? savedView
       : 'overview';
@@ -473,10 +474,11 @@ export default function App() {
               )}
               
               {currentView === 'today' && (
-                <TodayView
+                <TaskTrackingView
                   tasks={tasks}
                   goals={goals}
-                  onUpdateProgress={handleUpdateProgress}
+                  defaultTab="today"
+                  onTasksUpdate={fetchGoals}
                 />
               )}
 
@@ -501,14 +503,11 @@ export default function App() {
               )}
               
               {currentView === 'weekly' && (
-                <WeeklyTaskView 
-                  goals={goals}
+                <TaskTrackingView
                   tasks={tasks}
-                  isKidsMode={isKidsMode}
-                  onGoalClick={(goalId) => {
-                    setSelectedGoalId(goalId);
-                    setCurrentView('overview');
-                  }}
+                  goals={goals}
+                  defaultTab="weekly"
+                  onTasksUpdate={fetchGoals}
                 />
               )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Sun, Zap } from 'lucide-react';
+import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Zap } from 'lucide-react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
@@ -34,7 +34,7 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
   const isOnboarding = onboardingStep < 4;
 
   const NavItem = ({ label, icon: Icon, view, isDimmed = false, count }: { label: string; icon: any; view: typeof currentView; isDimmed?: boolean; count?: number }) => {
-    const isActive = currentView === view;
+    const isActive = currentView === view || (view === 'today' && currentView === 'weekly');
     const button = (
       <button
         onClick={() => onNavigate(view)}
@@ -115,10 +115,9 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
         <NavItem label="Yearly goals" icon={Target} view="overview" isDimmed={isOnboarding && lifeGoalsCount === 0} count={goalsCount} />
         <div className="border-t border-white/10 my-2"></div>
 
-        {/* DAILY Section */}
-        <SectionLabel label="Daily" />
-        <NavItem label="This week" icon={Calendar} view="weekly" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
-        <NavItem label="Today" icon={Sun} view="today" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
+        {/* LOG Section */}
+        <SectionLabel label="Log" />
+        <NavItem label="Log tasks" icon={Calendar} view="today" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
         <div className="border-t border-white/10 my-2"></div>
 
         {/* OTHERS Section */}

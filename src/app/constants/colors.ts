@@ -132,3 +132,26 @@ export const RING_COLORS = {
   fill: COLORS.primary,
   text: COLORS.primary,
 } as const;
+
+// Colors for the task tracking redesign (Today/Weekly/Monthly tabs)
+export const TRACKING_COLORS = {
+  ringGreen: '#1D9E75',
+  ringAmber: '#EF9F27',
+  ringRed: '#E24B4A',
+  todayBlue: '#378ADD',
+  doneDot: '#1D9E75',
+  missedDot: '#F09595',
+  monthFull: '#1D9E75',
+  monthPartial: '#9FE1CB',
+  monthMissed: '#F7C1C1',
+  pillGreenBg: '#E1F5EE',
+  pillGreenText: '#0F6E56',
+  pillAmberBg: '#FAEEDA',
+  pillAmberText: '#854F0B',
+  pillRedBg: '#FCEBEB',
+  pillRedText: '#A32D2D',
+} as const;
+
+export const GOAL_DOT_COLORS = [
+  '#1D9E75', '#378ADD', '#7F77DD', '#EF9F27', '#E24B4A', '#F09595', '#805232',
+] as const;
