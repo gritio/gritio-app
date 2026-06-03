@@ -75,6 +75,7 @@ export interface Task {
   frequency: Frequency;
   target: number; // Target per day/week
   unit: string; // e.g., "days", "steps", "mins", "km"
+  timesPerWeek?: number;
   currentProgress: number;
   lastUpdated: Date;
   completionHistory: CompletionRecord[];
