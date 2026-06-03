@@ -102,7 +102,6 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 
   // Today tab inputs: { taskId: string (number input) | boolean (checkbox) }
   const [todayInputs, setTodayInputs] = useState<Record<string, string | boolean>>({});
-  const [saving, setSaving] = useState(false);
   const [loadingWeek, setLoadingWeek] = useState(false);
 
   const weekDates = getWeekDates(weekOffset);
@@ -216,32 +215,14 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
     }, 0) / tasks.length * 100
   );
 
-  // --- Save today ---
-  const handleSaveToday = async () => {
-    setSaving(true);
-    const dateStr = todayKey();
+  // --- Auto-save today (checkbox toggle or numeric blur) ---
+  const handleTodaySave = async (task: Task, value: number) => {
     try {
-      await Promise.all(
-        tasks.map(async (task) => {
-          const raw = todayInputs[task.id];
-          let value: number;
-          if (isCheckbox(task)) {
-            value = raw ? 1 : 0;
-          } else {
-            value = parseFloat(String(raw)) || 0;
-          }
-          if (value > 0) {
-            await tasksApi.logCompletion(task.id, dateStr, value);
-          }
-        })
-      );
-      toast.success('Saved!');
+      await tasksApi.logCompletion(task.id, todayKey(), value);
       await fetchWeekCompletions();
       onTasksUpdate?.();
     } catch {
-      toast.error('Failed to save. Please try again.');
-    } finally {
-      setSaving(false);
+      toast.error('Failed to save.');
     }
   };
 
@@ -375,7 +356,11 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                       {checkbox ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                           <button
-                            onClick={() => setTodayInputs(prev => ({ ...prev, [task.id]: !isChecked }))}
+                            onClick={async () => {
+                              const newChecked = !isChecked;
+                              setTodayInputs(prev => ({ ...prev, [task.id]: newChecked }));
+                              await handleTodaySave(task, newChecked ? 1 : 0);
+                            }}
                             style={{
                               width: 34, height: 34, borderRadius: '50%',
                               border: isChecked ? 'none' : '2px solid #d1d5db',
@@ -398,6 +383,17 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                             type="number"
                             value={String(inputVal || '')}
                             onChange={e => setTodayInputs(prev => ({ ...prev, [task.id]: e.target.value }))}
+                            onBlur={async e => {
+                              const n = parseFloat(e.target.value);
+                              if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                            }}
+                            onKeyDown={async e => {
+                              if (e.key === 'Enter') {
+                                const n = parseFloat(String(inputVal || ''));
+                                if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
                             placeholder="0"
                             style={{
                               width: 72, height: 34, fontSize: 14, fontWeight: 500,
@@ -419,28 +415,6 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                 })}
               </div>
             ))
-          )}
-          {tasks.length > 0 && (
-            <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-              <button
-                onClick={handleSaveToday}
-                disabled={saving}
-                style={{
-                  background: saving ? '#6b7280' : '#185FA5',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '11px 36px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: saving ? 'not-allowed' : 'pointer',
-                  boxShadow: saving ? 'none' : '0 2px 8px rgba(24,95,165,0.35)',
-                  letterSpacing: '0.01em',
-                }}
-              >
-                {saving ? 'Saving…' : 'Save today ↗'}
-              </button>
-            </div>
           )}
         </div>
       )}
