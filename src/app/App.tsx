@@ -91,6 +91,22 @@ export default function App() {
 
   const onboardingStep = calculateOnboardingStep(lifeGoals, goals, tasks);
 
+  // Silent refresh after task saves — no loading spinner, no view reset
+  const refreshTasksQuietly = async () => {
+    try {
+      const [fetchedGoals, fetchedMonthlyGoals, fetchedTasks] = await Promise.all([
+        goalsApi.getGoals(),
+        monthlyGoalsApi.getAllMonthlyGoals(),
+        tasksApi.getAllTasks(),
+      ]);
+      setGoals(fetchedGoals);
+      setMonthlyGoals(fetchedMonthlyGoals);
+      setTasks(fetchedTasks);
+    } catch {
+      // Silently ignore — stale data is better than a broken interstitial
+    }
+  };
+
   // Fetch goals on component mount
   const fetchGoals = async () => {
     try {
@@ -478,7 +494,7 @@ export default function App() {
                   tasks={tasks}
                   goals={goals}
                   defaultTab="today"
-                  onTasksUpdate={fetchGoals}
+                  onTasksUpdate={refreshTasksQuietly}
                 />
               )}
 
@@ -507,7 +523,7 @@ export default function App() {
                   tasks={tasks}
                   goals={goals}
                   defaultTab="weekly"
-                  onTasksUpdate={fetchGoals}
+                  onTasksUpdate={refreshTasksQuietly}
                 />
               )}
 
