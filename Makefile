@@ -26,11 +26,12 @@ setup:
 	@echo "✅ Setup complete! Run 'make up' to start"
 
 up:
-	docker-compose up --build -d
-	@echo "✅ Services started"
-	@echo "   Frontend: http://localhost:5173"
-	@echo "   Backend:  http://localhost:3000"
+	docker-compose up -d postgres pgadmin
+	@echo "✅ Database services started"
 	@echo "   pgAdmin:  http://localhost:5050"
+	@echo "   Database: localhost:5433"
+	@echo ""
+	@echo "Run 'make dev-local' to start backend + frontend"
 
 down:
 	docker-compose down
