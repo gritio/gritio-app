@@ -1,21 +1,17 @@
 import { useState } from 'react';
-import { Goal, MonthlyGoal, Task } from '../types';
+import { Goal, Task } from '../types';
 import { Target, Trash2, Edit, X } from 'lucide-react';
 import { CollapsibleGoalRow } from './CollapsibleGoalRow';
 import { AddTaskPanel } from './AddTaskPanel';
-import { GenerateMonthlyGoalsPanel } from './GenerateMonthlyGoalsPanel';
-import { monthlyGoalsApi, goalsApi } from '../services/api';
+import { goalsApi } from '../services/api';
 import { COLORS } from '../constants/colors';
 
 interface GoalsOverviewNewProps {
   goals: Goal[];
-  monthlyGoals: MonthlyGoal[];
   tasks: Task[];
   onSelectGoal: (goalId: string) => void;
-  onAddMonthlyGoal: (goalId: string) => void;
   onAddTask: (goalId: string) => void;
   onEditGoal?: (goalId: string) => void;
-  onEditMonthlyGoal?: (monthlyGoalId: string) => void;
   onUpdateGoal?: (updatedGoal: Goal) => void;
   onDeleteGoal?: (goalId: string) => void;
   onRefreshGoals?: () => void;
@@ -24,13 +20,10 @@ interface GoalsOverviewNewProps {
 
 export function GoalsOverviewNew({
   goals,
-  monthlyGoals,
   tasks,
   onSelectGoal,
-  onAddMonthlyGoal,
   onAddTask,
   onEditGoal,
-  onEditMonthlyGoal,
   onUpdateGoal,
   onDeleteGoal,
   onRefreshGoals,
@@ -38,12 +31,8 @@ export function GoalsOverviewNew({
 }: GoalsOverviewNewProps) {
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
   const [deleteConfirmGoalId, setDeleteConfirmGoalId] = useState<string | null>(null);
-  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
   const [isAddTaskPanelOpen, setIsAddTaskPanelOpen] = useState(false);
   const [selectedGoalForTask, setSelectedGoalForTask] = useState<Goal | null>(null);
-  const [isGenerateMonthlyGoalsPanelOpen, setIsGenerateMonthlyGoalsPanelOpen] = useState(false);
-  const [selectedGoalForGeneration, setSelectedGoalForGeneration] = useState<Goal | null>(null);
-  const [localMonthlyGoals, setLocalMonthlyGoals] = useState(monthlyGoals);
   const [localGoals, setLocalGoals] = useState(goals);
 
   const toggleGoal = (goalId: string) => {
@@ -56,60 +45,6 @@ export function GoalsOverviewNew({
     setExpandedGoals(newExpanded);
   };
 
-  const handleUpdateMonthlyProgress = async (monthlyGoalId: string, newProgress: number | string) => {
-    try {
-      setIsUpdatingProgress(true);
-      console.log('Updating monthly goal:', monthlyGoalId, 'to', newProgress);
-      const updateData = {
-        currentProgress: Number(newProgress),
-      };
-      const result = await monthlyGoalsApi.updateMonthlyGoal(monthlyGoalId, updateData);
-      console.log('Update response:', result);
-      
-      // Update the local monthly goals state
-      const updatedMonthlyGoals = localMonthlyGoals.map(mg => 
-        mg.id === monthlyGoalId 
-          ? { ...mg, currentProgress: Number(newProgress) }
-          : mg
-      );
-      setLocalMonthlyGoals(updatedMonthlyGoals);
-      
-      // Recalculate parent goal progress
-      const updatedGoal = updatedMonthlyGoals.find(mg => mg.id === monthlyGoalId);
-      if (updatedGoal) {
-        const goalId = updatedGoal.goalId;
-        const goalMonthlyGoals = updatedMonthlyGoals.filter(mg => mg.goalId === goalId);
-        
-        // Calculate average progress across all months
-        const totalProgress = goalMonthlyGoals.reduce((sum, mg) => {
-          const monthProgress = mg.target > 0 
-            ? (Number(mg.currentProgress) / Number(mg.target)) * 100 
-            : 0;
-          return sum + monthProgress;
-        }, 0);
-        const avgProgress = Math.round(totalProgress / goalMonthlyGoals.length);
-        
-        // Update the parent goal
-        const updatedGoals = localGoals.map(g => 
-          g.id === goalId 
-            ? { ...g, progress: avgProgress }
-            : g
-        );
-        setLocalGoals(updatedGoals);
-      }
-      
-      // Refresh goals to get updated status from backend
-      if (onRefreshGoals) {
-        await onRefreshGoals();
-      }
-    } catch (error: any) {
-      console.error('Failed to update progress:', error);
-      console.error('Error details:', error?.response?.data || error?.message || error);
-      alert('Failed to update progress: ' + (error?.response?.data?.message || error?.message || 'Unknown error'));
-    } finally {
-      setIsUpdatingProgress(false);
-    }
-  };
 
   const handleOpenAddTaskPanel = (goalId: string) => {
     const goal = goals.find(g => g.id === goalId);
@@ -130,38 +65,6 @@ export function GoalsOverviewNew({
     }
   };
 
-  const handleOpenGenerateMonthlyGoalsPanel = (goalId: string) => {
-    const goal = localGoals.find(g => g.id === goalId);
-    if (goal) {
-      setSelectedGoalForGeneration(goal);
-      setIsGenerateMonthlyGoalsPanelOpen(true);
-    }
-  };
-
-  const handleGenerateMonthlyGoals = async (strategy: string, startValue?: number) => {
-    if (!selectedGoalForGeneration) return;
-
-    try {
-      const payload: any = {
-        autoCreateMonthly: true,
-        distributionStrategy: strategy,
-      };
-
-      if (startValue !== undefined) {
-        payload.startValue = startValue;
-      }
-
-      await goalsApi.updateGoal(selectedGoalForGeneration.id, payload);
-      
-      setIsGenerateMonthlyGoalsPanelOpen(false);
-      setSelectedGoalForGeneration(null);
-      
-      if (onRefreshGoals) onRefreshGoals();
-    } catch (error: any) {
-      console.error('Failed to generate monthly goals:', error);
-      throw error;
-    }
-  };
 
   const onTrackCount = localGoals.filter(g => g.status === 'ON_TRACK' || g.status === 'COMPLETED').length;
   const behindCount = localGoals.length - onTrackCount;
@@ -220,15 +123,11 @@ export function GoalsOverviewNew({
           <CollapsibleGoalRow
             key={goal.id}
             goal={goal}
-            monthlyGoals={localMonthlyGoals}
             isExpanded={expandedGoals.has(goal.id)}
             onToggle={() => toggleGoal(goal.id)}
-            onEditMonthlyGoal={onEditMonthlyGoal || (() => {})}
-            onUpdateProgress={handleUpdateMonthlyProgress}
             onEditGoal={onEditGoal}
             onDeleteGoal={(goalId) => setDeleteConfirmGoalId(goalId)}
             onAddTask={handleOpenAddTaskPanel}
-            onGenerateMonthlyGoals={handleOpenGenerateMonthlyGoalsPanel}
             tasks={tasks}
             isKidsMode={isKidsMode}
           />
@@ -286,18 +185,6 @@ export function GoalsOverviewNew({
         />
       )}
 
-      {/* Generate Monthly Goals Panel */}
-      {selectedGoalForGeneration && (
-        <GenerateMonthlyGoalsPanel
-          goal={selectedGoalForGeneration}
-          isOpen={isGenerateMonthlyGoalsPanelOpen}
-          onClose={() => {
-            setIsGenerateMonthlyGoalsPanelOpen(false);
-            setSelectedGoalForGeneration(null);
-          }}
-          onGenerate={handleGenerateMonthlyGoals}
-        />
-      )}
     </div>
   );
 }
