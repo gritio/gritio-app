@@ -1,11 +1,12 @@
-.PHONY: help setup up down logs sync-db
+.PHONY: help setup up down logs sync-db dev-local
 
 help:
 	@echo "Gritio Development Commands"
 	@echo ""
 	@echo "  make setup          - First time setup (install dependencies, link Railway)"
-	@echo "  make up             - Start all services"
+	@echo "  make up             - Start all services with Docker"
 	@echo "  make down           - Stop all services"
+	@echo "  make dev-local      - Start backend + frontend locally (requires DB running)"
 	@echo "  make logs           - View service logs"
 	@echo "  make sync-db        - Sync production database from Railway"
 	@echo "  make clean          - Remove containers and volumes"
@@ -54,7 +55,15 @@ shell-db:
 fresh-start: down clean up
 	@echo "✅ Fresh start complete"
 
-dev: up
-	@echo "🚀 Development environment running"
+dev-local:
+	@echo "🚀 Installing dependencies..."
+	@npm install > /dev/null 2>&1
+	@cd src/api && npm install > /dev/null 2>&1 && npx prisma generate > /dev/null 2>&1 && cd ../..
+	@echo "✅ Starting backend + frontend locally..."
 	@echo "Frontend: http://localhost:5173"
 	@echo "Backend:  http://localhost:3000"
+	@echo ""
+	@echo "Make sure PostgreSQL is running (docker-compose up postgres)"
+	@echo "Press Ctrl+C to stop both"
+	@echo ""
+	@(cd src/api && npm run start:dev) & npm run dev:frontend
