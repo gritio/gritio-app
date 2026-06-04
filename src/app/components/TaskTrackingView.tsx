@@ -18,13 +18,13 @@ type Tab = 'today' | 'weekly' | 'monthly';
 // Returns Monday-based week dates for the given offset (0 = this week)
 function getWeekDates(weekOffset: number): Date[] {
   const today = new Date();
-  const dow = today.getDay(); // 0=Sun, 1=Mon...
+  const dow = today.getUTCDay(); // 0=Sun, 1=Mon...
   const monday = new Date(today);
-  monday.setDate(today.getDate() - ((dow + 6) % 7) + weekOffset * 7);
-  monday.setHours(0, 0, 0, 0);
+  monday.setUTCDate(today.getUTCDate() - ((dow + 6) % 7) + weekOffset * 7);
+  monday.setUTCHours(0, 0, 0, 0);
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    d.setUTCDate(monday.getUTCDate() + i);
     return d;
   });
 }
@@ -43,7 +43,7 @@ function isToday(date: Date): boolean {
 
 function isPast(date: Date): boolean {
   const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
+  d.setUTCHours(23, 59, 59, 999);
   return d < new Date();
 }
 
