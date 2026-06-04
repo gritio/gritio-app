@@ -217,22 +217,44 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 
   // --- Auto-save today (checkbox toggle or numeric blur) ---
   const handleTodaySave = async (task: Task, value: number) => {
+    const key = todayKey();
+
+    // Optimistic update — instant UI response
+    setWeekCompletions(prev => ({
+      ...prev,
+      [task.id]: { ...prev[task.id], [key]: value }
+    }));
+
     try {
-      await tasksApi.logCompletion(task.id, todayKey(), value);
-      await fetchWeekCompletions();
+      await tasksApi.logCompletion(task.id, key, value);
+      // Refetch in background to catch any server-side changes
+      fetchWeekCompletions();
       onTasksUpdate?.();
     } catch {
+      // Revert on error
+      await fetchWeekCompletions();
       toast.error('Failed to save.');
     }
   };
 
   // --- Inline weekly cell save ---
   const handleWeeklyCellSave = async (task: Task, date: Date, value: number) => {
+    const key = toDateKey(date);
+
+    // Optimistic update — instant UI response
+    setWeekCompletions(prev => ({
+      ...prev,
+      [task.id]: { ...prev[task.id], [key]: value }
+    }));
+
     try {
-      await tasksApi.logCompletion(task.id, toDateKey(date), value);
-      await fetchWeekCompletions();
+      await tasksApi.logCompletion(task.id, key, value);
+      // Refetch in background to catch any server-side changes
+      fetchWeekCompletions();
       onTasksUpdate?.();
     } catch {
+      // Revert on error
+      await fetchWeekCompletions();
       toast.error('Failed to save.');
     }
   };
