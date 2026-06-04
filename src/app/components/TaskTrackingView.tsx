@@ -118,7 +118,7 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
             const map: Record<string, number> = {};
             for (const rec of history) {
               const key = rec.date ? rec.date.slice(0, 10) : null;
-              if (key) map[key] = Number(rec.value) || (rec.completed ? 1 : 0);
+              if (key) map[key] = rec.value !== undefined && rec.value !== null ? Number(rec.value) : (rec.completed ? 1 : 0);
             }
             return { taskId: task.id, map };
           } catch {
@@ -153,7 +153,7 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
             const map: Record<string, number> = {};
             for (const rec of data) {
               const key = rec.date ? rec.date.slice(0, 10) : null;
-              if (key) map[key] = Number(rec.value) || (rec.completed ? 1 : 0);
+              if (key) map[key] = rec.value !== undefined && rec.value !== null ? Number(rec.value) : (rec.completed ? 1 : 0);
             }
             return { taskId: task.id, map };
           } catch {
@@ -184,9 +184,9 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
     for (const task of tasks) {
       const val = weekCompletions[task.id]?.[key];
       if (isCheckbox(task)) {
-        inputs[task.id] = val ? val > 0 : false;
+        inputs[task.id] = val !== undefined && val !== null ? val > 0 : false;
       } else {
-        inputs[task.id] = val ? String(val) : '';
+        inputs[task.id] = val !== undefined && val !== null ? String(val) : '';
       }
     }
     setTodayInputs(inputs);
@@ -385,12 +385,12 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                             onChange={e => setTodayInputs(prev => ({ ...prev, [task.id]: e.target.value }))}
                             onBlur={async e => {
                               const n = parseFloat(e.target.value);
-                              if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                              if (!isNaN(n) && n >= 0) await handleTodaySave(task, n);
                             }}
                             onKeyDown={async e => {
                               if (e.key === 'Enter') {
                                 const n = parseFloat(String(inputVal || ''));
-                                if (!isNaN(n) && n > 0) await handleTodaySave(task, n);
+                                if (!isNaN(n) && n >= 0) await handleTodaySave(task, n);
                                 (e.target as HTMLInputElement).blur();
                               }
                             }}
@@ -775,12 +775,12 @@ function WeeklyNumInput({
       onChange={e => setLocalVal(e.target.value)}
       onBlur={() => {
         const n = parseFloat(localVal);
-        if (!isNaN(n) && n > 0) onSave(n);
+        if (!isNaN(n) && n >= 0) onSave(n);
       }}
       onKeyDown={e => {
         if (e.key === 'Enter') {
           const n = parseFloat(localVal);
-          if (!isNaN(n) && n > 0) onSave(n);
+          if (!isNaN(n) && n >= 0) onSave(n);
           (e.target as HTMLInputElement).blur();
         }
       }}
