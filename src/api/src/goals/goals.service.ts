@@ -6,46 +6,64 @@ import { CreateGoalDto, UpdateGoalDto } from './dto/goal.dto';
 export class GoalsService {
   constructor(private prisma: PrismaService) {}
 
-  private calculateGoalStatus(goal: any, monthlyGoals: any[]): 'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND' {
-    const currentMonth = new Date();
-    currentMonth.setHours(0, 0, 0, 0);
-    
-    let cumulativeProgress = 0;
-    let cumulativeTarget = 0;
-    let monthsCompletedUpToCurrent = 0;
-    
-    monthlyGoals.forEach(mg => {
-      const mgDate = new Date(mg.monthDate);
-      mgDate.setHours(0, 0, 0, 0);
-      
-      if (mgDate <= currentMonth) {
-        cumulativeProgress += Number(mg.currentProgress);
-        cumulativeTarget += Number(mg.target);
-        monthsCompletedUpToCurrent++;
-      }
+  private async calculateGoalStatus(goal: any): Promise<'COMPLETED' | 'ON_TRACK' | 'AT_RISK' | 'BEHIND'> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+
+    // Get all tasks for this goal
+    const tasks = await this.prisma.task.findMany({
+      where: { goalId: goal.id },
+      select: { id: true },
     });
-    
-    if (cumulativeTarget === 0) {
+
+    if (tasks.length === 0) {
       return 'BEHIND';
     }
-    
-    // Use the goal's yearly target (finalTarget for progressive, or sum for others)
-    const yearlyTarget = goal.finalTarget || goal.target || 0;
-    
+
+    const taskIds = tasks.map(t => t.id);
+
+    // Get all TaskMonthAggregation records up to current month for this year
+    const aggregations = await this.prisma.taskMonthAggregation.findMany({
+      where: {
+        taskId: { in: taskIds },
+        year: currentYear,
+        month: { lte: currentMonth },
+      },
+    });
+
+    if (aggregations.length === 0) {
+      return 'BEHIND';
+    }
+
+    // Sum total progress across all months up to now
+    const totalProgress = aggregations.reduce((sum, agg) => sum + Number(agg.totalValue), 0);
+
+    // Get yearly target - for weight goals, use the difference; otherwise use finalTarget
+    let yearlyTarget = goal.finalTarget || goal.target || 0;
+    if (goal.unit === 'Kilogram' && goal.weightGoal) {
+      yearlyTarget = Math.abs(goal.weightGoal.targetWeight - goal.weightGoal.startWeight);
+    }
+
+    if (yearlyTarget === 0) {
+      return 'BEHIND';
+    }
+
     // Calculate pace: if we maintain current progress rate, will we hit the yearly target?
-    const progressPerMonth = monthsCompletedUpToCurrent > 0 ? cumulativeProgress / monthsCompletedUpToCurrent : 0;
+    const monthsElapsed = aggregations.length > 0 ? Math.max(aggregations.length, 1) : 1;
+    const progressPerMonth = totalProgress / monthsElapsed;
     const projectedYearlyProgress = progressPerMonth * 12;
     const pacePercentage = (projectedYearlyProgress / yearlyTarget) * 100;
-    
-    // If we've completed the full year
-    if (monthsCompletedUpToCurrent === 12) {
-      if (cumulativeProgress >= yearlyTarget) {
+
+    // If we've completed 12 months
+    if (currentMonth >= 12) {
+      if (totalProgress >= yearlyTarget) {
         return 'COMPLETED';
       } else {
         return 'BEHIND';
       }
     }
-    
+
     // Based on pace, determine status
     if (pacePercentage >= 100) {
       return 'ON_TRACK';
@@ -58,53 +76,6 @@ export class GoalsService {
     }
   }
 
-  private calculateMonthlyDistribution(
-    target: number,
-    strategy: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE',
-    startValue?: number
-  ): number[] {
-    const months: number[] = Array(12).fill(0);
-
-    if (target <= 0) return months;
-
-    if (strategy === 'SPREAD_EVENLY') {
-      // Distribute evenly across quarters (Jan, Apr, Jul, Oct)
-      const remainder = target % 4;
-      const basePerMonth = Math.floor(target / 4);
-      
-      months[0] = basePerMonth + (remainder > 0 ? 1 : 0);
-      months[3] = basePerMonth + (remainder > 1 ? 1 : 0);
-      months[6] = basePerMonth + (remainder > 2 ? 1 : 0);
-      months[9] = basePerMonth + (remainder > 3 ? 1 : 0);
-    } else if (strategy === 'EQUAL_DISTRIBUTION') {
-      // Divide equally across all 12 months
-      const monthlyTarget = parseFloat((target / 12).toFixed(2));
-      for (let i = 0; i < 12; i++) {
-        months[i] = monthlyTarget;
-      }
-    } else if (strategy === 'FRONT_LOAD') {
-      // Fill first N months
-      const wholePart = Math.floor(target);
-      const fractionalPart = target - wholePart;
-      
-      for (let i = 0; i < wholePart; i++) {
-        months[i] = 1;
-      }
-      if (fractionalPart > 0 && wholePart < 12) {
-        months[wholePart] = fractionalPart;
-      }
-    } else if (strategy === 'PROGRESSIVE') {
-      // Ramp from startValue to target linearly over all 12 months
-      const start = Math.round(startValue || 0);
-      const incrementPerMonth = (target - start) / 12;
-      
-      for (let i = 0; i < 12; i++) {
-        months[i] = Math.round(start + (i + 1) * incrementPerMonth);
-      }
-    }
-
-    return months;
-  }
 
   async createGoal(userId: string, dto: CreateGoalDto) {
     console.log('GoalsService.createGoal - userId:', userId);
@@ -160,77 +131,6 @@ export class GoalsService {
       });
     }
 
-    // Create monthly goals if auto-create is enabled
-    if (dto.autoCreateMonthly && dto.distributionStrategy) {
-      const startDate = new Date(dto.startDate);
-      let target = 0;
-
-      // Determine the target value based on unit
-      if (dto.unit === 'Kilogram' && dto.weightGoal) {
-        // For weight goals, calculate absolute difference (weight to lose/gain)
-        target = Math.abs(parseFloat(String(dto.weightGoal.targetWeight)) - parseFloat(String(dto.weightGoal.startWeight)));
-      } else if (dto.unit === 'Count' && dto.countGoal) {
-        target = parseFloat(String(dto.countGoal.targetCount));
-      } else if (dto.unit === 'Time' && dto.timeGoal) {
-        // For time goals, convert hours and minutes to total minutes
-        const hours = parseFloat(String(dto.timeGoal.targetHours)) || 0;
-        const minutes = parseFloat(String(dto.timeGoal.targetMinutes)) || 0;
-        target = hours * 60 + minutes;
-      }
-
-      const distribution = this.calculateMonthlyDistribution(
-        target,
-        (dto.distributionStrategy as 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE') || 'SPREAD_EVENLY',
-        dto.startValue
-      );
-
-      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-        const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthIndex, 1);
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        const monthName = monthNames[monthDate.getMonth()];
-        const year = monthDate.getFullYear();
-
-        let monthlyTarget = distribution[monthIndex];
-        
-        // For weight goals, compute the target weight (not the amount to lose)
-        if (dto.unit === 'Kilogram' && dto.weightGoal) {
-          const startWeight = parseFloat(String(dto.weightGoal.startWeight));
-          const targetWeight = parseFloat(String(dto.weightGoal.targetWeight));
-          
-          // Calculate cumulative weight lost up to this month
-          let cumulativeWeightLost = 0;
-          for (let i = 0; i <= monthIndex; i++) {
-            cumulativeWeightLost += distribution[i];
-          }
-          
-          // Target for this month is: start weight - cumulative weight lost
-          const direction = targetWeight < startWeight ? -1 : 1; // -1 for weight loss, 1 for weight gain
-          monthlyTarget = parseFloat((startWeight + (direction * cumulativeWeightLost)).toFixed(2));
-          
-          console.log(`INSERT Weight Goal: month=${monthName}, startWeight=${startWeight}, cumulativeWeightLost=${cumulativeWeightLost}, monthlyTarget=${monthlyTarget}`);
-        } else {
-          console.log(`INSERT: month=${monthName}, target=${monthlyTarget}, targetString=${monthlyTarget.toString()}`);
-        }
-        
-        // Use executeRawUnsafe to properly handle decimal values
-        await this.prisma.executeRawUnsafe(
-          `INSERT INTO "MonthlyGoal" ("id", "goalId", "title", "month", "monthDate", "target", "unit", "remarks", "status", "createdAt", "updatedAt") 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          require('crypto').randomUUID(),
-          goal.id,
-          `${dto.title} - ${monthName}`,
-          `${monthName} ${year}`,
-          monthDate,
-          monthlyTarget,
-          dto.unit,
-          `Monthly target for ${monthName}`,
-          'ON_TRACK',
-          new Date(),
-          new Date()
-        );
-      }
-    }
 
     return this.getGoalById(goal.id);
   }
@@ -243,18 +143,19 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
-        monthlyGoals: true,
         lifeGoal: true,
       },
       orderBy: { createdAt: 'desc' },
     });
     console.log('GoalsService.getGoalsByUser - found goals count:', goals.length);
-    
-    const goalsWithStatus = goals.map(goal => ({
-      ...goal,
-      status: this.calculateGoalStatus(goal, goal.monthlyGoals),
-    }));
-    
+
+    const goalsWithStatus = await Promise.all(
+      goals.map(async (goal) => ({
+        ...goal,
+        status: await this.calculateGoalStatus(goal),
+      }))
+    );
+
     return goalsWithStatus;
   }
 
@@ -265,16 +166,15 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
-        monthlyGoals: true,
         lifeGoal: true,
       },
     });
-    
+
     if (!goal) return null;
-    
+
     return {
       ...goal,
-      status: this.calculateGoalStatus(goal, goal.monthlyGoals),
+      status: await this.calculateGoalStatus(goal),
     };
   }
 
@@ -339,73 +239,6 @@ export class GoalsService {
       });
     }
 
-    if (dto.autoCreateMonthly && dto.distributionStrategy) {
-      await this.prisma.monthlyGoal.deleteMany({
-        where: { goalId: id }
-      });
-
-      const startDate = new Date(goal.startDate);
-      let target = 0;
-
-      if (goal.unit === 'Kilogram' && goal.weightGoal) {
-        target = Math.abs(parseFloat(String(goal.weightGoal.targetWeight)) - parseFloat(String(goal.weightGoal.startWeight)));
-      } else if (goal.unit === 'Count' && goal.countGoal) {
-        target = parseFloat(String(goal.countGoal.targetCount));
-      } else if (goal.unit === 'Time' && goal.timeGoal) {
-        const hours = parseFloat(String(goal.timeGoal.targetHours)) || 0;
-        const minutes = parseFloat(String(goal.timeGoal.targetMinutes)) || 0;
-        target = hours * 60 + minutes;
-      }
-
-      const distribution = this.calculateMonthlyDistribution(
-        target,
-        (dto.distributionStrategy as 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE') || 'SPREAD_EVENLY',
-        dto.startValue
-      );
-
-      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-        const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthIndex, 1);
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        const monthName = monthNames[monthDate.getMonth()];
-        const year = monthDate.getFullYear();
-
-        let monthlyTarget = distribution[monthIndex];
-        
-        if (goal.unit === 'Kilogram' && goal.weightGoal) {
-          const startWeight = parseFloat(String(goal.weightGoal.startWeight));
-          const targetWeight = parseFloat(String(goal.weightGoal.targetWeight));
-          
-          let cumulativeWeightLost = 0;
-          for (let i = 0; i <= monthIndex; i++) {
-            cumulativeWeightLost += distribution[i];
-          }
-          
-          const direction = targetWeight < startWeight ? -1 : 1;
-          monthlyTarget = parseFloat((startWeight + (direction * cumulativeWeightLost)).toFixed(2));
-          
-          console.log(`INSERT Weight Goal: month=${monthName}, startWeight=${startWeight}, cumulativeWeightLost=${cumulativeWeightLost}, monthlyTarget=${monthlyTarget}`);
-        } else {
-          console.log(`INSERT: month=${monthName}, target=${monthlyTarget}, targetString=${monthlyTarget.toString()}`);
-        }
-        
-        await this.prisma.executeRawUnsafe(
-          `INSERT INTO "MonthlyGoal" ("id", "goalId", "title", "month", "monthDate", "target", "unit", "remarks", "status", "createdAt", "updatedAt") 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          require('crypto').randomUUID(),
-          goal.id,
-          `${goal.title} - ${monthName}`,
-          `${monthName} ${year}`,
-          monthDate,
-          monthlyTarget,
-          goal.unit,
-          `Monthly target for ${monthName}`,
-          'ON_TRACK',
-          new Date(),
-          new Date()
-        );
-      }
-    }
 
     return this.getGoalById(id);
   }
@@ -426,11 +259,9 @@ export class GoalsService {
   }
 
   async updateParentGoalProgress(goalId: string) {
-    // Fetch the goal with related data
     const goal = await this.prisma.goal.findUnique({
       where: { id: goalId },
       include: {
-        monthlyGoals: true,
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
@@ -442,20 +273,12 @@ export class GoalsService {
     let newProgress = 0;
 
     if (goal.unit === 'Kilogram' && goal.weightGoal) {
-      // For weight goals: currentProgress is now the latest current weight
-      // Get the most recent current weight from monthly goals
-      let currentWeightFromMonthly = goal.weightGoal.startWeight;
-      if (goal.monthlyGoals.length > 0) {
-        // The most recent monthly goal's currentProgress represents the current weight
-        const mostRecentMonthly = goal.monthlyGoals[goal.monthlyGoals.length - 1];
-        currentWeightFromMonthly = Number(mostRecentMonthly.currentProgress);
-      }
-      
+      // For weight goals: compare current weight against start and target
       const totalWeightToLose = Math.abs(
         goal.weightGoal.targetWeight - goal.weightGoal.startWeight
       );
       const weightLostSoFar = Math.abs(
-        currentWeightFromMonthly - goal.weightGoal.startWeight
+        goal.weightGoal.currentWeight - goal.weightGoal.startWeight
       );
       newProgress =
         totalWeightToLose > 0
@@ -465,29 +288,38 @@ export class GoalsService {
       console.log(`updateParentGoalProgress - Weight Goal ${goalId}:`, {
         startWeight: goal.weightGoal.startWeight,
         targetWeight: goal.weightGoal.targetWeight,
-        currentWeight: currentWeightFromMonthly,
+        currentWeight: goal.weightGoal.currentWeight,
         totalWeightToLose,
         weightLostSoFar,
         progress: newProgress,
       });
     } else {
-      // For other goals: sum all progress across monthly goals
-      const totalProgress = goal.monthlyGoals.reduce(
-        (sum, mg) => sum + Number(mg.currentProgress),
-        0
-      );
-      const totalTarget = goal.monthlyGoals.reduce(
-        (sum, mg) => sum + Number(mg.target),
-        0
-      );
-      newProgress =
-        totalTarget > 0 ? Math.round((totalProgress / totalTarget) * 100) : 0;
-
-      console.log(`updateParentGoalProgress - Regular Goal ${goalId}:`, {
-        totalProgress,
-        totalTarget,
-        progress: newProgress,
+      // For other goals: sum all progress from TaskMonthAggregation across all tasks
+      const tasks = await this.prisma.task.findMany({
+        where: { goalId },
+        select: { id: true },
       });
+
+      if (tasks.length === 0) {
+        newProgress = 0;
+      } else {
+        const taskIds = tasks.map(t => t.id);
+        const aggregations = await this.prisma.taskMonthAggregation.findMany({
+          where: { taskId: { in: taskIds } },
+        });
+
+        const totalProgress = aggregations.reduce((sum, agg) => sum + Number(agg.totalValue), 0);
+        const totalTarget = aggregations.reduce((sum, agg) => sum + Number(agg.target), 0);
+
+        newProgress =
+          totalTarget > 0 ? Math.round((totalProgress / totalTarget) * 100) : 0;
+
+        console.log(`updateParentGoalProgress - Regular Goal ${goalId}:`, {
+          totalProgress,
+          totalTarget,
+          progress: newProgress,
+        });
+      }
     }
 
     // Update parent goal progress

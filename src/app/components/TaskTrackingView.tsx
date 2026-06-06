@@ -515,7 +515,8 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                       const today_ = isToday(date);
                       const past = isPast(date) && !today_;
                       const future = !today_ && !past;
-                      const done = val !== undefined && val > 0;
+                      // For checkboxes: done if val > 0. For numeric: never "done" (val is just a number)
+                      const done = checkbox && val !== undefined && val > 0;
                       const missed = past && !done;
 
                       return (
@@ -565,7 +566,7 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                           ) : missed ? (
                             checkbox ? (
                               <button
-                                onClick={async () => handleWeeklyCellSave(task, date, 1)}
+                                onClick={async () => handleWeeklyCellSave(task, date, done ? 0 : 1)}
                                 style={{
                                   width: 22, height: 22, borderRadius: '50%',
                                   background: TRACKING_COLORS.missedDot,

@@ -103,8 +103,11 @@ fi
 
 echo -e "${GREEN}✓ SSH tunnel established (PID: $TUNNEL_PID)${NC}"
 
-# Create temporary dump file
-DUMP_FILE="/tmp/gritio_prod_backup_$(date +%s).sql"
+# Create backup directory if it doesn't exist
+mkdir -p ./backups
+
+# Create dump file
+DUMP_FILE="./backups/gritio_prod_backup_$(date +%s).sql"
 echo -e "${YELLOW}💾 Creating dump from production (this may take a moment)...${NC}"
 
 # Create dump using SSH tunnel
