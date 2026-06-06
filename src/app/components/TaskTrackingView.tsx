@@ -555,14 +555,24 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                               />
                             )
                           ) : done ? (
-                            <span style={{
-                              width: 22, height: 22, borderRadius: '50%',
-                              background: TRACKING_COLORS.doneDot,
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 10, color: '#fff',
-                            }}>
-                              <Check size={10} />
-                            </span>
+                            checkbox ? (
+                              <button
+                                onClick={async () => handleWeeklyCellSave(task, date, 0)}
+                                style={{
+                                  width: 22, height: 22, borderRadius: '50%',
+                                  background: TRACKING_COLORS.doneDot,
+                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 10, color: '#fff', border: 'none', cursor: 'pointer',
+                                }}
+                              >
+                                <Check size={10} />
+                              </button>
+                            ) : (
+                              <WeeklyNumInput
+                                value={val}
+                                onSave={v => handleWeeklyCellSave(task, date, v)}
+                              />
+                            )
                           ) : missed ? (
                             checkbox ? (
                               <button
