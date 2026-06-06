@@ -271,28 +271,6 @@ export function AddTaskPanel({ isOpen, onClose, goalId, goalTitle, onSave }: Add
             </p>
           </div>
 
-          {/* Copy Task to Other Months */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold text-[#805232] border-t border-gray-200 pt-3 uppercase">
-              Copy Task to Other Months
-            </h3>
-            <div className="grid grid-cols-4 gap-2">
-              {months.map((month, index) => (
-                <label key={month} className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedMonths.has(index)}
-                    onChange={() => toggleMonth(index)}
-                    className="w-3 h-3 rounded accent-[#805232]"
-                  />
-                  <span className="text-xs text-gray-700">{month}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 italic mt-1">
-              Task will be created in current month and any selected months
-            </p>
-          </div>
         </form>
       </div>
 
