@@ -77,7 +77,9 @@ fresh-start: down clean up
 dev-local:
 	@echo "🚀 Installing dependencies..."
 	@npm install > /dev/null 2>&1
-	@cd src/api && npm install > /dev/null 2>&1 && npx prisma generate > /dev/null 2>&1 && cd ../..
+	@cd src/api && npm install > /dev/null 2>&1 && npx prisma generate > /dev/null 2>&1
+	@echo "📦 Applying database migrations..."
+	@cd src/api && npx prisma migrate deploy
 	@echo "✅ Starting backend + frontend locally..."
 	@echo "Frontend: http://localhost:5173"
 	@echo "Backend:  http://localhost:3000"
