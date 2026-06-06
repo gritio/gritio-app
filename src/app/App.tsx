@@ -94,13 +94,11 @@ export default function App() {
   // Silent refresh after task saves — no loading spinner, no view reset
   const refreshTasksQuietly = async () => {
     try {
-      const [fetchedGoals, fetchedMonthlyGoals, fetchedTasks] = await Promise.all([
+      const [fetchedGoals, fetchedTasks] = await Promise.all([
         goalsApi.getGoals(),
-        monthlyGoalsApi.getAllMonthlyGoals(),
         tasksApi.getAllTasks(),
       ]);
       setGoals(fetchedGoals);
-      setMonthlyGoals(fetchedMonthlyGoals);
       setTasks(fetchedTasks);
     } catch {
       // Silently ignore — stale data is better than a broken interstitial
@@ -121,20 +119,18 @@ export default function App() {
       
       const fetchPromise = Promise.all([
         goalsApi.getGoals(),
-        monthlyGoalsApi.getAllMonthlyGoals(),
         tasksApi.getAllTasks(),
         todosApi.getAllTodos(),
         lifeGoalsApi.getLifeGoals()
       ]);
-      const [fetchedGoals, fetchedMonthlyGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals] = await Promise.race([fetchPromise, timeoutPromise]) as any;
-      
+      const [fetchedGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals] = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
       console.log('Goals fetched successfully:', fetchedGoals);
-      console.log('Monthly goals fetched successfully:', fetchedMonthlyGoals);
       console.log('Tasks fetched successfully:', fetchedTasks);
       console.log('Todos fetched successfully:', fetchedTodos);
       console.log('Life goals fetched successfully:', fetchedLifeGoals);
       setGoals(fetchedGoals);
-      setMonthlyGoals(fetchedMonthlyGoals);
+      setMonthlyGoals([]);
       setTasks(fetchedTasks);
       setTodos(fetchedTodos);
       setLifeGoals(fetchedLifeGoals || []);
@@ -166,7 +162,7 @@ export default function App() {
       console.log('Using mock data as fallback');
       // Fall back to mock data on error
       setGoals(mockGoals);
-      setMonthlyGoals(mockMonthlyGoals);
+      setMonthlyGoals([]);
       setTasks(mockTasks);
       setLoadingError(null); // Clear error after fallback
       setGoalsLoading(false);

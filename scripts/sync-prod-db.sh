@@ -83,10 +83,11 @@ fi
 echo -e "${GREEN}✓ Postgres resolved to $POSTGRES_IP${NC}"
 
 # Create SSH tunnel via backend to postgres
-LOCAL_TUNNEL_PORT=5433
+# Use port 5434 (not 5433) to avoid killing the local Docker postgres port-forward
+LOCAL_TUNNEL_PORT=5434
 echo -e "${YELLOW}🔗 Creating SSH tunnel (localhost:$LOCAL_TUNNEL_PORT → postgres)...${NC}"
 
-# Kill any existing tunnel on this port
+# Kill any existing tunnel on this port (safe - 5434 is dedicated for sync tunnel)
 lsof -ti:$LOCAL_TUNNEL_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
 sleep 1
 

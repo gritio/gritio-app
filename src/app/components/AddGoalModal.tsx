@@ -30,8 +30,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     targetHours: '',
     targetMinutes: ''
   });
-  const [autoCreateMonthly, setAutoCreateMonthly] = useState(false);
-  const [distributionStrategy, setDistributionStrategy] = useState<'spread' | 'equal' | 'frontload' | 'progressive'>('spread');
   const [startValue, setStartValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,113 +69,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     return 0;
   };
 
-  const calculateMonthlyDistribution = (): number[] => {
-    const target = getTargetValue();
-    const months: number[] = Array(12).fill(0);
-
-    if (target <= 0) return months;
-
-    if (distributionStrategy === 'spread') {
-      // Distribute evenly across quarters
-      const remainder = target % 4;
-      const basePerMonth = Math.floor(target / 4);
-      
-      // Assign to Jan, Apr, Jul, Oct
-      months[0] = basePerMonth + (remainder > 0 ? 1 : 0);
-      months[3] = basePerMonth + (remainder > 1 ? 1 : 0);
-      months[6] = basePerMonth + (remainder > 2 ? 1 : 0);
-      months[9] = basePerMonth + (remainder > 3 ? 1 : 0);
-    } else if (distributionStrategy === 'equal') {
-      // Divide equally across all 12 months
-      const monthlyTarget = parseFloat((target / 12).toFixed(2));
-      for (let i = 0; i < 12; i++) {
-        months[i] = monthlyTarget;
-      }
-    } else if (distributionStrategy === 'frontload') {
-      // Fill first N months
-      const wholePart = Math.floor(target);
-      const fractionalPart = target - wholePart;
-      
-      for (let i = 0; i < wholePart; i++) {
-        months[i] = 1;
-      }
-      if (fractionalPart > 0 && wholePart < 12) {
-        months[wholePart] = fractionalPart;
-      }
-    } else if (distributionStrategy === 'progressive') {
-      // Ramp from startValue to target linearly, then maintain
-      const start = parseInt(startValue) || 0;
-      const monthsToReach = Math.min(target, 12);
-      const incrementPerMonth = (target - start) / monthsToReach;
-      
-      for (let i = 0; i < 12; i++) {
-        if (i < monthsToReach) {
-          months[i] = Math.round(start + (i + 1) * incrementPerMonth);
-        } else {
-          months[i] = target;
-        }
-      }
-    }
-
-    return months;
-  };
-
-  const getDistributionDescription = () => {
-    const target = getTargetValue();
-    if (target <= 0) return 'Set a target value first';
-
-    if (distributionStrategy === 'spread') {
-      return `Distribute quarterly: ${Math.ceil(target / 4)} per quarter`;
-    } else if (distributionStrategy === 'equal') {
-      return `Consistent targets: ${(target / 12).toFixed(2)} per month`;
-    } else if (distributionStrategy === 'frontload') {
-      return `Build momentum early: Fill first ${Math.ceil(target)} months`;
-    } else if (distributionStrategy === 'progressive') {
-      const start = parseFloat(startValue) || 0;
-      return `Ramp from ${start} to ${target}: increasing each month`;
-    }
-    return '';
-  };
-
-  const getStrategyBenefits = () => {
-    if (distributionStrategy === 'spread') {
-      return 'Even pacing throughout year, clear targets';
-    } else if (distributionStrategy === 'equal') {
-      return 'Consistent targets every month, total equals goal';
-    } else if (distributionStrategy === 'frontload') {
-      return 'Build momentum early, finish ahead of schedule';
-    } else if (distributionStrategy === 'progressive') {
-      return 'Start easy, build progressively toward goal';
-    }
-    return '';
-  };
-
-  const renderDistributionPreview = () => {
-    const distribution = calculateMonthlyDistribution();
-    const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-    
-    return (
-      <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg">
-        <div className="flex items-end justify-between gap-1 h-32">
-          {distribution.map((value, index) => (
-            <div key={index} className="flex flex-col items-center flex-1">
-              <div className="text-xs text-gray-600 mb-2">{value.toFixed(2)}</div>
-              <div className="w-full bg-gray-200 rounded relative overflow-hidden h-20 flex items-end">
-                {value > 0 && (
-                  <div
-                    className="w-full bg-[#805232] transition-all"
-                    style={{height: `${Math.min((value / getTargetValue()) * 100, 100)}%`}}
-                  />
-                )}
-              </div>
-              <div className="text-xs text-gray-600 mt-2">{months[index]}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -194,20 +85,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
         remarks: formData.remarks || undefined,
         lifeGoalId: formData.lifeGoalId || undefined,
       };
-
-      if (autoCreateMonthly) {
-        goalPayload.autoCreateMonthly = true;
-        const strategyMap: Record<string, string> = {
-          'spread': 'SPREAD_EVENLY',
-          'equal': 'EQUAL_DISTRIBUTION',
-          'frontload': 'FRONT_LOAD',
-          'progressive': 'PROGRESSIVE'
-        };
-        goalPayload.distributionStrategy = strategyMap[distributionStrategy] || 'SPREAD_EVENLY';
-        if (distributionStrategy === 'progressive') {
-          goalPayload.startValue = parseInt(startValue);
-        }
-      }
 
       if (formData.unit === 'Kilogram' && weightData.startWeight) {
         goalPayload.weightGoal = {
@@ -242,7 +119,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       setCountData({ targetCount: '' });
       setTimeData({ targetHours: '', targetMinutes: '' });
       setStartValue('');
-      setAutoCreateMonthly(false);
       console.log('Closing modal');
       onClose();
     } catch (err: any) {
@@ -479,136 +355,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
               />
             </div>
             
-            {/* Auto Create Monthly Targets Section */}
-            <div className="border-t pt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <input
-                  type="checkbox"
-                  id="autoCreateMonthly"
-                  checked={autoCreateMonthly}
-                  onChange={(e) => setAutoCreateMonthly(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <label htmlFor="autoCreateMonthly" className="text-sm font-medium text-[#805232] cursor-pointer">
-                  Automatically create monthly targets
-                </label>
-              </div>
-
-              {autoCreateMonthly && (
-                <div className="space-y-4 ml-6">
-                  <div>
-                    <label className="block text-sm mb-3 text-[#805232] font-medium">
-                      Distribution Strategy
-                    </label>
-                    <div className="space-y-2">
-                      {/* Spread Evenly */}
-                      <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                        style={{borderColor: distributionStrategy === 'spread' ? '#805232' : '', backgroundColor: distributionStrategy === 'spread' ? '#f5f1ed' : ''}}>
-                        <input
-                          type="radio"
-                          name="strategy"
-                          value="spread"
-                          checked={distributionStrategy === 'spread'}
-                          onChange={(e) => setDistributionStrategy(e.target.value as any)}
-                          className="w-4 h-4 mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-[#805232]">Spread Evenly</span>
-                            <span className="text-xs bg-[#805232] text-white px-2 py-1 rounded">Recommended</span>
-                          </div>
-                          <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
-                        </div>
-                      </label>
-
-                      {/* Equal Distribution */}
-                      <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                        style={{borderColor: distributionStrategy === 'equal' ? '#805232' : '', backgroundColor: distributionStrategy === 'equal' ? '#f5f1ed' : ''}}>
-                        <input
-                          type="radio"
-                          name="strategy"
-                          value="equal"
-                          checked={distributionStrategy === 'equal'}
-                          onChange={(e) => setDistributionStrategy(e.target.value as any)}
-                          className="w-4 h-4 mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-[#805232]">Equal Distribution</div>
-                          <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
-                        </div>
-                      </label>
-
-                      {/* Front Load */}
-                      <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                        style={{borderColor: distributionStrategy === 'frontload' ? '#805232' : '', backgroundColor: distributionStrategy === 'frontload' ? '#f5f1ed' : ''}}>
-                        <input
-                          type="radio"
-                          name="strategy"
-                          value="frontload"
-                          checked={distributionStrategy === 'frontload'}
-                          onChange={(e) => setDistributionStrategy(e.target.value as any)}
-                          className="w-4 h-4 mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-[#805232]">Front Load</div>
-                          <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
-                        </div>
-                      </label>
-
-                      {/* Progressive - Only for Count and Time goals */}
-                      {(formData.unit === 'Count' || formData.unit === 'Time') && (
-                        <label className="flex items-start gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                          style={{borderColor: distributionStrategy === 'progressive' ? '#805232' : '', backgroundColor: distributionStrategy === 'progressive' ? '#f5f1ed' : ''}}>
-                          <input
-                            type="radio"
-                            name="strategy"
-                            value="progressive"
-                            checked={distributionStrategy === 'progressive'}
-                            onChange={(e) => setDistributionStrategy(e.target.value as any)}
-                            className="w-4 h-4 mt-0.5"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-[#805232]">Progressive</div>
-                            <p className="text-xs text-gray-600 mt-1">{getStrategyBenefits()}</p>
-                          </div>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Progressive Strategy Fields */}
-                  {(formData.unit === 'Count' || formData.unit === 'Time') && distributionStrategy === 'progressive' && (
-                    <div className="ml-6 p-3 bg-gray-50 rounded-lg">
-                      <div className="max-w-xs">
-                        <label className="block text-xs mb-1 text-[#805232] font-medium">
-                          Start Value *
-                        </label>
-                        <input
-                          type="number"
-                          step="1"
-                          value={startValue}
-                          onChange={(e) => setStartValue(e.target.value)}
-                          placeholder="e.g., 3"
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
-                        />
-                        <p className="text-xs text-gray-600 mt-2">
-                          Will increase to {getTargetValue()} by year-end
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Distribution Preview */}
-                  <div>
-                    <label className="block text-sm mb-2 text-[#805232] font-medium">
-                      Monthly Distribution Preview
-                    </label>
-                    <p className="text-xs text-gray-600 mb-2">{getDistributionDescription()}</p>
-                    {renderDistributionPreview()}
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
           
           {/* Error Message */}
