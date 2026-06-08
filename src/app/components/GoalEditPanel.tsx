@@ -57,7 +57,12 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
         remarks: formData.remarks,
         lifeGoalId: formData.lifeGoalId || undefined,
       };
-      
+
+      // Kilogram goals always stay LOGS; for others, send the chosen mode.
+      if (formData.unit !== 'Kilogram' && formData.progressSource) {
+        updateData.progressSource = formData.progressSource;
+      }
+
       if (formData.unit === 'Kilogram' && formData.weightGoal) {
         updateData.weightGoal = {
           startWeight: formData.weightGoal.startWeight,
@@ -172,6 +177,48 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
             </div>
           </div>
           
+          {/* Progress tracking mode - hidden for Kilogram (always LOGS) */}
+          {(formData.unit === 'Count' || formData.unit === 'Time') && (
+            <div className="border border-[#B8B9BA] rounded-lg p-4 bg-[#FAFAFA]">
+              <label className="block text-sm mb-3 text-[#805232] font-bold">
+                Track progress by *
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editProgressSource"
+                    value="TASKS"
+                    checked={formData.progressSource === 'TASKS'}
+                    onChange={() => setFormData({ ...formData, progressSource: 'TASKS' })}
+                    className="mt-1 accent-[#805232]"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-[#805232]">From weekly/daily tasks</div>
+                    <div className="text-xs text-[#999]">Progress aggregated from task completions</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="editProgressSource"
+                    value="LOGS"
+                    checked={formData.progressSource === 'LOGS'}
+                    onChange={() => setFormData({ ...formData, progressSource: 'LOGS' })}
+                    className="mt-1 accent-[#805232]"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-[#805232]">Log entries manually</div>
+                    <div className="text-xs text-[#999]">Add entries as they happen</div>
+                  </div>
+                </label>
+              </div>
+              <p className="text-xs text-[#805232] mt-3">
+                Switching changes how progress is calculated. Existing tasks and logs are preserved.
+              </p>
+            </div>
+          )}
+
           {/* Current Weight - Only show if Kilogram is selected */}
           {formData.unit === 'Kilogram' && (
             <div>

@@ -62,6 +62,7 @@ model Goal {
   remarks               String?
   yearlyMeasure         String?    // deprecated - use unit-specific targets instead
   distributionStrategy  DistributionStrategy @default(SPREAD_EVENLY)
+  progressSource        ProgressSource @default(TASKS) // TASKS = aggregate from completions, LOGS = manual entries
   startValue            Float?     // For PROGRESSIVE: starting amount
   finalTarget           Float?     // For PROGRESSIVE: target by year-end
   createdAt             DateTime   @default(now())
@@ -74,9 +75,25 @@ model Goal {
   weightGoal            WeightGoal?
   countGoal             CountGoal?
   timeGoal              TimeGoal?
+  logs                  GoalLog[]
 
   @@index([userId])
   @@index([lifeGoalId])
+}
+
+// Manual log entries against a goal (used when progressSource = LOGS)
+model GoalLog {
+  id        String   @id @default(cuid())
+  goalId    String
+  value     Float    // weight in kg, count, or minutes depending on goal unit
+  remarks   String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goal      Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, loggedAt])
 }
 
 // Weight-specific goal tracking
@@ -226,4 +243,9 @@ enum DistributionStrategy {
   EQUAL_DISTRIBUTION
   FRONT_LOAD
   PROGRESSIVE
+}
+
+enum ProgressSource {
+  TASKS
+  LOGS
 }

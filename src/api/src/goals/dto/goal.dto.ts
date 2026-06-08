@@ -50,6 +50,10 @@ export class CreateGoalDto {
   distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
 
   @IsOptional()
+  @IsString()
+  progressSource?: 'TASKS' | 'LOGS';
+
+  @IsOptional()
   @IsNumber()
   startValue?: number;
 
@@ -98,6 +102,10 @@ export class UpdateGoalDto {
   @IsOptional()
   @IsString()
   distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
+
+  @IsOptional()
+  @IsString()
+  progressSource?: 'TASKS' | 'LOGS';
 
   @IsOptional()
   @IsNumber()

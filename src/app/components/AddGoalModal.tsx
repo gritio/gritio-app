@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Goal, MeasurementType, Frequency, LifeGoal } from '../types';
+import { Goal, MeasurementType, Frequency, LifeGoal, ProgressSource } from '../types';
 import { X } from 'lucide-react';
 import { lifeGoalsApi } from '../services/api';
 
@@ -31,6 +31,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     targetMinutes: ''
   });
   const [startValue, setStartValue] = useState('');
+  const [progressSource, setProgressSource] = useState<ProgressSource>('TASKS');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
@@ -76,6 +77,10 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     
     try {
       console.log('Form submission started');
+      // Kilogram goals always log-driven; otherwise honor user's pick.
+      const effectiveProgressSource: ProgressSource =
+        formData.unit === 'Kilogram' ? 'LOGS' : progressSource;
+
       const goalPayload: any = {
         title: formData.title,
         area: formData.area,
@@ -84,6 +89,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
         endDate: formData.endDate,
         remarks: formData.remarks || undefined,
         lifeGoalId: formData.lifeGoalId || undefined,
+        progressSource: effectiveProgressSource,
       };
 
       if (formData.unit === 'Kilogram' && weightData.startWeight) {
@@ -119,6 +125,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       setCountData({ targetCount: '' });
       setTimeData({ targetHours: '', targetMinutes: '' });
       setStartValue('');
+      setProgressSource('TASKS');
       console.log('Closing modal');
       onClose();
     } catch (err: any) {
@@ -226,6 +233,45 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
               </select>
             </div>
             
+            {/* Progress tracking mode - hidden for Kilogram (always LOGS) */}
+            {(formData.unit === 'Count' || formData.unit === 'Time') && (
+              <div className="border border-[#B8B9BA] rounded-lg p-4 bg-white">
+                <label className="block text-sm mb-3 text-[#805232] font-semibold">
+                  Track progress by *
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="progressSource"
+                      value="TASKS"
+                      checked={progressSource === 'TASKS'}
+                      onChange={() => setProgressSource('TASKS')}
+                      className="mt-1 accent-[#805232]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[#805232]">From weekly/daily tasks</div>
+                      <div className="text-xs text-[#999]">Progress aggregated from task completions (e.g. workout 3x/week)</div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="progressSource"
+                      value="LOGS"
+                      checked={progressSource === 'LOGS'}
+                      onChange={() => setProgressSource('LOGS')}
+                      className="mt-1 accent-[#805232]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[#805232]">Log entries manually</div>
+                      <div className="text-xs text-[#999]">Add entries as they happen (trips taken, hours logged, etc.)</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Weight Goal Fields - Only show if Kilogram is selected */}
             {formData.unit === 'Kilogram' && (
               <>

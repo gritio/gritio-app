@@ -81,6 +81,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.todo;
   }
 
+  get goalLog() {
+    return this.prisma.goalLog;
+  }
+
   async executeRawUnsafe(query: string, ...values: any[]) {
     return this.prisma.$executeRawUnsafe(query, ...values);
   }
