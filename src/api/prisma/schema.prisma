@@ -52,8 +52,7 @@ model Goal {
   userId                String
   lifeGoalId            String?    // Optional link to a life goal
   title                 String
-  area                  String     // e.g., "Health", "Learning", "Career"
-  unit                  String     // "Kilogram", "Count", "Time"
+  unit                  String     // "Kilogram", "Count", "Time", "Percentage"
   startDate             DateTime
   endDate               DateTime
   target                Int        // 100 for percentage
@@ -75,10 +74,22 @@ model Goal {
   weightGoal            WeightGoal?
   countGoal             CountGoal?
   timeGoal              TimeGoal?
+  percentageGoal        PercentageGoal?
   logs                  GoalLog[]
 
   @@index([userId])
   @@index([lifeGoalId])
+}
+
+// Percentage adherence goals (e.g. "achieve 80% adherence on weekly tasks")
+model PercentageGoal {
+  id            String   @id @default(cuid())
+  goalId        String   @unique
+  targetPercent Int      // e.g., 80 means goal is met at 80% avg adherence
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  goal          Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
 }
 
 // Manual log entries against a goal (used when progressSource = LOGS)

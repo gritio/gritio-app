@@ -80,6 +80,17 @@ export class GoalsService {
       return 'BEHIND';
     }
 
+    // Percentage goals: status compares avg adherence to target threshold.
+    if (goal.unit === 'Percentage' && goal.percentageGoal) {
+      const { progressAvg } = await this.computeTaskProgress(goal.id);
+      const target = goal.percentageGoal.targetPercent;
+      if (progressAvg >= target) return 'COMPLETED';
+      const pace = target > 0 ? (progressAvg / target) * 100 : 0;
+      if (pace >= 70) return 'ON_TRACK';
+      if (pace >= 50) return 'AT_RISK';
+      return 'BEHIND';
+    }
+
     // TASKS mode: use existing pace-based logic
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -131,15 +142,17 @@ export class GoalsService {
     console.log('GoalsService.createGoal - userId:', userId);
     console.log('GoalsService.createGoal - title:', dto.title);
 
-    // Kilogram goals are always log-driven; otherwise honor the DTO (default TASKS).
-    const progressSource = dto.unit === 'Kilogram' ? 'LOGS' : (dto.progressSource || 'TASKS');
+    // Kilogram = always LOGS, Percentage = always TASKS, others = honor DTO (default TASKS).
+    let progressSource: 'TASKS' | 'LOGS' = 'TASKS';
+    if (dto.unit === 'Kilogram') progressSource = 'LOGS';
+    else if (dto.unit === 'Percentage') progressSource = 'TASKS';
+    else progressSource = dto.progressSource || 'TASKS';
 
     const goal = await this.prisma.goal.create({
       data: {
         userId,
         lifeGoalId: dto.lifeGoalId || null,
         title: dto.title,
-        area: dto.area,
         unit: dto.unit,
         yearlyMeasure: '', // deprecated field, keeping for backward compatibility
         startDate: new Date(dto.startDate),
@@ -155,6 +168,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        percentageGoal: true,
         lifeGoal: true,
       },
     });
@@ -182,6 +196,13 @@ export class GoalsService {
           goalId: goal.id,
           targetHours: dto.timeGoal.targetHours,
           targetMinutes: dto.timeGoal.targetMinutes || 0,
+        },
+      });
+    } else if (dto.unit === 'Percentage' && dto.percentageGoal) {
+      await this.prisma.percentageGoal.create({
+        data: {
+          goalId: goal.id,
+          targetPercent: dto.percentageGoal.targetPercent,
         },
       });
     }
@@ -220,6 +241,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        percentageGoal: true,
         lifeGoal: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -236,6 +258,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        percentageGoal: true,
         lifeGoal: true,
       },
     });
@@ -271,6 +294,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        percentageGoal: true,
         lifeGoal: true,
       },
     });
@@ -304,10 +328,18 @@ export class GoalsService {
       if (dto.timeGoal.targetMinutes !== undefined) timeGoalData.targetMinutes = dto.timeGoal.targetMinutes;
       if (dto.timeGoal.currentHours !== undefined) timeGoalData.currentHours = dto.timeGoal.currentHours;
       if (dto.timeGoal.currentMinutes !== undefined) timeGoalData.currentMinutes = dto.timeGoal.currentMinutes;
-      
+
       await this.prisma.timeGoal.update({
         where: { goalId: id },
         data: timeGoalData,
+      });
+    }
+
+    if (dto.percentageGoal?.targetPercent !== undefined) {
+      await this.prisma.percentageGoal.upsert({
+        where: { goalId: id },
+        update: { targetPercent: dto.percentageGoal.targetPercent },
+        create: { goalId: id, targetPercent: dto.percentageGoal.targetPercent },
       });
     }
 
@@ -337,6 +369,7 @@ export class GoalsService {
         weightGoal: true,
         countGoal: true,
         timeGoal: true,
+        percentageGoal: true,
       },
     });
 
@@ -388,7 +421,13 @@ export class GoalsService {
     } else {
       // TASKS mode: progress bar uses average adherence (bounded 0-100%).
       const { progressAvg } = await this.computeTaskProgress(goalId);
-      newProgress = Math.round(progressAvg);
+      // Percentage goals scale against their target adherence threshold (e.g. 80%).
+      if (goal.unit === 'Percentage' && goal.percentageGoal) {
+        const target = goal.percentageGoal.targetPercent;
+        newProgress = target > 0 ? Math.round((progressAvg / target) * 100) : 0;
+      } else {
+        newProgress = Math.round(progressAvg);
+      }
     }
 
     await this.prisma.goal.update({

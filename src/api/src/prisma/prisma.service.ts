@@ -65,6 +65,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.timeGoal;
   }
 
+  get percentageGoal() {
+    return this.prisma.percentageGoal;
+  }
+
   get task() {
     return this.prisma.task;
   }

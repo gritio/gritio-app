@@ -64,7 +64,6 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
             <div className="flex-1">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <div className="text-sm text-[#805232] mb-1">{goal.area}</div>
                   <h1 className="mb-2 text-[#805232]">{goal.title}</h1>
                   <p className="text-[#805232]">Yearly Target: {goal.yearlyMeasure}</p>
                 </div>

@@ -6,15 +6,14 @@ import { COLORS } from '../constants/colors';
 
 function getIconForGoal(goal: Goal): { Icon: React.ReactNode; bgColor: string; iconColor: string } {
   const title = goal.title.toLowerCase();
-  const area = goal.area?.toLowerCase() || '';
 
-  if (area.includes('health') || title.includes('health') || title.includes('fitness') || title.includes('weight')) {
+  if (title.includes('health') || title.includes('fitness') || title.includes('weight')) {
     return { Icon: <Heart className="w-4 h-4" />, bgColor: '#fde8e0', iconColor: '#d85a30' };
   }
-  if (area.includes('financial') || area.includes('money') || title.includes('financial') || title.includes('retire')) {
+  if (title.includes('financial') || title.includes('retire') || title.includes('money')) {
     return { Icon: <Building2 className="w-4 h-4" />, bgColor: '#fdf8e0', iconColor: '#854f0b' };
   }
-  if (area.includes('family') || title.includes('family') || title.includes('nandu') || title.includes('child')) {
+  if (title.includes('family') || title.includes('nandu') || title.includes('child')) {
     return { Icon: <Users className="w-4 h-4" />, bgColor: COLORS.successLight, iconColor: COLORS.success };
   }
   return { Icon: <Star className="w-4 h-4" />, bgColor: '#ede9fe', iconColor: '#6d28d9' };
@@ -123,8 +122,24 @@ export function CollapsibleGoalRow({
     }
   };
 
+  const isPercentage = goal.unit === 'Percentage';
+
   // Headline metrics
   const headlineLeft = (() => {
+    if (isPercentage && goal.percentageGoal) {
+      const avg = Math.round(goal.progressAvg || 0);
+      const target = goal.percentageGoal.targetPercent;
+      return (
+        <>
+          <div className="text-base font-semibold text-[#805232]">
+            {avg}%
+          </div>
+          <div className="text-xs text-[#999] font-medium">
+            target: {target}%
+          </div>
+        </>
+      );
+    }
     if (isTasksMode) {
       return (
         <>

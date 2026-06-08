@@ -149,7 +149,6 @@ export const authApi = {
 export const goalsApi = {
   createGoal: async (goalData: {
     title: string;
-    area: string;
     unit: string;
     startDate: string;
     endDate: string;
@@ -157,6 +156,7 @@ export const goalsApi = {
     weightGoal?: { startWeight: number; currentWeight: number; targetWeight: number };
     countGoal?: { targetCount: number };
     timeGoal?: { targetHours: number; targetMinutes?: number };
+    percentageGoal?: { targetPercent: number };
     progressSource?: 'TASKS' | 'LOGS';
   }): Promise<Goal> => {
     try {
@@ -196,6 +196,7 @@ export const goalsApi = {
       weightGoal?: { startWeight?: number; currentWeight?: number; targetWeight?: number };
       countGoal?: { targetCount?: number; currentCount?: number };
       timeGoal?: { targetHours?: number; targetMinutes?: number; currentHours?: number; currentMinutes?: number };
+      percentageGoal?: { targetPercent?: number };
       autoCreateMonthly?: boolean;
       distributionStrategy?: string;
       progressSource?: 'TASKS' | 'LOGS';
