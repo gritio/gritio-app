@@ -12,7 +12,6 @@ interface AddGoalModalProps {
 export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
   const [formData, setFormData] = useState({
     title: '',
-    area: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     unit: '',
@@ -29,6 +28,9 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
   const [timeData, setTimeData] = useState({
     targetHours: '',
     targetMinutes: ''
+  });
+  const [percentageData, setPercentageData] = useState({
+    targetPercent: '80'
   });
   const [startValue, setStartValue] = useState('');
   const [progressSource, setProgressSource] = useState<ProgressSource>('TASKS');
@@ -77,13 +79,14 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     
     try {
       console.log('Form submission started');
-      // Kilogram goals always log-driven; otherwise honor user's pick.
+      // Kilogram → LOGS (forced); Percentage → TASKS (forced); else honor pick.
       const effectiveProgressSource: ProgressSource =
-        formData.unit === 'Kilogram' ? 'LOGS' : progressSource;
+        formData.unit === 'Kilogram' ? 'LOGS'
+        : formData.unit === 'Percentage' ? 'TASKS'
+        : progressSource;
 
       const goalPayload: any = {
         title: formData.title,
-        area: formData.area,
         unit: formData.unit,
         startDate: formData.startDate,
         endDate: formData.endDate,
@@ -107,6 +110,10 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
           targetHours: parseInt(timeData.targetHours),
           targetMinutes: parseInt(timeData.targetMinutes) || 0
         };
+      } else if (formData.unit === 'Percentage' && percentageData.targetPercent) {
+        goalPayload.percentageGoal = {
+          targetPercent: parseInt(percentageData.targetPercent)
+        };
       }
       await onSave(goalPayload);
       console.log('Goal saved successfully');
@@ -114,7 +121,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       // Reset form
       setFormData({
         title: '',
-        area: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         unit: '',
@@ -124,6 +130,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       setWeightData({ startWeight: '', targetWeight: '' });
       setCountData({ targetCount: '' });
       setTimeData({ targetHours: '', targetMinutes: '' });
+      setPercentageData({ targetPercent: '80' });
       setStartValue('');
       setProgressSource('TASKS');
       console.log('Closing modal');
@@ -194,27 +201,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
               )}
             </div>
             
-            {/* Area */}
-            <div>
-              <label className="block text-sm mb-2 text-[#805232]">
-                Area *
-              </label>
-              <select
-                required
-                value={formData.area}
-                onChange={(e) => setFormData({...formData, area: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
-              >
-                <option value="">Select an area</option>
-                <option value="Health">Health</option>
-                <option value="Learning">Learning</option>
-                <option value="Career">Career</option>
-                <option value="Finance">Finance</option>
-                <option value="Relationships">Relationships</option>
-                <option value="Personal">Personal</option>
-              </select>
-            </div>
-            
             {/* Unit */}
             <div>
               <label className="block text-sm mb-2 text-[#805232]">
@@ -230,6 +216,7 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                 <option value="Count">Count</option>
                 <option value="Time">Time</option>
                 <option value="Kilogram">Kilogram</option>
+                <option value="Percentage">Percentage (adherence)</option>
               </select>
             </div>
             
@@ -357,7 +344,29 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                 </div>
               </div>
             )}
-            
+
+            {/* Percentage Goal Field - Only show if Percentage is selected */}
+            {formData.unit === 'Percentage' && (
+              <div>
+                <label className="block text-sm mb-2 text-[#805232]">
+                  Target Adherence % *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="100"
+                  value={percentageData.targetPercent}
+                  onChange={(e) => setPercentageData({ targetPercent: e.target.value })}
+                  placeholder="e.g., 80"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                />
+                <p className="text-xs text-[#999] mt-1">
+                  Goal is met when your average task adherence reaches this %.
+                </p>
+              </div>
+            )}
+
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div>

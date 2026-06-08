@@ -41,7 +41,6 @@ export interface TaskProgressEntry {
 export interface Goal {
   id: string;
   title: string;
-  area: string; // e.g., "Health", "Learning", "Career"
   startDate: Date;
   endDate: Date;
   target: number;
@@ -61,6 +60,9 @@ export interface Goal {
     targetMinutes: number;
     currentHours: number;
     currentMinutes: number;
+  };
+  percentageGoal?: {
+    targetPercent: number;
   };
   bookGoal?: BookGoal;
   monthlyGoals?: any[];

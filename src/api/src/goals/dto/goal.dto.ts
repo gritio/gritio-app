@@ -5,9 +5,6 @@ export class CreateGoalDto {
   title: string;
 
   @IsString()
-  area: string;
-
-  @IsString()
   unit: string;
 
   @IsDateString()
@@ -40,6 +37,11 @@ export class CreateGoalDto {
   timeGoal?: {
     targetHours: number;
     targetMinutes?: number;
+  };
+
+  @IsOptional()
+  percentageGoal?: {
+    targetPercent: number;
   };
 
   @IsOptional()
@@ -94,6 +96,11 @@ export class UpdateGoalDto {
     targetMinutes?: number;
     currentHours?: number;
     currentMinutes?: number;
+  };
+
+  @IsOptional()
+  percentageGoal?: {
+    targetPercent?: number;
   };
 
   @IsOptional()

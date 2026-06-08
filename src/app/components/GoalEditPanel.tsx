@@ -44,10 +44,13 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData) return;
-    
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e && 'preventDefault' in e) e.preventDefault();
+    if (!formData) {
+      console.error('GoalEditPanel.handleSubmit: formData is null, aborting');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
@@ -58,8 +61,12 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
         lifeGoalId: formData.lifeGoalId || undefined,
       };
 
-      // Kilogram goals always stay LOGS; for others, send the chosen mode.
-      if (formData.unit !== 'Kilogram' && formData.progressSource) {
+      // Kilogram + Percentage have forced modes; others send the chosen mode.
+      if (
+        formData.unit !== 'Kilogram' &&
+        formData.unit !== 'Percentage' &&
+        formData.progressSource
+      ) {
         updateData.progressSource = formData.progressSource;
       }
 
@@ -78,15 +85,22 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
           targetHours: formData.timeGoal.targetHours,
           targetMinutes: formData.timeGoal.targetMinutes || 0,
         };
+      } else if (formData.unit === 'Percentage' && formData.percentageGoal) {
+        updateData.percentageGoal = {
+          targetPercent: formData.percentageGoal.targetPercent,
+        };
       }
-      
+
+      console.log('GoalEditPanel.handleSubmit: sending updateData', updateData);
       const updatedGoal = await goalsApi.updateGoal(formData.id, updateData);
+      console.log('GoalEditPanel.handleSubmit: received updated goal', updatedGoal);
       onSave(updatedGoal);
       onClose();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update goal';
-      console.error('Goal update error:', errorMsg);
-      setError(errorMsg);
+      const detail = err.response?.data ? JSON.stringify(err.response.data) : '';
+      console.error('Goal update error:', errorMsg, detail, err);
+      setError(`${errorMsg}${detail ? ` — ${detail}` : ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -155,16 +169,6 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
                 </option>
               ))}
             </select>
-          </div>
-          
-          {/* Area - Read Only */}
-          <div>
-            <label className="block text-sm mb-2 text-[#805232] font-bold">
-              Area
-            </label>
-            <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-[#805232] flex items-center">
-              {formData.area}
-            </div>
           </div>
           
           {/* Unit - Read Only */}
@@ -273,6 +277,36 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
                 placeholder="e.g., 24"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
               />
+            </div>
+          )}
+
+          {/* Percentage Goal Field - Only show if Percentage is selected */}
+          {formData.unit === 'Percentage' && (
+            <div>
+              <label className="block text-sm mb-2 text-[#805232] font-bold">
+                Target Adherence % *
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                max="100"
+                value={formData.percentageGoal?.targetPercent ?? ''}
+                onChange={(e) => {
+                  const targetPercent = parseInt(e.target.value) || 0;
+                  if (formData) {
+                    setFormData({
+                      ...formData,
+                      percentageGoal: { targetPercent },
+                    });
+                  }
+                }}
+                placeholder="e.g., 80"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+              />
+              <p className="text-xs text-[#999] mt-1">
+                Goal is met when avg task adherence reaches this %.
+              </p>
             </div>
           )}
 
