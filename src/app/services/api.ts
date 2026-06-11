@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Goal, MonthlyGoal, Task, Todo } from '../types';
+import { Goal, MonthlyGoal, Task, Todo, GoalLog } from '../types';
 import { getToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -149,7 +149,6 @@ export const authApi = {
 export const goalsApi = {
   createGoal: async (goalData: {
     title: string;
-    area: string;
     unit: string;
     startDate: string;
     endDate: string;
@@ -157,6 +156,8 @@ export const goalsApi = {
     weightGoal?: { startWeight: number; currentWeight: number; targetWeight: number };
     countGoal?: { targetCount: number };
     timeGoal?: { targetHours: number; targetMinutes?: number };
+    percentageGoal?: { targetPercent: number };
+    progressSource?: 'TASKS' | 'LOGS';
   }): Promise<Goal> => {
     try {
       console.log('API: Creating goal with data:', goalData);
@@ -195,8 +196,10 @@ export const goalsApi = {
       weightGoal?: { startWeight?: number; currentWeight?: number; targetWeight?: number };
       countGoal?: { targetCount?: number; currentCount?: number };
       timeGoal?: { targetHours?: number; targetMinutes?: number; currentHours?: number; currentMinutes?: number };
+      percentageGoal?: { targetPercent?: number };
       autoCreateMonthly?: boolean;
       distributionStrategy?: string;
+      progressSource?: 'TASKS' | 'LOGS';
       startValue?: number;
     }
   ): Promise<Goal> => {
@@ -213,6 +216,35 @@ export const goalsApi = {
 
   deleteGoal: async (id: string): Promise<void> => {
     await apiClient.delete(`/goals/${id}`);
+  },
+};
+
+export const goalLogsApi = {
+  create: async (data: {
+    goalId: string;
+    value: number;
+    remarks?: string;
+    loggedAt?: string;
+  }): Promise<GoalLog> => {
+    const response = await apiClient.post('/goal-logs', data);
+    return response.data;
+  },
+
+  listByGoal: async (goalId: string): Promise<GoalLog[]> => {
+    const response = await apiClient.get(`/goal-logs/goal/${goalId}`);
+    return response.data;
+  },
+
+  update: async (
+    id: string,
+    data: { value?: number; remarks?: string; loggedAt?: string },
+  ): Promise<GoalLog> => {
+    const response = await apiClient.patch(`/goal-logs/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/goal-logs/${id}`);
   },
 };
 

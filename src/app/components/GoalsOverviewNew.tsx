@@ -128,6 +128,7 @@ export function GoalsOverviewNew({
             onEditGoal={onEditGoal}
             onDeleteGoal={(goalId) => setDeleteConfirmGoalId(goalId)}
             onAddTask={handleOpenAddTaskPanel}
+            onRefreshGoals={onRefreshGoals}
             tasks={tasks}
             isKidsMode={isKidsMode}
           />

@@ -5,9 +5,6 @@ export class CreateGoalDto {
   title: string;
 
   @IsString()
-  area: string;
-
-  @IsString()
   unit: string;
 
   @IsDateString()
@@ -43,11 +40,20 @@ export class CreateGoalDto {
   };
 
   @IsOptional()
+  percentageGoal?: {
+    targetPercent: number;
+  };
+
+  @IsOptional()
   autoCreateMonthly?: boolean;
 
   @IsOptional()
   @IsString()
   distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
+
+  @IsOptional()
+  @IsString()
+  progressSource?: 'TASKS' | 'LOGS';
 
   @IsOptional()
   @IsNumber()
@@ -93,11 +99,20 @@ export class UpdateGoalDto {
   };
 
   @IsOptional()
+  percentageGoal?: {
+    targetPercent?: number;
+  };
+
+  @IsOptional()
   autoCreateMonthly?: boolean;
 
   @IsOptional()
   @IsString()
   distributionStrategy?: 'SPREAD_EVENLY' | 'EQUAL_DISTRIBUTION' | 'FRONT_LOAD' | 'PROGRESSIVE';
+
+  @IsOptional()
+  @IsString()
+  progressSource?: 'TASKS' | 'LOGS';
 
   @IsOptional()
   @IsNumber()

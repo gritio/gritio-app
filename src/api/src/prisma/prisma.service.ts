@@ -65,6 +65,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.timeGoal;
   }
 
+  get percentageGoal() {
+    return this.prisma.percentageGoal;
+  }
+
   get task() {
     return this.prisma.task;
   }
@@ -79,6 +83,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get todo() {
     return this.prisma.todo;
+  }
+
+  get goalLog() {
+    return this.prisma.goalLog;
   }
 
   async executeRawUnsafe(query: string, ...values: any[]) {

@@ -24,10 +24,23 @@ export interface BookGoal {
   booksRead: number;
 }
 
+export type ProgressSource = 'TASKS' | 'LOGS';
+
+export interface TaskProgressEntry {
+  taskId: string;
+  title: string;
+  frequency: 'DAILY' | 'WEEKLY';
+  target: number;
+  timesPerWeek?: number | null;
+  unit: string;
+  ytdValue: number;
+  expected: number;
+  adherence: number;
+}
+
 export interface Goal {
   id: string;
   title: string;
-  area: string; // e.g., "Health", "Learning", "Career"
   startDate: Date;
   endDate: Date;
   target: number;
@@ -48,8 +61,25 @@ export interface Goal {
     currentHours: number;
     currentMinutes: number;
   };
+  percentageGoal?: {
+    targetPercent: number;
+  };
   bookGoal?: BookGoal;
   monthlyGoals?: any[];
+  progressSource: ProgressSource;
+  progressTotal?: number | null;
+  progressAvg?: number | null;
+  taskProgress?: TaskProgressEntry[];
+}
+
+export interface GoalLog {
+  id: string;
+  goalId: string;
+  value: number;
+  remarks?: string | null;
+  loggedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MonthlyGoal {

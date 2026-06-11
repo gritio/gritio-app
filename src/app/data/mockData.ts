@@ -27,7 +27,6 @@ export const mockGoals: Goal[] = [
     id: 'goal-1',
     title: 'Reach Target Weight',
     yearlyMeasure: '87',
-    area: 'Health',
     startDate: new Date('2025-01-01'),
     endDate: new Date('2025-12-31'),
     target: 100, // 100% completion
@@ -45,7 +44,6 @@ export const mockGoals: Goal[] = [
     id: 'goal-2',
     title: 'Read 24 Books',
     yearlyMeasure: '24 Books',
-    area: 'Learning',
     startDate: new Date('2025-01-01'),
     endDate: new Date('2025-12-31'),
     target: 100,
@@ -62,7 +60,6 @@ export const mockGoals: Goal[] = [
     id: 'goal-3',
     title: 'Build Side Project',
     yearlyMeasure: 'Launch MVP',
-    area: 'Career',
     startDate: new Date('2025-01-01'),
     endDate: new Date('2025-12-31'),
     target: 100,

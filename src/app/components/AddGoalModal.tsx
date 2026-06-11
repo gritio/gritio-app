@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Goal, MeasurementType, Frequency, LifeGoal } from '../types';
+import { Goal, MeasurementType, Frequency, LifeGoal, ProgressSource } from '../types';
 import { X } from 'lucide-react';
 import { lifeGoalsApi } from '../services/api';
 
@@ -12,7 +12,6 @@ interface AddGoalModalProps {
 export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
   const [formData, setFormData] = useState({
     title: '',
-    area: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     unit: '',
@@ -30,7 +29,11 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     targetHours: '',
     targetMinutes: ''
   });
+  const [percentageData, setPercentageData] = useState({
+    targetPercent: '80'
+  });
   const [startValue, setStartValue] = useState('');
+  const [progressSource, setProgressSource] = useState<ProgressSource>('TASKS');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
@@ -76,14 +79,20 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
     
     try {
       console.log('Form submission started');
+      // Kilogram → LOGS (forced); Percentage → TASKS (forced); else honor pick.
+      const effectiveProgressSource: ProgressSource =
+        formData.unit === 'Kilogram' ? 'LOGS'
+        : formData.unit === 'Percentage' ? 'TASKS'
+        : progressSource;
+
       const goalPayload: any = {
         title: formData.title,
-        area: formData.area,
         unit: formData.unit,
         startDate: formData.startDate,
         endDate: formData.endDate,
         remarks: formData.remarks || undefined,
         lifeGoalId: formData.lifeGoalId || undefined,
+        progressSource: effectiveProgressSource,
       };
 
       if (formData.unit === 'Kilogram' && weightData.startWeight) {
@@ -101,6 +110,10 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
           targetHours: parseInt(timeData.targetHours),
           targetMinutes: parseInt(timeData.targetMinutes) || 0
         };
+      } else if (formData.unit === 'Percentage' && percentageData.targetPercent) {
+        goalPayload.percentageGoal = {
+          targetPercent: parseInt(percentageData.targetPercent)
+        };
       }
       await onSave(goalPayload);
       console.log('Goal saved successfully');
@@ -108,7 +121,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       // Reset form
       setFormData({
         title: '',
-        area: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
         unit: '',
@@ -118,7 +130,9 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
       setWeightData({ startWeight: '', targetWeight: '' });
       setCountData({ targetCount: '' });
       setTimeData({ targetHours: '', targetMinutes: '' });
+      setPercentageData({ targetPercent: '80' });
       setStartValue('');
+      setProgressSource('TASKS');
       console.log('Closing modal');
       onClose();
     } catch (err: any) {
@@ -187,27 +201,6 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
               )}
             </div>
             
-            {/* Area */}
-            <div>
-              <label className="block text-sm mb-2 text-[#805232]">
-                Area *
-              </label>
-              <select
-                required
-                value={formData.area}
-                onChange={(e) => setFormData({...formData, area: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
-              >
-                <option value="">Select an area</option>
-                <option value="Health">Health</option>
-                <option value="Learning">Learning</option>
-                <option value="Career">Career</option>
-                <option value="Finance">Finance</option>
-                <option value="Relationships">Relationships</option>
-                <option value="Personal">Personal</option>
-              </select>
-            </div>
-            
             {/* Unit */}
             <div>
               <label className="block text-sm mb-2 text-[#805232]">
@@ -223,9 +216,49 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                 <option value="Count">Count</option>
                 <option value="Time">Time</option>
                 <option value="Kilogram">Kilogram</option>
+                <option value="Percentage">Percentage (adherence)</option>
               </select>
             </div>
             
+            {/* Progress tracking mode - hidden for Kilogram (always LOGS) */}
+            {(formData.unit === 'Count' || formData.unit === 'Time') && (
+              <div className="border border-[#B8B9BA] rounded-lg p-4 bg-white">
+                <label className="block text-sm mb-3 text-[#805232] font-semibold">
+                  Track progress by *
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="progressSource"
+                      value="TASKS"
+                      checked={progressSource === 'TASKS'}
+                      onChange={() => setProgressSource('TASKS')}
+                      className="mt-1 accent-[#805232]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[#805232]">From weekly/daily tasks</div>
+                      <div className="text-xs text-[#999]">Progress aggregated from task completions (e.g. workout 3x/week)</div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="progressSource"
+                      value="LOGS"
+                      checked={progressSource === 'LOGS'}
+                      onChange={() => setProgressSource('LOGS')}
+                      className="mt-1 accent-[#805232]"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[#805232]">Log entries manually</div>
+                      <div className="text-xs text-[#999]">Add entries as they happen (trips taken, hours logged, etc.)</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Weight Goal Fields - Only show if Kilogram is selected */}
             {formData.unit === 'Kilogram' && (
               <>
@@ -311,7 +344,29 @@ export function AddGoalModal({ isOpen, onClose, onSave }: AddGoalModalProps) {
                 </div>
               </div>
             )}
-            
+
+            {/* Percentage Goal Field - Only show if Percentage is selected */}
+            {formData.unit === 'Percentage' && (
+              <div>
+                <label className="block text-sm mb-2 text-[#805232]">
+                  Target Adherence % *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max="100"
+                  value={percentageData.targetPercent}
+                  onChange={(e) => setPercentageData({ targetPercent: e.target.value })}
+                  placeholder="e.g., 80"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                />
+                <p className="text-xs text-[#999] mt-1">
+                  Goal is met when your average task adherence reaches this %.
+                </p>
+              </div>
+            )}
+
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div>
