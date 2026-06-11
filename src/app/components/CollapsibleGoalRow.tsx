@@ -188,6 +188,38 @@ export function CollapsibleGoalRow({
   const barColor = goal.status?.toUpperCase().includes('ON_TRACK') ? '#3b6d11' : '#805232';
   const barPct = Math.min(Math.round(isTasksMode ? (goal.progressAvg || 0) : (goal.progress || 0)), 100);
 
+  const hasTasks = !!goal.taskProgress && goal.taskProgress.length > 0;
+
+  const renderTaskRows = () => (
+    <div className="space-y-2">
+      {goal.taskProgress!.map(tp => {
+        const adherence = Math.round(tp.adherence);
+        const freqText = tp.frequency === 'WEEKLY'
+          ? `${tp.timesPerWeek || 1}× / week`
+          : 'daily';
+        return (
+          <div key={tp.taskId} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-[#805232] truncate">{tp.title}</div>
+              <div className="text-xs text-[#999]">
+                {freqText} · {formatNumber(tp.ytdValue)} / {formatNumber(tp.expected)} YTD
+              </div>
+            </div>
+            <div className="w-24 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.min(adherence, 100)}%`, backgroundColor: barColor }}
+              />
+            </div>
+            <div className="text-xs font-semibold text-[#805232] w-10 text-right">
+              {adherence}%
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="mb-6">
       {/* Goal Header */}
@@ -224,7 +256,7 @@ export function CollapsibleGoalRow({
             <div className="text-right">{headlineLeft}</div>
 
             <div className="flex items-center gap-2">
-              {onAddTask && isTasksMode && (
+              {onAddTask && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -285,37 +317,9 @@ export function CollapsibleGoalRow({
             {isTasksMode && (
               <div className="pt-3">
                 <div className="text-xs font-semibold text-[#805232] mb-2">Tasks</div>
-                {(!goal.taskProgress || goal.taskProgress.length === 0) ? (
+                {hasTasks ? renderTaskRows() : (
                   <div className="text-xs text-[#999] py-2">
                     No tasks yet. Click + to add a task.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {goal.taskProgress.map(tp => {
-                      const adherence = Math.round(tp.adherence);
-                      const freqText = tp.frequency === 'WEEKLY'
-                        ? `${tp.timesPerWeek || 1}× / week`
-                        : 'daily';
-                      return (
-                        <div key={tp.taskId} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-[#805232] truncate">{tp.title}</div>
-                            <div className="text-xs text-[#999]">
-                              {freqText} · {formatNumber(tp.ytdValue)} / {formatNumber(tp.expected)} YTD
-                            </div>
-                          </div>
-                          <div className="w-24 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${Math.min(adherence, 100)}%`, backgroundColor: barColor }}
-                            />
-                          </div>
-                          <div className="text-xs font-semibold text-[#805232] w-10 text-right">
-                            {adherence}%
-                          </div>
-                        </div>
-                      );
-                    })}
                   </div>
                 )}
                 {onEditGoal && (
@@ -435,6 +439,14 @@ export function CollapsibleGoalRow({
                     {goal.unit === 'Time' && goal.timeGoal ? ` min of ${goal.timeGoal.targetHours * 60 + goal.timeGoal.targetMinutes}` : ''}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Supporting tasks — shown on LOGS goals that also have tasks */}
+            {isLogsMode && hasTasks && (
+              <div className="pt-4 mt-3 border-t border-[#F0F0F0]">
+                <div className="text-xs font-semibold text-[#805232] mb-2">Supporting tasks</div>
+                {renderTaskRows()}
               </div>
             )}
           </div>

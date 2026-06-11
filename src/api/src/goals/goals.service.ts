@@ -211,26 +211,17 @@ export class GoalsService {
     return this.getGoalById(goal.id);
   }
 
-  // Decorate a goal with status + (TASKS mode) progressTotal/progressAvg/taskProgress.
+  // Decorate a goal with status + taskProgress.
+  // taskProgress is always populated so the frontend can render supporting habits
+  // on LOGS goals too. progressTotal/progressAvg stay null in LOGS mode — logs drive
+  // the headline progress %.
   private async decorateGoal(goal: any) {
     const status = await this.calculateGoalStatus(goal);
+    const { taskProgress, progressTotal, progressAvg } = await this.computeTaskProgress(goal.id);
     if (goal.progressSource === 'TASKS') {
-      const { taskProgress, progressTotal, progressAvg } = await this.computeTaskProgress(goal.id);
-      return {
-        ...goal,
-        status,
-        progressTotal,
-        progressAvg,
-        taskProgress,
-      };
+      return { ...goal, status, progressTotal, progressAvg, taskProgress };
     }
-    return {
-      ...goal,
-      status,
-      progressTotal: null,
-      progressAvg: null,
-      taskProgress: [],
-    };
+    return { ...goal, status, progressTotal: null, progressAvg: null, taskProgress };
   }
 
   async getGoalsByUser(userId: string) {
