@@ -211,17 +211,20 @@ export class GoalsService {
     return this.getGoalById(goal.id);
   }
 
-  // Decorate a goal with status + taskProgress.
+  // Decorate a goal with status + taskProgress + (LOGS only) logsTotal.
   // taskProgress is always populated so the frontend can render supporting habits
   // on LOGS goals too. progressTotal/progressAvg stay null in LOGS mode — logs drive
-  // the headline progress %.
+  // the headline progress %. logsTotal is the absolute sum (count or minutes) so
+  // the headline can show "3 of 8" instead of "0% of 8".
   private async decorateGoal(goal: any) {
     const status = await this.calculateGoalStatus(goal);
     const { taskProgress, progressTotal, progressAvg } = await this.computeTaskProgress(goal.id);
     if (goal.progressSource === 'TASKS') {
-      return { ...goal, status, progressTotal, progressAvg, taskProgress };
+      return { ...goal, status, progressTotal, progressAvg, taskProgress, logsTotal: null };
     }
-    return { ...goal, status, progressTotal: null, progressAvg: null, taskProgress };
+    const logs = await this.prisma.goalLog.findMany({ where: { goalId: goal.id } });
+    const logsTotal = logs.reduce((s, l) => s + l.value, 0);
+    return { ...goal, status, progressTotal: null, progressAvg: null, taskProgress, logsTotal };
   }
 
   async getGoalsByUser(userId: string) {

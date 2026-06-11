@@ -166,20 +166,21 @@ export function CollapsibleGoalRow({
         </>
       );
     }
-    // LOGS Count/Time
-    let totalLogged = logs.reduce((s, l) => s + l.value, 0);
+    // LOGS Count/Time — show absolute total instead of %.
+    const totalLogged = goal.logsTotal ?? logs.reduce((s, l) => s + l.value, 0);
+    let mainText = '';
     let targetText = '';
     if (goal.unit === 'Count' && goal.countGoal) {
+      mainText = formatNumber(totalLogged);
       targetText = `of ${goal.countGoal.targetCount}`;
     } else if (goal.unit === 'Time' && goal.timeGoal) {
       const totalMins = goal.timeGoal.targetHours * 60 + goal.timeGoal.targetMinutes;
+      mainText = `${formatNumber(totalLogged)} min`;
       targetText = `of ${totalMins} min`;
     }
     return (
       <>
-        <div className="text-base font-semibold text-[#805232]">
-          {Math.round(goal.progress || 0)}%
-        </div>
+        <div className="text-base font-semibold text-[#805232]">{mainText}</div>
         <div className="text-xs text-[#999] font-medium">{targetText}</div>
       </>
     );
