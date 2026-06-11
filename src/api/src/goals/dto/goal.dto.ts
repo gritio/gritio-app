@@ -71,6 +71,14 @@ export class UpdateGoalDto {
 
   @IsOptional()
   @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
   remarks?: string;
 
   @IsOptional()

@@ -191,6 +191,8 @@ export const goalsApi = {
     id: string,
     goalData: {
       title?: string;
+      unit?: string;
+      endDate?: string;
       remarks?: string;
       lifeGoalId?: string;
       weightGoal?: { startWeight?: number; currentWeight?: number; targetWeight?: number };

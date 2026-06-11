@@ -57,18 +57,15 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
     try {
       const updateData: any = {
         title: formData.title,
+        unit: formData.unit,
         remarks: formData.remarks,
         lifeGoalId: formData.lifeGoalId || undefined,
+        endDate: formData.endDate
+          ? (formData.endDate instanceof Date
+              ? formData.endDate.toISOString()
+              : new Date(formData.endDate).toISOString())
+          : undefined,
       };
-
-      // Kilogram + Percentage have forced modes; others send the chosen mode.
-      if (
-        formData.unit !== 'Kilogram' &&
-        formData.unit !== 'Percentage' &&
-        formData.progressSource
-      ) {
-        updateData.progressSource = formData.progressSource;
-      }
 
       if (formData.unit === 'Kilogram' && formData.weightGoal) {
         updateData.weightGoal = {
@@ -171,84 +168,99 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
             </select>
           </div>
           
-          {/* Unit - Read Only */}
+          {/* Unit - editable */}
           <div>
             <label className="block text-sm mb-2 text-[#805232] font-bold">
-              Unit
+              Unit *
             </label>
-            <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-[#805232] flex items-center">
-              {formData.unit}
-            </div>
+            <select
+              required
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+            >
+              <option value="Count">Count</option>
+              <option value="Time">Time</option>
+              <option value="Kilogram">Kilogram</option>
+              <option value="Percentage">Percentage (adherence)</option>
+            </select>
+            <p className="text-xs text-[#999] mt-1">
+              Changing unit clears the existing target values; set new values below.
+            </p>
           </div>
-          
-          {/* Progress tracking mode - hidden for Kilogram (always LOGS) */}
-          {(formData.unit === 'Count' || formData.unit === 'Time') && (
-            <div className="border border-[#B8B9BA] rounded-lg p-4 bg-[#FAFAFA]">
-              <label className="block text-sm mb-3 text-[#805232] font-bold">
-                Track progress by *
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="editProgressSource"
-                    value="TASKS"
-                    checked={formData.progressSource === 'TASKS'}
-                    onChange={() => setFormData({ ...formData, progressSource: 'TASKS' })}
-                    className="mt-1 accent-[#805232]"
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-[#805232]">From weekly/daily tasks</div>
-                    <div className="text-xs text-[#999]">Progress aggregated from task completions</div>
-                  </div>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="editProgressSource"
-                    value="LOGS"
-                    checked={formData.progressSource === 'LOGS'}
-                    onChange={() => setFormData({ ...formData, progressSource: 'LOGS' })}
-                    className="mt-1 accent-[#805232]"
-                  />
-                  <div>
-                    <div className="text-sm font-medium text-[#805232]">Log entries manually</div>
-                    <div className="text-xs text-[#999]">Add entries as they happen</div>
-                  </div>
-                </label>
-              </div>
-              <p className="text-xs text-[#805232] mt-3">
-                Switching changes how progress is calculated. Existing tasks and logs are preserved.
-              </p>
-            </div>
-          )}
 
-          {/* Current Weight - Only show if Kilogram is selected */}
+          {/* Weight Goal Fields - Only show if Kilogram is selected */}
           {formData.unit === 'Kilogram' && (
-            <div>
-              <label className="block text-sm mb-2 text-[#805232] font-bold">
-                Current Weight (kg) *
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={formData.weightGoal?.currentWeight || ''}
-                onChange={(e) => {
-                  const currentWeight = parseFloat(e.target.value) || 0;
-                  if (formData) {
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-bold">
+                  Start (kg) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={formData.weightGoal?.startWeight ?? ''}
+                  onChange={(e) => {
+                    const startWeight = parseFloat(e.target.value) || 0;
                     setFormData({
                       ...formData,
                       weightGoal: {
                         ...(formData.weightGoal || { startWeight: 0, currentWeight: 0, targetWeight: 0 }),
-                        currentWeight
-                      }
+                        startWeight,
+                      },
                     });
-                  }
-                }}
-                placeholder="e.g., 80.5"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
-              />
+                  }}
+                  placeholder="e.g., 96"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-bold">
+                  Current (kg) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={formData.weightGoal?.currentWeight ?? ''}
+                  onChange={(e) => {
+                    const currentWeight = parseFloat(e.target.value) || 0;
+                    setFormData({
+                      ...formData,
+                      weightGoal: {
+                        ...(formData.weightGoal || { startWeight: 0, currentWeight: 0, targetWeight: 0 }),
+                        currentWeight,
+                      },
+                    });
+                  }}
+                  placeholder="e.g., 90"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-bold">
+                  Target (kg) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={formData.weightGoal?.targetWeight ?? ''}
+                  onChange={(e) => {
+                    const targetWeight = parseFloat(e.target.value) || 0;
+                    setFormData({
+                      ...formData,
+                      weightGoal: {
+                        ...(formData.weightGoal || { startWeight: 0, currentWeight: 0, targetWeight: 0 }),
+                        targetWeight,
+                      },
+                    });
+                  }}
+                  placeholder="e.g., 87"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+                />
+              </div>
             </div>
           )}
           
@@ -382,9 +394,14 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
               <label className="block text-sm mb-2 text-[#805232] font-bold">
                 End Date
               </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-[#805232] flex items-center">
-                {formData.endDate ? (formData.endDate instanceof Date ? formData.endDate.toISOString().split('T')[0] : String(formData.endDate).split('T')[0]) : ''}
-              </div>
+              <input
+                type="date"
+                max={new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0]}
+                value={formData.endDate ? (formData.endDate instanceof Date ? formData.endDate.toISOString().split('T')[0] : String(formData.endDate).split('T')[0]) : ''}
+                onChange={(e) => setFormData({ ...formData, endDate: new Date(e.target.value) as any })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-[#805232]"
+              />
+              <p className="text-xs text-[#999] mt-1">Max: Dec 31 of current year</p>
             </div>
           </div>
           

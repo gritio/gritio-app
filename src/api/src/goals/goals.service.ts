@@ -142,11 +142,11 @@ export class GoalsService {
     console.log('GoalsService.createGoal - userId:', userId);
     console.log('GoalsService.createGoal - title:', dto.title);
 
-    // Kilogram = always LOGS, Percentage = always TASKS, others = honor DTO (default TASKS).
-    let progressSource: 'TASKS' | 'LOGS' = 'TASKS';
-    if (dto.unit === 'Kilogram') progressSource = 'LOGS';
-    else if (dto.unit === 'Percentage') progressSource = 'TASKS';
-    else progressSource = dto.progressSource || 'TASKS';
+    // Unit alone determines progressSource:
+    //   Count / Time / Kilogram → LOGS (log-driven progress)
+    //   Percentage              → TASKS (adherence-driven progress)
+    const progressSource: 'TASKS' | 'LOGS' =
+      dto.unit === 'Percentage' ? 'TASKS' : 'LOGS';
 
     const goal = await this.prisma.goal.create({
       data: {
@@ -211,26 +211,20 @@ export class GoalsService {
     return this.getGoalById(goal.id);
   }
 
-  // Decorate a goal with status + (TASKS mode) progressTotal/progressAvg/taskProgress.
+  // Decorate a goal with status + taskProgress + (LOGS only) logsTotal.
+  // taskProgress is always populated so the frontend can render supporting habits
+  // on LOGS goals too. progressTotal/progressAvg stay null in LOGS mode — logs drive
+  // the headline progress %. logsTotal is the absolute sum (count or minutes) so
+  // the headline can show "3 of 8" instead of "0% of 8".
   private async decorateGoal(goal: any) {
     const status = await this.calculateGoalStatus(goal);
+    const { taskProgress, progressTotal, progressAvg } = await this.computeTaskProgress(goal.id);
     if (goal.progressSource === 'TASKS') {
-      const { taskProgress, progressTotal, progressAvg } = await this.computeTaskProgress(goal.id);
-      return {
-        ...goal,
-        status,
-        progressTotal,
-        progressAvg,
-        taskProgress,
-      };
+      return { ...goal, status, progressTotal, progressAvg, taskProgress, logsTotal: null };
     }
-    return {
-      ...goal,
-      status,
-      progressTotal: null,
-      progressAvg: null,
-      taskProgress: [],
-    };
+    const logs = await this.prisma.goalLog.findMany({ where: { goalId: goal.id } });
+    const logsTotal = logs.reduce((s, l) => s + l.value, 0);
+    return { ...goal, status, progressTotal: null, progressAvg: null, taskProgress, logsTotal };
   }
 
   async getGoalsByUser(userId: string) {
@@ -277,10 +271,20 @@ export class GoalsService {
       throw new Error('Goal not found or unauthorized');
     }
 
-    // Kilogram goals can't switch off LOGS mode; otherwise honor the DTO if provided.
-    const nextProgressSource = dto.progressSource && existingGoal.unit !== 'Kilogram'
-      ? dto.progressSource
-      : undefined;
+    // Unit change handling: if the DTO sends a unit different from the current one,
+    // wipe the old sub-goal record and create a fresh one for the new unit.
+    const nextUnit = dto.unit && dto.unit !== existingGoal.unit ? dto.unit : undefined;
+    const effectiveUnit = nextUnit || existingGoal.unit;
+    const nextProgressSource: 'TASKS' | 'LOGS' =
+      effectiveUnit === 'Percentage' ? 'TASKS' : 'LOGS';
+
+    if (nextUnit) {
+      // Old sub-goals are tied to the previous unit; delete them so they don't leak.
+      await this.prisma.weightGoal.deleteMany({ where: { goalId: id } });
+      await this.prisma.countGoal.deleteMany({ where: { goalId: id } });
+      await this.prisma.timeGoal.deleteMany({ where: { goalId: id } });
+      await this.prisma.percentageGoal.deleteMany({ where: { goalId: id } });
+    }
 
     const goal = await this.prisma.goal.update({
       where: { id },
@@ -288,7 +292,9 @@ export class GoalsService {
         ...(dto.title && { title: dto.title }),
         ...(dto.remarks !== undefined && { remarks: dto.remarks }),
         ...(dto.lifeGoalId !== undefined && { lifeGoalId: dto.lifeGoalId || null }),
-        ...(nextProgressSource && { progressSource: nextProgressSource }),
+        ...(nextUnit && { unit: nextUnit }),
+        ...(dto.endDate && { endDate: new Date(dto.endDate) }),
+        progressSource: nextProgressSource,
       },
       include: {
         weightGoal: true,
@@ -299,50 +305,50 @@ export class GoalsService {
       },
     });
 
-    if (dto.weightGoal) {
-      const weightGoalData: any = {};
-      if (dto.weightGoal.startWeight !== undefined) weightGoalData.startWeight = dto.weightGoal.startWeight;
-      if (dto.weightGoal.currentWeight !== undefined) weightGoalData.currentWeight = dto.weightGoal.currentWeight;
-      if (dto.weightGoal.targetWeight !== undefined) weightGoalData.targetWeight = dto.weightGoal.targetWeight;
-      
-      await this.prisma.weightGoal.update({
+    // After possible unit swap, recreate-or-update the matching sub-goal from the DTO.
+    if (effectiveUnit === 'Kilogram' && dto.weightGoal) {
+      const data = {
+        startWeight: dto.weightGoal.startWeight ?? 0,
+        currentWeight: dto.weightGoal.currentWeight ?? dto.weightGoal.startWeight ?? 0,
+        targetWeight: dto.weightGoal.targetWeight ?? 0,
+      };
+      await this.prisma.weightGoal.upsert({
         where: { goalId: id },
-        data: weightGoalData,
+        update: data,
+        create: { goalId: id, ...data },
       });
-    }
-
-    if (dto.countGoal) {
-      const countGoalData: any = {};
-      if (dto.countGoal.targetCount !== undefined) countGoalData.targetCount = dto.countGoal.targetCount;
-      if (dto.countGoal.currentCount !== undefined) countGoalData.currentCount = dto.countGoal.currentCount;
-      
-      await this.prisma.countGoal.update({
+    } else if (effectiveUnit === 'Count' && dto.countGoal) {
+      const data = {
+        targetCount: dto.countGoal.targetCount ?? 0,
+        ...(dto.countGoal.currentCount !== undefined && { currentCount: dto.countGoal.currentCount }),
+      };
+      await this.prisma.countGoal.upsert({
         where: { goalId: id },
-        data: countGoalData,
+        update: data,
+        create: { goalId: id, ...data },
       });
-    }
-
-    if (dto.timeGoal) {
-      const timeGoalData: any = {};
-      if (dto.timeGoal.targetHours !== undefined) timeGoalData.targetHours = dto.timeGoal.targetHours;
-      if (dto.timeGoal.targetMinutes !== undefined) timeGoalData.targetMinutes = dto.timeGoal.targetMinutes;
-      if (dto.timeGoal.currentHours !== undefined) timeGoalData.currentHours = dto.timeGoal.currentHours;
-      if (dto.timeGoal.currentMinutes !== undefined) timeGoalData.currentMinutes = dto.timeGoal.currentMinutes;
-
-      await this.prisma.timeGoal.update({
+    } else if (effectiveUnit === 'Time' && dto.timeGoal) {
+      const data = {
+        targetHours: dto.timeGoal.targetHours ?? 0,
+        targetMinutes: dto.timeGoal.targetMinutes ?? 0,
+        ...(dto.timeGoal.currentHours !== undefined && { currentHours: dto.timeGoal.currentHours }),
+        ...(dto.timeGoal.currentMinutes !== undefined && { currentMinutes: dto.timeGoal.currentMinutes }),
+      };
+      await this.prisma.timeGoal.upsert({
         where: { goalId: id },
-        data: timeGoalData,
+        update: data,
+        create: { goalId: id, ...data },
       });
-    }
-
-    if (dto.percentageGoal?.targetPercent !== undefined) {
+    } else if (effectiveUnit === 'Percentage' && dto.percentageGoal) {
       await this.prisma.percentageGoal.upsert({
         where: { goalId: id },
-        update: { targetPercent: dto.percentageGoal.targetPercent },
-        create: { goalId: id, targetPercent: dto.percentageGoal.targetPercent },
+        update: { targetPercent: dto.percentageGoal.targetPercent ?? 0 },
+        create: { goalId: id, targetPercent: dto.percentageGoal.targetPercent ?? 0 },
       });
     }
 
+    // Sub-goal changed → progress needs recompute.
+    await this.updateParentGoalProgress(id);
 
     return this.getGoalById(id);
   }

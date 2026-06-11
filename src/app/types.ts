@@ -69,6 +69,7 @@ export interface Goal {
   progressSource: ProgressSource;
   progressTotal?: number | null;
   progressAvg?: number | null;
+  logsTotal?: number | null;
   taskProgress?: TaskProgressEntry[];
 }
 
