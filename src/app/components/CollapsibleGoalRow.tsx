@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Goal, Task, GoalLog } from '../types';
-import { ChevronRight, Edit, Trash2, Plus, Heart, Building2, Users, Star } from 'lucide-react';
+import { ChevronRight, Edit, Trash2, Plus, Heart, Building2, Users, Star, Pencil, Check, X } from 'lucide-react';
 import { goalLogsApi } from '../services/api';
 import { COLORS } from '../constants/colors';
 
@@ -38,7 +38,7 @@ function formatNumber(n: number): string {
 
 function formatLogDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export function CollapsibleGoalRow({
@@ -52,56 +52,97 @@ export function CollapsibleGoalRow({
   tasks = [],
   isKidsMode,
 }: CollapsibleGoalRowProps) {
-  const isLogsMode = goal.progressSource === 'LOGS';
-  const isTasksMode = goal.progressSource === 'TASKS';
+  const isCount = goal.unit === 'Count';
   const isWeight = goal.unit === 'Kilogram';
+  const isTime = goal.unit === 'Time';
+  const isPercentage = goal.unit === 'Percentage';
+  const pillClickable = !isPercentage;
 
   const [logs, setLogs] = useState<GoalLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newValue, setNewValue] = useState<string>('1');
-  const [newRemarks, setNewRemarks] = useState('');
-  const [newLoggedAt, setNewLoggedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [showEditor, setShowEditor] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [newValue, setNewValue] = useState<string>('');
+  const [newRemarks, setNewRemarks] = useState('');
+
+  // Inline edit state for previous log rows.
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [editingRemarks, setEditingRemarks] = useState<string>('');
 
   const goalTasks = tasks.filter(t => t.goalId === goal.id);
+  const hasTasks = !!goal.taskProgress && goal.taskProgress.length > 0;
 
+  // Fetch logs whenever the tile is opened (chevron OR pill) for LOGS units.
   useEffect(() => {
-    if (!isExpanded || !isLogsMode) return;
+    if (isPercentage) return;
+    if (!isExpanded && !showEditor) return;
     let cancelled = false;
-    setLogsLoading(true);
     goalLogsApi.listByGoal(goal.id)
       .then(data => { if (!cancelled) setLogs(data); })
-      .catch(err => console.error('Failed to fetch logs:', err))
-      .finally(() => { if (!cancelled) setLogsLoading(false); });
+      .catch(err => console.error('Failed to fetch logs:', err));
     return () => { cancelled = true; };
-  }, [isExpanded, isLogsMode, goal.id]);
+  }, [isExpanded, showEditor, isPercentage, goal.id]);
 
-  // For LOGS+Weight, prefill the value with the latest weight reading.
+  // Reset editor + inline-edit when the tile collapses.
   useEffect(() => {
-    if (showAddForm && isLogsMode && isWeight && logs.length > 0) {
-      setNewValue(String(logs[0].value));
-    } else if (showAddForm && isLogsMode && isWeight && goal.weightGoal) {
-      setNewValue(String(goal.weightGoal.currentWeight ?? goal.weightGoal.startWeight));
+    if (!isExpanded && !showEditor) {
+      setEditingLogId(null);
     }
-  }, [showAddForm, isLogsMode, isWeight, logs, goal.weightGoal]);
+  }, [isExpanded, showEditor]);
 
-  const handleAddLog = async () => {
-    const value = parseFloat(newValue);
-    if (isNaN(value)) return;
+  // Cumulative count (only meaningful for Count goals): sum of log values to date.
+  const logsTotal = goal.logsTotal ?? logs.reduce((s, l) => s + l.value, 0);
+
+  // Default new-value when opening the editor — varies per unit.
+  const computeDefaultNewValue = (): string => {
+    if (isCount) return String(Math.round(logsTotal) + 1);
+    if (isWeight) {
+      const latest = logs[0]?.value;
+      const current = goal.weightGoal?.currentWeight;
+      const start = goal.weightGoal?.startWeight;
+      return String(latest ?? current ?? start ?? '');
+    }
+    if (isTime) return '';
+    return '';
+  };
+
+  const openEditor = () => {
+    if (!pillClickable) return;
+    setNewValue(computeDefaultNewValue());
+    setNewRemarks('');
+    setShowEditor(true);
+    // If tile is collapsed, ask parent to expand it.
+    if (!isExpanded) onToggle();
+  };
+
+  const closeEditor = () => {
+    setShowEditor(false);
+    setNewValue('');
+    setNewRemarks('');
+  };
+
+  const handleSave = async () => {
+    const inputNum = parseFloat(newValue);
+    if (!Number.isFinite(inputNum)) return;
+
+    // Compute the log entry's value field based on unit semantics.
+    let logValue = inputNum;
+    if (isCount) {
+      logValue = Math.max(0, inputNum - logsTotal);
+      // If the user didn't change the prefilled (next-number) value, treat as +1.
+      if (logValue === 0 && inputNum === logsTotal + 1) logValue = 1;
+      if (logValue <= 0) return;
+    }
+
     setSubmitting(true);
     try {
       const log = await goalLogsApi.create({
         goalId: goal.id,
-        value,
+        value: logValue,
         remarks: newRemarks || undefined,
-        loggedAt: new Date(newLoggedAt).toISOString(),
       });
       setLogs(prev => [log, ...prev]);
-      setShowAddForm(false);
-      setNewValue(isWeight ? newValue : '1');
-      setNewRemarks('');
-      setNewLoggedAt(new Date().toISOString().split('T')[0]);
+      closeEditor();
       if (onRefreshGoals) onRefreshGoals();
     } catch (err) {
       console.error('Failed to create log:', err);
@@ -122,108 +163,101 @@ export function CollapsibleGoalRow({
     }
   };
 
-  const isPercentage = goal.unit === 'Percentage';
+  const startEditLog = (log: GoalLog) => {
+    setEditingLogId(log.id);
+    setEditingValue(String(log.value));
+    setEditingRemarks(log.remarks || '');
+  };
 
-  // Headline metrics
-  const headlineLeft = (() => {
+  const cancelEditLog = () => {
+    setEditingLogId(null);
+    setEditingValue('');
+    setEditingRemarks('');
+  };
+
+  const saveEditLog = async (id: string) => {
+    const v = parseFloat(editingValue);
+    if (!Number.isFinite(v)) return;
+    try {
+      const updated = await goalLogsApi.update(id, {
+        value: v,
+        remarks: editingRemarks,
+      });
+      setLogs(prev => prev.map(l => (l.id === id ? updated : l)));
+      cancelEditLog();
+      if (onRefreshGoals) onRefreshGoals();
+    } catch (err) {
+      console.error('Failed to update log:', err);
+    }
+  };
+
+  // ------- Subtitle text per unit -------
+  const currentYear = new Date().getFullYear();
+  const subtitle = (() => {
     if (isPercentage && goal.percentageGoal) {
-      const avg = Math.round(goal.progressAvg || 0);
-      const target = goal.percentageGoal.targetPercent;
-      return (
-        <>
-          <div className="text-base font-semibold text-[#805232]">
-            {avg}%
-          </div>
-          <div className="text-xs text-[#999] font-medium">
-            target: {target}%
-          </div>
-        </>
-      );
+      return `Avg ${Math.round(goal.progressAvg || 0)}% · target ${goal.percentageGoal.targetPercent}%`;
     }
-    if (isTasksMode) {
-      return (
-        <>
-          <div className="text-base font-semibold text-[#805232]">
-            Total: {formatNumber(goal.progressTotal || 0)}
-          </div>
-          <div className="text-xs text-[#999] font-medium">
-            Avg: {Math.round(goal.progressAvg || 0)}%
-          </div>
-        </>
-      );
+    const yearPct = Math.round(goal.progress || 0);
+    if (isCount && goal.countGoal) {
+      return `${formatNumber(logsTotal)} of ${goal.countGoal.targetCount} · ${yearPct}% of year`;
     }
-    if (isLogsMode && isWeight && goal.weightGoal) {
-      const cur = goal.weightGoal.currentWeight;
-      const tgt = goal.weightGoal.targetWeight;
-      return (
-        <>
-          <div className="text-base font-semibold text-[#805232]">
-            {formatNumber(cur)} kg
-          </div>
-          <div className="text-xs text-[#999] font-medium">
-            target: {formatNumber(tgt)} kg
-          </div>
-        </>
-      );
+    if (isWeight && goal.weightGoal) {
+      return `Target ${formatNumber(goal.weightGoal.targetWeight)} kg by Dec ${currentYear}`;
     }
-    // LOGS Count/Time — show absolute total instead of %.
-    const totalLogged = goal.logsTotal ?? logs.reduce((s, l) => s + l.value, 0);
-    let mainText = '';
-    let targetText = '';
-    if (goal.unit === 'Count' && goal.countGoal) {
-      mainText = formatNumber(totalLogged);
-      targetText = `of ${goal.countGoal.targetCount}`;
-    } else if (goal.unit === 'Time' && goal.timeGoal) {
-      const totalMins = goal.timeGoal.targetHours * 60 + goal.timeGoal.targetMinutes;
-      mainText = `${formatNumber(totalLogged)} min`;
-      targetText = `of ${totalMins} min`;
+    if (isTime && goal.timeGoal) {
+      const tgt = goal.timeGoal.targetHours * 60 + goal.timeGoal.targetMinutes;
+      return `${formatNumber(logsTotal)} of ${tgt} min · ${yearPct}% of year`;
     }
-    return (
-      <>
-        <div className="text-base font-semibold text-[#805232]">{mainText}</div>
-        <div className="text-xs text-[#999] font-medium">{targetText}</div>
-      </>
-    );
+    return '';
+  })();
+
+  // ------- Pill text per unit -------
+  const pillText = (() => {
+    if (isCount && goal.countGoal) return `${formatNumber(logsTotal)} of ${goal.countGoal.targetCount}`;
+    if (isWeight && goal.weightGoal) return `${formatNumber(goal.weightGoal.currentWeight)} kg`;
+    if (isTime) return `${formatNumber(logsTotal)} min`;
+    if (isPercentage) return `${Math.round(goal.progressAvg || 0)}%`;
+    return '';
   })();
 
   const barColor = goal.status?.toUpperCase().includes('ON_TRACK') ? '#3b6d11' : '#805232';
-  const barPct = Math.min(Math.round(isTasksMode ? (goal.progressAvg || 0) : (goal.progress || 0)), 100);
+  const barPct = Math.min(Math.round(isPercentage ? (goal.progressAvg || 0) : (goal.progress || 0)), 100);
 
-  const hasTasks = !!goal.taskProgress && goal.taskProgress.length > 0;
+  // Editor labels per unit
+  const editorLabel = isCount ? 'DONE' : isWeight ? 'WEIGHT' : isTime ? 'MINUTES' : 'VALUE';
+  const editorSuffix = isCount ? '' : isWeight ? 'kg' : isTime ? 'min' : '';
 
-  const renderTaskRows = () => (
-    <div className="space-y-2">
-      {goal.taskProgress!.map(tp => {
-        const adherence = Math.round(tp.adherence);
-        const freqText = tp.frequency === 'WEEKLY'
-          ? `${tp.timesPerWeek || 1}× / week`
-          : 'daily';
-        return (
-          <div key={tp.taskId} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2">
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-[#805232] truncate">{tp.title}</div>
-              <div className="text-xs text-[#999]">
-                {freqText} · {formatNumber(tp.ytdValue)} / {formatNumber(tp.expected)} YTD
-              </div>
-            </div>
-            <div className="w-24 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${Math.min(adherence, 100)}%`, backgroundColor: barColor }}
-              />
-            </div>
-            <div className="text-xs font-semibold text-[#805232] w-10 text-right">
-              {adherence}%
-            </div>
-          </div>
-        );
-      })}
-    </div>
+  // Display label for a log row (Count: cumulative position; others: value with unit)
+  const formatLogLabel = (log: GoalLog, idxAscending: number): string => {
+    if (isCount) {
+      // idxAscending is position when logs are sorted oldest-first
+      // For a multi-trip log (value > 1), use a range
+      const startPos = idxAscending + 1;
+      const endPos = idxAscending + Math.max(1, Math.round(log.value));
+      return startPos === endPos ? `#${startPos}` : `#${startPos}–${endPos}`;
+    }
+    if (isWeight) return `${formatNumber(log.value)} kg`;
+    if (isTime) return `${formatNumber(log.value)} min`;
+    return formatNumber(log.value);
+  };
+
+  // Sort logs newest-first for display, but we need cumulative position for Count
+  // so we compute ascending index by reversing.
+  const sortedDesc = [...logs].sort((a, b) =>
+    new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime(),
   );
+  // Cumulative running sum from oldest → newest
+  const ascending = [...sortedDesc].reverse();
+  const ascendingCumStart: Record<string, number> = {};
+  let running = 0;
+  for (const l of ascending) {
+    ascendingCumStart[l.id] = running;
+    running += Math.max(1, Math.round(l.value));
+  }
+  const visibleLogs = sortedDesc.slice(0, 2);
 
   return (
     <div className="mb-6">
-      {/* Goal Header */}
       <div
         className={`rounded-lg mb-4 hover:shadow-lg transition-all duration-200 ${
           isKidsMode
@@ -231,6 +265,7 @@ export function CollapsibleGoalRow({
             : 'bg-white border border-[#E8E8E8]'
         }`}
       >
+        {/* Header row */}
         <div className="flex items-center gap-3 p-3.5">
           <button
             onClick={onToggle}
@@ -250,54 +285,74 @@ export function CollapsibleGoalRow({
           })()}
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-[#805232]">{goal.title}</h3>
+            <h3 className="text-sm font-semibold text-[#805232] truncate">{goal.title}</h3>
+            {subtitle && (
+              <div className="text-xs text-[#999] mt-0.5 truncate">{subtitle}</div>
+            )}
           </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="text-right">{headlineLeft}</div>
+          {/* Value pill */}
+          {pillText && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (pillClickable) openEditor();
+              }}
+              disabled={!pillClickable}
+              className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+                pillClickable
+                  ? 'bg-[#EFE6DD] text-[#805232] hover:bg-[#E5D7C8] cursor-pointer'
+                  : 'bg-[#F0F0F0] text-[#999] cursor-default'
+              }`}
+              title={pillClickable ? 'Click to log' : ''}
+            >
+              <span>{pillText}</span>
+              {pillClickable && <Pencil className="w-3 h-3 opacity-60" />}
+            </button>
+          )}
 
-            <div className="flex items-center gap-2">
-              {onAddTask && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddTask(goal.id);
-                  }}
-                  className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
-                  title="Add task"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              )}
-              {onEditGoal && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditGoal(goal.id);
-                  }}
-                  className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
-                  title="Edit goal"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              )}
-              {onDeleteGoal && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteGoal(goal.id);
-                  }}
-                  className="p-1.5 text-[#999] hover:text-red-600 hover:bg-[#f5f5f5] rounded transition-colors"
-                  title="Delete goal"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onAddTask && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddTask(goal.id);
+                }}
+                className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
+                title="Add task"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+            {onEditGoal && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditGoal(goal.id);
+                }}
+                className="p-1.5 text-[#999] hover:text-[#805232] hover:bg-[#f5f5f5] rounded transition-colors"
+                title="Edit goal"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            )}
+            {onDeleteGoal && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteGoal(goal.id);
+                }}
+                className="p-1.5 text-[#999] hover:text-red-600 hover:bg-[#f5f5f5] rounded transition-colors"
+                title="Delete goal"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Progress bar row */}
+        {/* Progress bar */}
         <div className="flex items-center gap-2.5 px-3.5 pb-3.5">
           <div className="flex-1 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
             <div
@@ -305,149 +360,170 @@ export function CollapsibleGoalRow({
               style={{ width: `${barPct}%`, backgroundColor: barColor }}
             />
           </div>
-          <div className="text-xs text-[#999] font-medium whitespace-nowrap">
-            {isTasksMode
-              ? `${Math.round(goal.progressAvg || 0)}% avg adherence`
-              : `${Math.round(goal.progress || 0)}% of year`}
-          </div>
         </div>
 
-        {/* Expanded section */}
-        {isExpanded && (
+        {/* Expanded body — chevron expansion OR editor open */}
+        {(isExpanded || showEditor) && (
           <div className="px-3.5 pb-3.5 pt-1 border-t border-[#F0F0F0]">
-            {isTasksMode && (
-              <div className="pt-3">
-                <div className="text-xs font-semibold text-[#805232] mb-2">Tasks</div>
-                {hasTasks ? renderTaskRows() : (
-                  <div className="text-xs text-[#999] py-2">
-                    No tasks yet. Click + to add a task.
+            {/* Editor section — only visible when pill was clicked */}
+            {showEditor && pillClickable && (
+              <div className="pt-3 pb-3 bg-[#FAFAFA] rounded-lg px-3 mt-3">
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">{editorLabel}</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        step={isWeight ? '0.1' : '1'}
+                        value={newValue}
+                        onChange={(e) => setNewValue(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
+                        autoFocus
+                      />
+                      {editorSuffix && <span className="text-xs text-[#999]">{editorSuffix}</span>}
+                    </div>
                   </div>
-                )}
-                {onEditGoal && (
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">
+                      {isCount ? 'Where / what was it?' : 'Notes (optional)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={newRemarks}
+                      onChange={(e) => setNewRemarks(e.target.value)}
+                      placeholder={isCount ? 'e.g. Paris' : 'e.g. Morning, fasted'}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end">
                   <button
-                    onClick={() => onEditGoal(goal.id)}
-                    className="mt-3 text-xs text-[#805232] underline hover:text-[#6b4427]"
+                    onClick={closeEditor}
+                    className="px-3 py-1 text-xs text-[#805232] border border-gray-300 rounded hover:bg-gray-50"
                   >
-                    Switch to manual logging
+                    Cancel
                   </button>
-                )}
-              </div>
-            )}
-
-            {isLogsMode && (
-              <div className="pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs font-semibold text-[#805232]">
-                    {isWeight ? 'Weight logs' : 'Log entries'}
-                  </div>
                   <button
-                    onClick={() => setShowAddForm(v => !v)}
-                    className="text-xs px-2.5 py-1 bg-[#805232] text-white rounded hover:bg-[#6b4427] transition-colors flex items-center gap-1"
+                    onClick={handleSave}
+                    disabled={submitting}
+                    className="px-3 py-1 text-xs bg-[#805232] text-white rounded hover:bg-[#6b4427] disabled:opacity-50"
                   >
-                    <Plus className="w-3 h-3" />
-                    {isWeight ? 'Log weight' : 'Log entry'}
+                    {submitting ? 'Saving...' : 'Save'}
                   </button>
                 </div>
+              </div>
+            )}
 
-                {showAddForm && (
-                  <div className="bg-[#FAFAFA] rounded p-3 mb-3 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-xs text-[#805232] mb-1">
-                          {isWeight ? 'Weight (kg)' : 'Value'}
-                        </label>
-                        <input
-                          type="number"
-                          step={isWeight ? '0.1' : '1'}
-                          value={newValue}
-                          onChange={e => setNewValue(e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-[#805232] mb-1">Date</label>
-                        <input
-                          type="date"
-                          value={newLoggedAt}
-                          onChange={e => setNewLoggedAt(e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[#805232] mb-1">Remarks (optional)</label>
-                      <input
-                        type="text"
-                        value={newRemarks}
-                        onChange={e => setNewRemarks(e.target.value)}
-                        placeholder={isWeight ? 'Morning, fasted...' : 'Trip to Goa, AI paper...'}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => setShowAddForm(false)}
-                        className="px-3 py-1 text-xs text-[#805232] border border-gray-300 rounded hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleAddLog}
-                        disabled={submitting}
-                        className="px-3 py-1 text-xs bg-[#805232] text-white rounded hover:bg-[#6b4427] disabled:opacity-50"
-                      >
-                        {submitting ? 'Saving...' : 'Add Entry'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {logsLoading ? (
-                  <div className="text-xs text-[#999] py-2">Loading...</div>
-                ) : logs.length === 0 ? (
-                  <div className="text-xs text-[#999] py-2">
-                    No entries yet. Click "{isWeight ? 'Log weight' : 'Log entry'}" to add one.
-                  </div>
+            {/* Previous logs (last 2) — shown when editor open OR chevron expansion */}
+            {!isPercentage && (
+              <div className="pt-3">
+                <div className="text-[10px] uppercase tracking-wider text-[#999] mb-2">Previous logs</div>
+                {visibleLogs.length === 0 ? (
+                  <div className="text-xs text-[#999] py-2">No previous entries.</div>
                 ) : (
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {logs.map(log => (
-                      <div key={log.id} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2 text-sm">
-                        <div className="text-xs text-[#999] w-24 flex-shrink-0">
-                          {formatLogDate(log.loggedAt)}
+                  <div className="space-y-1">
+                    {visibleLogs.map((log) => {
+                      const isEditing = editingLogId === log.id;
+                      const startPos = ascendingCumStart[log.id] ?? 0;
+                      const label = formatLogLabel(log, startPos);
+                      return (
+                        <div key={log.id} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2 text-sm">
+                          <div className="text-xs text-[#999] w-16 flex-shrink-0">
+                            {formatLogDate(log.loggedAt)}
+                          </div>
+                          {isEditing ? (
+                            <>
+                              <input
+                                type="number"
+                                step={isWeight ? '0.1' : '1'}
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="w-20 px-2 py-0.5 border border-gray-300 rounded text-sm text-[#805232]"
+                              />
+                              <input
+                                type="text"
+                                value={editingRemarks}
+                                onChange={(e) => setEditingRemarks(e.target.value)}
+                                className="flex-1 px-2 py-0.5 border border-gray-300 rounded text-sm text-[#805232]"
+                              />
+                              <button
+                                onClick={() => saveEditLog(log.id)}
+                                className="text-[#3b6d11] hover:bg-gray-100 p-1 rounded"
+                                title="Save"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={cancelEditLog}
+                                className="text-[#999] hover:bg-gray-100 p-1 rounded"
+                                title="Cancel"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-[#805232] font-medium w-20 flex-shrink-0">{label}</div>
+                              <div className="flex-1 text-[#805232] truncate">{log.remarks || ''}</div>
+                              {showEditor && (
+                                <>
+                                  <button
+                                    onClick={() => startEditLog(log)}
+                                    className="text-[#999] hover:text-[#805232] p-1"
+                                    title="Edit"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLog(log.id)}
+                                    className="text-[#999] hover:text-red-600 p-1"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
                         </div>
-                        <div className="text-[#805232] font-medium w-16 flex-shrink-0">
-                          {formatNumber(log.value)}{isWeight ? ' kg' : ''}
-                        </div>
-                        <div className="flex-1 text-[#805232] truncate">
-                          {log.remarks || ''}
-                        </div>
-                        <button
-                          onClick={() => handleDeleteLog(log.id)}
-                          className="text-[#999] hover:text-red-600 p-1"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {logs.length > 0 && !isWeight && (
-                  <div className="mt-2 text-xs text-[#999] text-right">
-                    Total: {formatNumber(logs.reduce((s, l) => s + l.value, 0))}
-                    {goal.unit === 'Count' && goal.countGoal ? ` of ${goal.countGoal.targetCount}` : ''}
-                    {goal.unit === 'Time' && goal.timeGoal ? ` min of ${goal.timeGoal.targetHours * 60 + goal.timeGoal.targetMinutes}` : ''}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Supporting tasks — shown on LOGS goals that also have tasks */}
-            {isLogsMode && hasTasks && (
+            {/* Supporting tasks — only shown on chevron expansion (not editor mode) */}
+            {!showEditor && hasTasks && (
               <div className="pt-4 mt-3 border-t border-[#F0F0F0]">
-                <div className="text-xs font-semibold text-[#805232] mb-2">Supporting tasks</div>
-                {renderTaskRows()}
+                <div className="text-xs font-semibold text-[#805232] mb-2">Tasks</div>
+                <div className="space-y-2">
+                  {goal.taskProgress!.map(tp => {
+                    const adherence = Math.round(tp.adherence);
+                    const freqText = tp.frequency === 'WEEKLY'
+                      ? `${tp.timesPerWeek || 1}× / week`
+                      : 'daily';
+                    return (
+                      <div key={tp.taskId} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-[#805232] truncate">{tp.title}</div>
+                          <div className="text-xs text-[#999]">
+                            {freqText} · {formatNumber(tp.ytdValue)} / {formatNumber(tp.expected)} YTD
+                          </div>
+                        </div>
+                        <div className="w-24 h-1.5 bg-[#f0f0f0] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${Math.min(adherence, 100)}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                        <div className="text-xs font-semibold text-[#805232] w-10 text-right">
+                          {adherence}%
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
