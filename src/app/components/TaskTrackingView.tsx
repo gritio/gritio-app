@@ -515,8 +515,9 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
                       const today_ = isToday(date);
                       const past = isPast(date) && !today_;
                       const future = !today_ && !past;
-                      // For checkboxes: done if val > 0. For numeric: never "done" (val is just a number)
-                      const done = checkbox && val !== undefined && val > 0;
+                      // "Done" = a value was logged for this day (any task type).
+                      // For checkbox tasks val will be 0/1; for numeric tasks it's the actual count.
+                      const done = val !== undefined && val > 0;
                       const missed = past && !done;
 
                       return (
