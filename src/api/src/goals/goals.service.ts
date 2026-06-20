@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGoalDto, UpdateGoalDto } from './dto/goal.dto';
 
@@ -208,7 +208,7 @@ export class GoalsService {
     }
 
 
-    return this.getGoalById(goal.id);
+    return this.getGoalById(goal.id, userId);
   }
 
   // Decorate a goal with status + taskProgress + (LOGS only) logsTotal.
@@ -245,7 +245,7 @@ export class GoalsService {
     return Promise.all(goals.map((goal) => this.decorateGoal(goal)));
   }
 
-  async getGoalById(id: string) {
+  async getGoalById(id: string, userId: string) {
     const goal = await this.prisma.goal.findUnique({
       where: { id },
       include: {
@@ -257,7 +257,8 @@ export class GoalsService {
       },
     });
 
-    if (!goal) return null;
+    if (!goal) throw new NotFoundException('Goal not found');
+    if (goal.userId !== userId) throw new ForbiddenException('Not your goal');
     return this.decorateGoal(goal);
   }
 
@@ -350,7 +351,7 @@ export class GoalsService {
     // Sub-goal changed → progress needs recompute.
     await this.updateParentGoalProgress(id);
 
-    return this.getGoalById(id);
+    return this.getGoalById(id, userId);
   }
 
   async deleteGoal(id: string, userId: string) {

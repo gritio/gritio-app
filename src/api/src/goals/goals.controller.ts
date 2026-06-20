@@ -33,8 +33,8 @@ export class GoalsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async getGoal(@Param('id') id: string) {
-    return this.goalsService.getGoalById(id);
+  async getGoal(@Param('id') id: string, @Request() req: any) {
+    return this.goalsService.getGoalById(id, req.user.userId);
   }
 
   @Put(':id')

@@ -1,10 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto } from './dto/task.dto';
 
 @Injectable()
 export class TasksService {
   constructor(private prisma: PrismaService) {}
+
+  // Verifies the given task belongs to the given user. Throws on missing/foreign.
+  private async assertTaskOwnership(taskId: string, userId: string) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { goal: true },
+    });
+    if (!task) throw new NotFoundException('Task not found');
+    if (task.goal.userId !== userId) throw new ForbiddenException('Not your task');
+    return task;
+  }
+
+  // Verifies the given goal belongs to the given user.
+  private async assertGoalOwnership(goalId: string, userId: string) {
+    const goal = await this.prisma.goal.findUnique({ where: { id: goalId } });
+    if (!goal) throw new NotFoundException('Goal not found');
+    if (goal.userId !== userId) throw new ForbiddenException('Not your goal');
+    return goal;
+  }
 
   async createTask(dto: CreateTaskDto, userId: string) {
     // Verify user owns the goal
@@ -63,7 +82,8 @@ export class TasksService {
     });
   }
 
-  async getTasksByGoal(goalId: string) {
+  async getTasksByGoal(goalId: string, userId: string) {
+    await this.assertGoalOwnership(goalId, userId);
     return this.prisma.task.findMany({
       where: { goalId },
       include: {
@@ -75,7 +95,8 @@ export class TasksService {
     });
   }
 
-  async getTaskById(id: string) {
+  async getTaskById(id: string, userId: string) {
+    await this.assertTaskOwnership(id, userId);
     return this.prisma.task.findUnique({
       where: { id },
       include: {
@@ -156,7 +177,8 @@ export class TasksService {
     return result;
   }
 
-  async getCompletionHistory(taskId: string, days: number = 30) {
+  async getCompletionHistory(taskId: string, userId: string, days: number = 30) {
+    await this.assertTaskOwnership(taskId, userId);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setUTCHours(0, 0, 0, 0);
@@ -186,7 +208,8 @@ export class TasksService {
     });
   }
 
-  async getMonthCompletions(taskId: string, year: number, month: number) {
+  async getMonthCompletions(taskId: string, year: number, month: number, userId: string) {
+    await this.assertTaskOwnership(taskId, userId);
     // Query the pre-computed aggregation
     const aggregation = await this.prisma.taskMonthAggregation.findUnique({
       where: {
