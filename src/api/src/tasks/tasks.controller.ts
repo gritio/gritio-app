@@ -32,28 +32,38 @@ export class TasksController {
 
   @Get('goal/:goalId')
   @UseGuards(JwtAuthGuard)
-  async getTasksByGoal(@Param('goalId') goalId: string) {
-    return this.tasksService.getTasksByGoal(goalId);
+  async getTasksByGoal(@Param('goalId') goalId: string, @Request() req: any) {
+    return this.tasksService.getTasksByGoal(goalId, req.user.userId);
   }
 
   @Get(':id/history')
   @UseGuards(JwtAuthGuard)
   async getTaskHistory(
     @Param('id') id: string,
+    @Request() req: any,
     @Query('days') days?: string,
   ) {
-    return this.tasksService.getCompletionHistory(id, days ? parseInt(days) : 30);
+    return this.tasksService.getCompletionHistory(
+      id,
+      req.user.userId,
+      days ? parseInt(days) : 30,
+    );
   }
 
   @Get(':id/completions')
   @UseGuards(JwtAuthGuard)
   async getMonthCompletions(
     @Param('id') id: string,
+    @Request() req: any,
     @Query('year') year: string,
     @Query('month') month: string,
   ) {
-    console.log('getMonthCompletions called with:', { id, year, month });
-    return this.tasksService.getMonthCompletions(id, parseInt(year), parseInt(month));
+    return this.tasksService.getMonthCompletions(
+      id,
+      parseInt(year),
+      parseInt(month),
+      req.user.userId,
+    );
   }
 
   @Post(':id/log-completion')
@@ -79,8 +89,8 @@ export class TasksController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async getTask(@Param('id') id: string) {
-    return this.tasksService.getTaskById(id);
+  async getTask(@Param('id') id: string, @Request() req: any) {
+    return this.tasksService.getTaskById(id, req.user.userId);
   }
 
   @Delete(':id')
