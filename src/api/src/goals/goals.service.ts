@@ -45,6 +45,7 @@ export class GoalsService {
         return {
           taskId: task.id,
           title: task.title,
+          type: task.type,
           frequency: task.frequency,
           target: task.target,
           timesPerWeek: task.timesPerWeek,
