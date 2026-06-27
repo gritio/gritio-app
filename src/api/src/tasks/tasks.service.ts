@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto } from './dto/task.dto';
+import { MeasurementType, Frequency } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -126,6 +127,8 @@ export class TasksService {
         ...(dto.target && { target: dto.target }),
         ...(dto.unit && { unit: dto.unit }),
         ...(dto.timesPerWeek !== undefined && { timesPerWeek: dto.timesPerWeek }),
+        ...(dto.type && { type: dto.type.toUpperCase() as MeasurementType }),
+        ...(dto.frequency && { frequency: dto.frequency.toUpperCase() as Frequency }),
       },
       include: {
         completionRecords: true,

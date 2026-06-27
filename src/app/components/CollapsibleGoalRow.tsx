@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Goal, Task, GoalLog } from '../types';
+import { Goal, Task, GoalLog, TaskProgressEntry } from '../types';
 import { ChevronRight, Edit, Trash2, Plus, Heart, Building2, Users, Star, Pencil, Check, X } from 'lucide-react';
 import { goalLogsApi } from '../services/api';
+import { EditTaskPanel } from './EditTaskPanel';
 import { COLORS } from '../constants/colors';
 
 function getIconForGoal(goal: Goal): { Icon: React.ReactNode; bgColor: string; iconColor: string } {
@@ -69,6 +70,8 @@ export function CollapsibleGoalRow({
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [editingRemarks, setEditingRemarks] = useState<string>('');
+
+  const [editingTask, setEditingTask] = useState<TaskProgressEntry | null>(null);
 
   const goalTasks = tasks.filter(t => t.goalId === goal.id);
   const hasTasks = !!goal.taskProgress && goal.taskProgress.length > 0;
@@ -534,6 +537,13 @@ export function CollapsibleGoalRow({
                         <div className="text-xs font-semibold text-[#805232] w-10 text-right">
                           {adherence}%
                         </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingTask(tp); }}
+                          className="text-[#805232] opacity-50 hover:opacity-100 transition-opacity ml-1"
+                          title="Edit task"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
                       </div>
                     );
                   })}
@@ -543,6 +553,13 @@ export function CollapsibleGoalRow({
           </div>
         )}
       </div>
+      <EditTaskPanel
+        isOpen={editingTask !== null}
+        onClose={() => setEditingTask(null)}
+        task={editingTask}
+        goalTitle={goal.title}
+        onSave={() => { setEditingTask(null); onRefreshGoals?.(); }}
+      />
     </div>
   );
 }

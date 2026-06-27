@@ -44,6 +44,14 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsNumber()
   timesPerWeek?: number;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  frequency?: string;
 }
 
 export class LogCompletionDto {

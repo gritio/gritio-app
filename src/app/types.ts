@@ -29,6 +29,7 @@ export type ProgressSource = 'TASKS' | 'LOGS';
 export interface TaskProgressEntry {
   taskId: string;
   title: string;
+  type: MeasurementType;
   frequency: 'DAILY' | 'WEEKLY';
   target: number;
   timesPerWeek?: number | null;

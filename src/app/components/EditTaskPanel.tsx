@@ -1,254 +1,252 @@
 import { useState, useEffect } from 'react';
-import { Task, MeasurementType, Frequency } from '../types';
+import { Task, TaskProgressEntry, MeasurementType, Frequency } from '../types';
 import { X } from 'lucide-react';
 import { tasksApi } from '../services/api';
 
 interface EditTaskPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  task: Task | null;
-  onSave: (task: Task) => void;
+  task: TaskProgressEntry | null;
+  goalTitle: string;
+  onSave: (updated: Task) => void;
 }
 
-export function EditTaskPanel({ isOpen, onClose, task, onSave }: EditTaskPanelProps) {
+export function EditTaskPanel({ isOpen, onClose, task, goalTitle, onSave }: EditTaskPanelProps) {
   const [formData, setFormData] = useState({
     title: '',
     type: 'number' as MeasurementType,
     frequency: 'daily' as Frequency,
     target: 1,
     unit: 'times',
-    timesPerWeek: 1
+    timesPerWeek: 1,
   });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [originalType, setOriginalType] = useState<MeasurementType>('number');
+  const [originalFrequency, setOriginalFrequency] = useState<Frequency>('daily');
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const loadTaskData = async () => {
-      if (task && isOpen) {
-        try {
-          console.log('EditTaskPanel: Loading task with id:', task.id);
-          const fullTask = await tasksApi.getTask(task.id);
-          console.log('EditTaskPanel: Loaded full task:', fullTask);
-          const typeValue = fullTask.type?.toLowerCase() as MeasurementType || 'number';
-          const freqValue = fullTask.frequency?.toLowerCase() as Frequency || 'daily';
-          console.log('EditTaskPanel: Normalized type:', typeValue, 'frequency:', freqValue);
-          setFormData({
-            title: fullTask.title || '',
-            type: typeValue,
-            frequency: freqValue,
-            target: fullTask.target || 1,
-            unit: fullTask.unit || 'times',
-            timesPerWeek: fullTask.timesPerWeek || 1
-          });
-          console.log('EditTaskPanel: Form data set to:', {
-            title: fullTask.title,
-            type: typeValue,
-            frequency: freqValue,
-            target: fullTask.target,
-            unit: fullTask.unit,
-            timesPerWeek: fullTask.timesPerWeek
-          });
-        } catch (err) {
-          console.error('Failed to load task:', err);
-          console.log('EditTaskPanel: Using fallback from passed task:', task);
-          setFormData({
-            title: task.title,
-            type: task.type as MeasurementType,
-            frequency: task.frequency as Frequency,
-            target: task.target,
-            unit: task.unit || 'times',
-            timesPerWeek: task.timesPerWeek || 1
-          });
-        }
-        setError(null);
-      }
-    };
-    loadTaskData();
+    if (task && isOpen) {
+      const type = task.type.toLowerCase() as MeasurementType;
+      const frequency = task.frequency.toLowerCase() as Frequency;
+      setFormData({
+        title: task.title,
+        type,
+        frequency,
+        target: task.target,
+        unit: task.unit,
+        timesPerWeek: task.timesPerWeek ?? 1,
+      });
+      setOriginalType(type);
+      setOriginalFrequency(frequency);
+      setError(null);
+    }
   }, [task, isOpen]);
 
   const handleTypeChange = (type: MeasurementType) => {
-    let defaultUnit = 'units';
+    let defaultUnit = formData.unit;
     if (type === 'number') defaultUnit = 'times';
     if (type === 'time') defaultUnit = 'mins';
     if (type === 'steps') defaultUnit = 'steps';
     if (type === 'distance') defaultUnit = 'km';
-    
-    const newData = {...formData, type, unit: defaultUnit};
-    if (type === 'number') {
-      newData.frequency = 'daily';
-    }
-    setFormData(newData);
+    setFormData({ ...formData, type, unit: defaultUnit });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!task) return;
-
-    const updateData = {
-      title: formData.title,
-      type: formData.type,
-      frequency: formData.frequency,
-      target: formData.target,
-      unit: formData.unit,
-      timesPerWeek: formData.frequency === 'weekly' ? formData.timesPerWeek : undefined
-    };
-    
+    setSaving(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      const updatedTask = await tasksApi.updateTask(task.id, updateData as any);
-      onSave(updatedTask);
+      const updated = await tasksApi.updateTask(task.taskId, {
+        title: formData.title,
+        type: formData.type,
+        frequency: formData.frequency,
+        target: formData.type !== 'number' ? formData.target : undefined,
+        unit: formData.type !== 'number' ? formData.unit : undefined,
+        timesPerWeek: formData.frequency === 'weekly' ? formData.timesPerWeek : undefined,
+      });
+      onSave(updated);
       onClose();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to update task';
-      console.error('Failed to update task:', err);
-      setError(errorMsg);
+      setError('Failed to save task. Please try again.');
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
+  const showTargetUnit = formData.type !== 'number';
+  const showTimesPerWeek = formData.frequency === 'weekly';
+  const hasStructuralChange = formData.type !== originalType || formData.frequency !== originalFrequency;
+
   if (!isOpen || !task) return null;
 
-  const showNumberTypeSpecificFields = formData.type === 'number';
-  const showFrequencyWeeklyFields = formData.frequency === 'weekly';
-  const showTargetUnit = formData.type !== 'number';
-
   return (
-    <div className={`fixed right-0 top-0 h-screen w-96 bg-gray-100 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-      <div className="sticky top-0 bg-gray-100 border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Edit Task</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 z-40 translate-x-0">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#805232] to-[#6b4427] text-white p-6 flex items-center justify-between sticky top-0">
+        <div>
+          <h2 className="text-lg font-bold">Edit Task</h2>
+          <p className="text-xs text-gray-200 mt-1">for {goalTitle}</p>
         </div>
+        <button
+          onClick={onClose}
+          className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-1">Task Name</label>
-          <input
-            type="text"
-            value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
-            placeholder="e.g., Gym Session"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-900"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-3">Task Type</label>
-          <div className="space-y-2">
-            {(['number', 'steps', 'distance', 'time'] as MeasurementType[]).map((type) => (
-              <label key={type} className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: formData.type === type ? '#805232' : '', backgroundColor: formData.type === type ? '#f5f1ed' : '' }}>
-                <input
-                  type="radio"
-                  name="type"
-                  value={type}
-                  checked={formData.type === type}
-                  onChange={() => handleTypeChange(type)}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm font-medium text-gray-900">
-                  {type === 'number' ? 'Simple Checkbox' : type === 'steps' ? 'Steps' : type === 'distance' ? 'Distance' : 'Time'}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {!showNumberTypeSpecificFields && (
+      {/* Form Content */}
+      <div className="overflow-y-auto h-[calc(100%-80px)] pb-28">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Target Per Session</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.1"
-                value={formData.target}
-                onChange={(e) => setFormData({...formData, target: parseFloat(e.target.value) || 0})}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-900"
-                required
-              />
-              <input
-                type="text"
-                value={formData.unit}
-                disabled
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-              />
-            </div>
-          </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-900 mb-3">Frequency</label>
-          <div className="space-y-2">
-            {(['daily', 'weekly'] as Frequency[]).map((freq) => (
-              <label key={freq} 
-                className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                style={{ borderColor: formData.frequency === freq ? '#805232' : '', backgroundColor: formData.frequency === freq ? '#f5f1ed' : '' }}>
-                <input
-                  type="radio"
-                  name="frequency"
-                  value={freq}
-                  checked={formData.frequency === freq}
-                  onChange={() => setFormData({...formData, frequency: freq})}
-                  className="w-4 h-4"
-                  disabled={showNumberTypeSpecificFields && freq === 'weekly'}
-                />
-                <span className="text-sm font-medium text-gray-900">
-                  {freq === 'daily' ? 'Daily' : 'Weekly'}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {showFrequencyWeeklyFields && (
-          <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">Times Per Week</label>
+            <label className="block text-sm mb-2 text-[#805232] font-semibold">Task Title *</label>
             <input
-              type="number"
-              min="1"
-              max="7"
-              value={formData.timesPerWeek}
-              onChange={(e) => setFormData({...formData, timesPerWeek: parseInt(e.target.value) || 1})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-900"
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
             />
           </div>
-        )}
 
-        <div className="flex gap-3 pt-6 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-800 transition-colors font-medium disabled:opacity-50"
-          >
-            {isLoading ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </form>
+          {/* Measurement Type */}
+          <div>
+            <label className="block text-sm mb-2 text-[#805232] font-semibold">Measurement Type *</label>
+            <select
+              value={formData.type}
+              onChange={(e) => handleTypeChange(e.target.value as MeasurementType)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
+            >
+              <option value="number">Number (countable items)</option>
+              <option value="time">Time (minutes/hours)</option>
+              <option value="steps">Steps (activity)</option>
+              <option value="distance">Distance (km/miles)</option>
+            </select>
+            <p className="text-xs text-[#805232] mt-1">
+              {formData.type === 'number' && 'e.g., gym days, books read, sessions completed'}
+              {formData.type === 'time' && 'e.g., reading time, workout duration, study time'}
+              {formData.type === 'steps' && 'e.g., daily steps, weekly step goal'}
+              {formData.type === 'distance' && 'e.g., running distance, walking distance'}
+            </p>
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <label className="block text-sm mb-2 text-[#805232] font-semibold">Frequency *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, frequency: 'daily' })}
+                className={`px-3 py-2 border rounded-lg transition-all text-sm ${
+                  formData.frequency === 'daily'
+                    ? 'border-[#805232] bg-[#FFF5F0] text-[#805232] font-semibold'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, frequency: 'weekly' })}
+                className={`px-3 py-2 border rounded-lg transition-all text-sm ${
+                  formData.frequency === 'weekly'
+                    ? 'border-[#805232] bg-[#FFF5F0] text-[#805232] font-semibold'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                Weekly
+              </button>
+            </div>
+          </div>
+
+          {/* Times Per Week */}
+          {showTimesPerWeek && (
+            <div>
+              <label className="block text-sm mb-2 text-[#805232] font-semibold">Times per Week *</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="7"
+                  value={formData.timesPerWeek}
+                  onChange={(e) => setFormData({ ...formData, timesPerWeek: parseInt(e.target.value) })}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#805232]"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={formData.timesPerWeek}
+                  onChange={(e) => setFormData({ ...formData, timesPerWeek: Math.min(7, Math.max(1, parseInt(e.target.value) || 1)) })}
+                  className="w-10 px-2 py-1 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Target and Unit */}
+          {showTargetUnit && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-semibold">Target *</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.target}
+                  onChange={(e) => setFormData({ ...formData, target: parseFloat(e.target.value) || 1 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-2 text-[#805232] font-semibold">Unit *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  placeholder="e.g., km, mins, steps"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Structural change warning */}
+          {hasStructuralChange && (
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg">
+              <p className="text-xs text-amber-800">
+                <strong>Heads up:</strong> Changing type or frequency will recalculate YTD progress from existing logs. Historical data is preserved.
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && <p className="text-xs text-red-600">{error}</p>}
+        </form>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-[#805232] hover:bg-gray-50 transition-colors text-sm font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={saving}
+          className="flex-1 px-3 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors text-sm font-medium disabled:opacity-60"
+        >
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
     </div>
   );
 }
