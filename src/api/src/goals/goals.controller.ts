@@ -12,7 +12,9 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GoalsService } from './goals.service';
 import { CreateGoalDto, UpdateGoalDto } from './dto/goal.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('goals')
 export class GoalsController {
   constructor(private goalsService: GoalsService) {}
