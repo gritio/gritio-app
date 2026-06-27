@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { LifeGoalsService } from './life-goals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('life-goals')
 export class LifeGoalsController {
   constructor(private lifeGoalsService: LifeGoalsService) {}

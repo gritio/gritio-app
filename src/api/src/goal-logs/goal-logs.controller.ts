@@ -12,7 +12,9 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GoalLogsService } from './goal-logs.service';
 import { CreateGoalLogDto, UpdateGoalLogDto } from './dto/goal-log.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('goal-logs')
 export class GoalLogsController {
   constructor(private service: GoalLogsService) {}

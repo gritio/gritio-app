@@ -14,7 +14,9 @@ import {
 import { TodosService } from './todos.service';
 import { CreateTodoDto, UpdateTodoDto, ToggleDoneDto, TogglePriorityDto, BulkMarkDoneDto } from './dto/todo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('todos')
 @UseGuards(JwtAuthGuard)
 export class TodosController {
