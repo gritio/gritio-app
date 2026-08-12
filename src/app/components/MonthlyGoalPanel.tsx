@@ -73,7 +73,7 @@ export function MonthlyGoalPanel({ goalId, goalTitle, isOpen, onClose, onSave }:
     <>
       {/* Panel */}
       <div 
-        className={`fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

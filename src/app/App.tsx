@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { Sidebar } from './components/Sidebar';
 import { GoalsPage } from './components/GoalsPage';
@@ -54,6 +55,7 @@ export default function App() {
   });
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   
   // Edit Panel State
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
@@ -447,10 +449,21 @@ export default function App() {
       ) : (
         <div className={`min-h-screen flex font-bold ${isKidsMode ? '' : 'bg-[#f5f0eb]'}`} style={{ ...(isKidsMode && { backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/assets/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }), fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} />
-          
+          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
           {/* Main Content Area with Panel */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'mr-96' : ''}`}>
+          <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'md:mr-96' : ''}`}>
+            {/* Mobile top bar */}
+            <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#3d2210] text-white sticky top-0 z-30 flex-shrink-0">
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open menu"
+                className="p-1 -ml-1"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <span className="font-bold">Gritio</span>
+            </div>
             {/* Main Content */}
             <main className="py-2 sm:py-4 md:py-8 flex-1 overflow-y-auto overflow-x-hidden">
               {currentView === 'overview' && (

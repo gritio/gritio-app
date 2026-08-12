@@ -142,7 +142,7 @@ export function TodosPage({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="w-full max-w-2xl mx-auto px-6 py-4">
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4">
         <h1 className="text-2xl font-bold text-[#805232] mb-4">My Todos</h1>
 
         {/* Add Todo */}

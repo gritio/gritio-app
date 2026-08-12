@@ -129,7 +129,7 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-3 sm:p-6">
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
             {error}

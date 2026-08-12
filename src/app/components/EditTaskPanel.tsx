@@ -82,7 +82,7 @@ export function EditTaskPanel({ isOpen, onClose, task, goalTitle, onSave }: Edit
   if (!isOpen || !task) return null;
 
   return (
-    <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-2xl transform transition-transform duration-300 z-40 translate-x-0">
+    <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-40 translate-x-0">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#805232] to-[#6b4427] text-white p-6 flex items-center justify-between sticky top-0">
         <div>

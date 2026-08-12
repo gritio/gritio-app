@@ -42,6 +42,8 @@ logs:
 
 sync-db:
 	@echo "🔄 Syncing production database..."
+	@echo "👉 Select the Postgres service:"
+	@railway service
 	@./scripts/sync-prod-db.sh
 
 restore-latest:
@@ -75,6 +77,10 @@ fresh-start: down clean up
 	@echo "✅ Fresh start complete"
 
 dev-local:
+	@if [ ! -f src/api/.env ]; then \
+		echo "🔧 No src/api/.env found, creating from template..."; \
+		cp src/api/.env.template src/api/.env; \
+	fi
 	@echo "🚀 Installing dependencies..."
 	@npm install > /dev/null 2>&1
 	@cd src/api && npm install > /dev/null 2>&1 && npx prisma generate > /dev/null 2>&1

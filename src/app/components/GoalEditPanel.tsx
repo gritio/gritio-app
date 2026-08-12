@@ -116,7 +116,7 @@ export function GoalEditPanel({ goal, isOpen, onClose, onSave, onDelete }: GoalE
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed right-0 top-0 h-screen w-96 bg-[#DCDCDC] shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed right-0 top-0 h-screen w-full sm:w-96 bg-[#DCDCDC] shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
       <div className="sticky top-0 bg-[#DCDCDC] border-b border-[#B8B9BA] p-6">
         {/* Header */}
         <div className="flex items-center justify-between">

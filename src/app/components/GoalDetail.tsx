@@ -33,7 +33,7 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
   };
   
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-3 sm:p-6">
       {/* Back Button */}
       <button 
         onClick={onBack}
@@ -46,8 +46,8 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
       {/* Main Goal Expandable Tile */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
         {/* Goal Header - Clickable */}
-        <div 
-          className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+        <div
+          className="p-3 sm:p-6 cursor-pointer hover:bg-gray-50 transition-colors"
           onClick={() => setIsGoalExpanded(!isGoalExpanded)}
         >
           <div className="flex items-start gap-4">
@@ -79,7 +79,7 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
                 />
               </div>
               
-              <div className="flex gap-6 text-sm text-[#805232]">
+              <div className="flex flex-wrap gap-3 sm:gap-6 text-sm text-[#805232]">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   {goal.startDate.toLocaleDateString()} - {goal.endDate.toLocaleDateString()}

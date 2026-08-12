@@ -78,31 +78,31 @@ export function GoalsOverviewNew({
   const dateRange = `${monthNames[startMonth.getMonth()]} – ${monthNames[endMonth.getMonth()]} ${endMonth.getFullYear()}`;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-6">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
       {/* Header with title */}
-      <h1 className="text-3xl font-bold mb-6" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }}>Yearly goals</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6" style={{ color: isKidsMode ? COLORS.kidsGreen : COLORS.primary }}>Yearly goals</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         {/* Goals Total Card */}
-        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
-          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Goals total</p>
-          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{localGoals.length}</p>
-          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>across 3 life goals</p>
+        <div className={`rounded-lg p-2.5 sm:p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-[11px] sm:text-xs font-semibold mb-1 sm:mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Goals total</p>
+          <p className={`text-lg sm:text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{localGoals.length}</p>
+          <p className={`text-[11px] sm:text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>across 3 life goals</p>
         </div>
 
         {/* Avg Progress Card */}
-        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
-          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Avg progress</p>
-          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{avgProgress}%</p>
-          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{dateRange}</p>
+        <div className={`rounded-lg p-2.5 sm:p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-[11px] sm:text-xs font-semibold mb-1 sm:mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>Avg progress</p>
+          <p className={`text-lg sm:text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#805232]'}`}>{avgProgress}%</p>
+          <p className={`text-[11px] sm:text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{dateRange}</p>
         </div>
 
         {/* On Track Card */}
-        <div className={`rounded-lg p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
-          <p className={`text-xs font-semibold mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>On track</p>
-          <p className={`text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#3b6d11]'}`}>{onTrackCount}</p>
-          <p className={`text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{behindCount} behind</p>
+        <div className={`rounded-lg p-2.5 sm:p-4 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-20 border border-[#0099FF]' : 'bg-white border border-[#E8E8E8]'}`}>
+          <p className={`text-[11px] sm:text-xs font-semibold mb-1 sm:mb-2 ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>On track</p>
+          <p className={`text-lg sm:text-2xl font-bold mb-1 ${isKidsMode ? 'text-[#00FF00]' : 'text-[#3b6d11]'}`}>{onTrackCount}</p>
+          <p className={`text-[11px] sm:text-xs ${isKidsMode ? 'text-[#00FF00]' : 'text-gray-600'}`}>{behindCount} behind</p>
         </div>
       </div>
 

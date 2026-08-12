@@ -284,10 +284,10 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
 
   // --- Render ---
   return (
-    <div style={{ width: '100%', maxWidth: 900, margin: '0 auto', padding: '1.5rem 1.5rem' }}>
+    <div className="px-4 sm:px-6" style={{ width: '100%', maxWidth: 900, margin: '0 auto', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
 
       {/* Persistent Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem', gap: 16 }}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4" style={{ marginBottom: '1.25rem' }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>
             {today.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
@@ -296,7 +296,7 @@ export function TaskTrackingView({ tasks, goals, defaultTab = 'today', onTasksUp
             {today.toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, minWidth: 270 }}>
+        <div className="grid grid-cols-3 gap-2 sm:gap-2 sm:min-w-[270px]">
           <MetricCard label="Today" value={`${todayCompletedCount}`} suffix={`/${tasks.length}`} />
           <MetricCard label="Week" value={`${weekPct}`} suffix="%" />
           <MetricCard label="Month" value="–" suffix="" />

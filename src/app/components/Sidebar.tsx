@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Zap } from 'lucide-react';
+import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Zap, X } from 'lucide-react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
-import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface SidebarProps {
   currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding';
@@ -14,30 +12,26 @@ interface SidebarProps {
   goalsCount?: number;
   tasksCount?: number;
   todosCount?: number;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboardingStep = 0, lifeGoalsCount = 0, goalsCount = 0, tasksCount = 0, todosCount = 0 }: SidebarProps) {
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboardingStep = 0, lifeGoalsCount = 0, goalsCount = 0, tasksCount = 0, todosCount = 0, isOpen = false, onClose }: SidebarProps) {
   const user = authApi.getStoredUser();
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const isIconOnly = windowWidth < 768;
 
   // Determine if user is in onboarding
   const isOnboarding = onboardingStep < 4;
 
+  const handleNavigate = (view: typeof currentView) => {
+    onNavigate(view);
+    onClose?.();
+  };
+
   const NavItem = ({ label, icon: Icon, view, isDimmed = false, count }: { label: string; icon: any; view: typeof currentView; isDimmed?: boolean; count?: number }) => {
     const isActive = currentView === view || (view === 'today' && currentView === 'weekly');
-    const button = (
+    return (
       <button
-        onClick={() => onNavigate(view)}
+        onClick={() => handleNavigate(view)}
         disabled={isDimmed}
         className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-md transition-all text-sm font-medium ${
           isDimmed
@@ -46,25 +40,14 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
             ? 'bg-white/10 text-white'
             : 'text-white/60 hover:text-white'
         }`}
-        title={isIconOnly ? label : undefined}
       >
         <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#e8c89a]' : isDimmed ? 'text-white/35' : 'text-white/40'}`} />
-        {!isIconOnly && <span className="flex-1 text-left">{label}</span>}
+        <span className="flex-1 text-left">{label}</span>
         {count !== undefined && count > 0 && (
           <span className="text-xs bg-white/20 text-white px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium">{count}</span>
         )}
       </button>
     );
-
-    if (isIconOnly) {
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent side="right" className="bg-[#805232] text-white">{label}</TooltipContent>
-        </Tooltip>
-      );
-    }
-    return button;
   };
 
   const SectionLabel = ({ label }: { label: string }) => (
@@ -72,10 +55,23 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
   );
 
   return (
-    <div className="w-44 bg-[#3d2210] min-h-screen shadow-lg flex flex-col flex-shrink-0">
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <div
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 md:w-44 bg-[#3d2210] min-h-screen shadow-lg flex flex-col flex-shrink-0 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
       {/* Logo/Brand */}
-      <div className="p-3 border-b border-white/10">
-        <div className="flex items-center gap-2 justify-center">
+      <div className="p-3 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2 justify-center flex-1">
           <div className="w-8 h-8 flex items-center justify-center">
             <AllyLogo size={32} />
           </div>
@@ -83,6 +79,13 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
             <h1 className="text-white font-bold text-sm">Gritio</h1>
           </div>
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden text-white/60 hover:text-white p-1"
+          aria-label="Close menu"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Menu Items */}
@@ -155,6 +158,7 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -35,7 +35,7 @@ export function TodoDetailPanel({ todo, onClose, onUpdate, onDelete }: TodoDetai
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black bg-opacity-40" onClick={onClose} />
 
-      <div className="w-96 bg-white shadow-2xl flex flex-col">
+      <div className="w-full sm:w-96 bg-white shadow-2xl flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <h2 className="text-base font-semibold text-[#805232]">Edit Todo</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">

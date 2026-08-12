@@ -60,7 +60,7 @@ export function OnboardingPage({ lifeGoals, goals, tasks, onNavigate }: Onboardi
     : `${currentStep - 1} of 4 steps done — next up: ${steps[currentStep - 1].title.toLowerCase()}.`;
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-6 py-8">
+    <div className="w-full max-w-3xl mx-auto px-3 sm:px-6 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#1a1009] mb-2">{title}</h1>
         <p className="text-sm text-[#7a6a5a]">{subtitle}</p>

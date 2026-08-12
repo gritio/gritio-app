@@ -5,6 +5,24 @@
 
 set -e
 
+# Run a command with a timeout so network/SSH steps fail loudly instead of
+# hanging forever with no feedback. Prints captured output either way.
+run_with_timeout() {
+    local timeout_secs=$1; shift
+    local tmpfile
+    tmpfile=$(mktemp)
+    ("$@" > "$tmpfile" 2>&1) &
+    local cmd_pid=$!
+    ( sleep "$timeout_secs"; kill -9 "$cmd_pid" 2>/dev/null ) &
+    local watchdog_pid=$!
+    wait "$cmd_pid" 2>/dev/null
+    local status=$?
+    kill "$watchdog_pid" 2>/dev/null
+    cat "$tmpfile"
+    rm -f "$tmpfile"
+    return $status
+}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -52,10 +70,14 @@ if [ -z "$PGDUMP" ] || [ -z "$PSQL" ]; then
 fi
 
 # Get DATABASE_URL to extract password
-PROD_DB_URL=$(railway variable list --kv 2>/dev/null | grep DATABASE_URL | cut -d'=' -f2-)
+VARS_OUTPUT=$(railway variables --kv 2>&1)
+PROD_DB_URL=$(echo "$VARS_OUTPUT" | grep DATABASE_URL | cut -d'=' -f2-)
 
 if [ -z "$PROD_DB_URL" ]; then
-    echo -e "${RED}❌ Could not fetch DATABASE_URL from Railway${NC}"
+    echo -e "${RED}❌ Could not fetch DATABASE_URL from Railway.${NC}"
+    echo "   'railway variables --kv' output:"
+    echo "$VARS_OUTPUT"
+    echo "   Make sure the right service is linked: railway service"
     exit 1
 fi
 
@@ -70,13 +92,26 @@ fi
 
 # Setup Railway SSH config if needed
 echo -e "${YELLOW}🔐 Setting up SSH tunnel to Railway...${NC}"
-railway ssh config -s gritio-backend > /dev/null 2>&1 || true
+if ! run_with_timeout 20 railway ssh config -s gritio-backend; then
+    echo -e "${RED}❌ 'railway ssh config' failed or timed out after 20s.${NC}"
+    echo "   Run it manually to see what it's asking: railway ssh config -s gritio-backend"
+    exit 1
+fi
 
 # Resolve postgres.railway.internal to IP through backend container
-POSTGRES_IP=$(railway ssh -s gritio-backend nc -zv postgres.railway.internal 5432 2>&1 | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+echo -e "${YELLOW}🔎 Resolving postgres.railway.internal (up to 20s)...${NC}"
+RESOLVE_OUTPUT=$(run_with_timeout 20 railway ssh -s gritio-backend nc -zv postgres.railway.internal 5432) || {
+    echo -e "${RED}❌ Timed out or failed reaching postgres.railway.internal via Railway SSH.${NC}"
+    echo "   Output so far:"
+    echo "$RESOLVE_OUTPUT"
+    echo "   Try running manually: railway ssh -s gritio-backend nc -zv postgres.railway.internal 5432"
+    exit 1
+}
+POSTGRES_IP=$(echo "$RESOLVE_OUTPUT" | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 
 if [ -z "$POSTGRES_IP" ]; then
     echo -e "${RED}❌ Could not resolve postgres.railway.internal from Railway backend${NC}"
+    echo "   Raw output: $RESOLVE_OUTPUT"
     exit 1
 fi
 

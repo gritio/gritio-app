@@ -375,8 +375,8 @@ export function CollapsibleGoalRow({
             {/* Editor section — only visible when pill was clicked */}
             {showEditor && pillClickable && (
               <div className="pt-3 pb-3 bg-[#FAFAFA] rounded-lg px-3 mt-3">
-                <div className="grid grid-cols-12 gap-3 mb-2">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-2">
+                  <div className="sm:col-span-3">
                     <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">{editorLabel}</label>
                     <div className="flex items-center gap-1">
                       <input
@@ -390,7 +390,7 @@ export function CollapsibleGoalRow({
                       {editorSuffix && <span className="text-xs text-[#999]">{editorSuffix}</span>}
                     </div>
                   </div>
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">Date</label>
                     <input
                       type="date"
@@ -400,7 +400,7 @@ export function CollapsibleGoalRow({
                       className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
                     />
                   </div>
-                  <div className="col-span-6">
+                  <div className="sm:col-span-6">
                     <label className="block text-[10px] uppercase tracking-wider text-[#999] mb-1">
                       {isCount ? 'Where / what was it?' : 'Notes (optional)'}
                     </label>
