@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Goal, MonthlyGoal, Task, Todo, GoalLog } from '../types';
+import { Goal, MonthlyGoal, Task, Todo, GoalLog, JournalSection } from '../types';
 import { getToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -518,5 +518,49 @@ export const todosApi = {
   bulkMarkDone: async (ids: string[]): Promise<{ count: number }> => {
     const response = await apiClient.post('/todos/bulk/mark-done', { ids });
     return response.data;
+  },
+};
+
+export const journalApi = {
+  getSections: async (): Promise<JournalSection[]> => {
+    try {
+      const response = await apiClient.get('/journal/sections');
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch journal sections:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  createSection: async (sectionData: { name: string; color?: string }): Promise<JournalSection> => {
+    try {
+      const response = await apiClient.post('/journal/sections', sectionData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to create journal section:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  updateSection: async (
+    id: string,
+    sectionData: { name?: string; color?: string; content?: string }
+  ): Promise<JournalSection> => {
+    try {
+      const response = await apiClient.patch(`/journal/sections/${id}`, sectionData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to update journal section:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  deleteSection: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/journal/sections/${id}`);
+    } catch (error: any) {
+      console.error('Failed to delete journal section:', error.response?.data || error.message);
+      throw error;
+    }
   },
 };

@@ -17,11 +17,12 @@ import { AddGoalModal } from './components/AddGoalModal';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
 import { OnboardingPage } from './components/OnboardingPage';
+import { JournalPage } from './components/JournalPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
-import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal } from './types';
-import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi } from './services/api';
+import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection } from './types';
+import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi } from './services/api';
 
-type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding';
+type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal';
 
 // Helper function to check if user is under 18
 const isUserKid = (dob?: string): boolean => {
@@ -49,7 +50,7 @@ export default function App() {
     const savedView = localStorage.getItem('currentView') as View | null;
     // 'weekly' redirects to 'today' since they're now the same tabbed view
     if (savedView === 'weekly') return 'today';
-    return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals', 'onboarding'].includes(savedView))
+    return (savedView && ['overview', 'detail', 'today', 'weekly', 'task-timeline', 'todos', 'life-goals', 'onboarding', 'journal'].includes(savedView))
       ? savedView
       : 'overview';
   });
@@ -80,6 +81,7 @@ export default function App() {
   const [checkIns] = useState<WeeklyCheckIn[]>(mockWeeklyCheckIns);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
+  const [journalSections, setJournalSections] = useState<JournalSection[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -123,9 +125,10 @@ export default function App() {
         goalsApi.getGoals(),
         tasksApi.getAllTasks(),
         todosApi.getAllTodos(),
-        lifeGoalsApi.getLifeGoals()
+        lifeGoalsApi.getLifeGoals(),
+        journalApi.getSections()
       ]);
-      const [fetchedGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals] = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const [fetchedGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals, fetchedJournalSections] = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       console.log('Goals fetched successfully:', fetchedGoals);
       console.log('Tasks fetched successfully:', fetchedTasks);
@@ -136,6 +139,7 @@ export default function App() {
       setTasks(fetchedTasks);
       setTodos(fetchedTodos);
       setLifeGoals(fetchedLifeGoals || []);
+      setJournalSections(fetchedJournalSections || []);
       
       // Check if user is in kids mode
       console.log('=== CHECKING KIDS MODE IN FETCH GOALS ===');
@@ -280,6 +284,7 @@ export default function App() {
     setMonthlyGoals([]);
     setTasks([]);
     setTodos([]);
+    setJournalSections([]);
     await authApi.logout();
     setIsAuthenticated(false);
   };
@@ -343,6 +348,30 @@ export default function App() {
       setTodos(todos.map(t => t.id === id ? { ...t, priority } : t));
     } catch (error: any) {
       console.error('Failed to toggle todo priority:', error);
+    }
+  };
+
+  const handleCreateJournalSection = async (data: { name: string; color?: string }): Promise<JournalSection> => {
+    const created = await journalApi.createSection(data);
+    setJournalSections(prev => [...prev, created]);
+    return created;
+  };
+
+  const handleUpdateJournalSection = async (id: string, data: { name?: string; color?: string; content?: string }) => {
+    try {
+      const updated = await journalApi.updateSection(id, data);
+      setJournalSections(prev => prev.map(s => s.id === id ? updated : s));
+    } catch (error: any) {
+      console.error('Failed to update journal section:', error);
+    }
+  };
+
+  const handleDeleteJournalSection = async (id: string) => {
+    try {
+      await journalApi.deleteSection(id);
+      setJournalSections(prev => prev.filter(s => s.id !== id));
+    } catch (error: any) {
+      console.error('Failed to delete journal section:', error);
     }
   };
   
@@ -449,7 +478,7 @@ export default function App() {
       ) : (
         <div className={`min-h-screen flex font-bold ${isKidsMode ? '' : 'bg-[#f5f0eb]'}`} style={{ ...(isKidsMode && { backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/assets/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }), fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} journalCount={journalSections.length} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
           {/* Main Content Area with Panel */}
           <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'md:mr-96' : ''}`}>
@@ -524,6 +553,15 @@ export default function App() {
                   onDeleteTodo={handleDeleteTodo}
                   onToggleDone={handleToggleTodoDone}
                   onTogglePriority={handleToggleTodoPriority}
+                />
+              )}
+
+              {currentView === 'journal' && (
+                <JournalPage
+                  sections={journalSections}
+                  onCreateSection={handleCreateJournalSection}
+                  onUpdateSection={handleUpdateJournalSection}
+                  onDeleteSection={handleDeleteJournalSection}
                 />
               )}
               
