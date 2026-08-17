@@ -140,3 +140,12 @@ export interface Todo {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface JournalSection {
+  id: string;
+  name: string;
+  color: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -1,10 +1,10 @@
-import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Zap, X } from 'lucide-react';
+import { Heart, Target, LogOut, CheckSquare, Calendar, Rocket, Zap, X, BookOpen } from 'lucide-react';
 import { AllyLogo } from './AllyLogo';
 import { authApi } from '../services/api';
 
 interface SidebarProps {
-  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding';
-  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding') => void;
+  currentView: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal';
+  onNavigate: (view: 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal') => void;
   onLogout?: () => void;
   isKidsMode?: boolean;
   onboardingStep?: number;
@@ -12,11 +12,12 @@ interface SidebarProps {
   goalsCount?: number;
   tasksCount?: number;
   todosCount?: number;
+  journalCount?: number;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboardingStep = 0, lifeGoalsCount = 0, goalsCount = 0, tasksCount = 0, todosCount = 0, isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboardingStep = 0, lifeGoalsCount = 0, goalsCount = 0, tasksCount = 0, todosCount = 0, journalCount = 0, isOpen = false, onClose }: SidebarProps) {
   const user = authApi.getStoredUser();
 
   // Determine if user is in onboarding
@@ -121,6 +122,11 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
         {/* LOG Section */}
         <SectionLabel label="Log" />
         <NavItem label="Log tasks" icon={Calendar} view="today" isDimmed={isOnboarding && tasksCount === 0} count={tasksCount} />
+        <div className="border-t border-white/10 my-2"></div>
+
+        {/* REFLECT Section */}
+        <SectionLabel label="Reflect" />
+        <NavItem label="Journal" icon={BookOpen} view="journal" isDimmed={false} count={journalCount} />
         <div className="border-t border-white/10 my-2"></div>
 
         {/* OTHERS Section */}
