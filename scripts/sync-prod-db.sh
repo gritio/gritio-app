@@ -158,7 +158,8 @@ if PGPASSWORD="$PGPASS" "$PGDUMP" -h localhost -p $LOCAL_TUNNEL_PORT -U postgres
         echo -e "${YELLOW}  WARNING: Dump file is empty!${NC}"
     fi
 else
-    echo -e "${RED}❌ Failed to create dump${NC}"
+    echo -e "${RED}❌ Failed to create dump. pg_dump said:${NC}"
+    cat "$DUMP_FILE"
     kill $TUNNEL_PID 2>/dev/null || true
     rm -f "$DUMP_FILE"
     exit 1

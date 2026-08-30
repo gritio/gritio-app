@@ -24,3 +24,7 @@ export class TogglePriorityDto {
 export class BulkMarkDoneDto {
   ids: string[];
 }
+
+export class ReorderTodosDto {
+  ids: string[];
+}

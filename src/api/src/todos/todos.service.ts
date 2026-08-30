@@ -8,6 +8,11 @@ export class TodosService {
   constructor(private prisma: PrismaService) {}
 
   async createTodo(userId: string, dto: CreateTodoDto): Promise<Todo> {
+    const maxOrder = await this.prisma.todo.aggregate({
+      where: { userId },
+      _max: { order: true },
+    });
+
     return this.prisma.todo.create({
       data: {
         userId,
@@ -16,6 +21,7 @@ export class TodosService {
         dueDate: new Date(dto.dueDate),
         priority: dto.priority || false,
         done: false,
+        order: (maxOrder._max.order ?? -1) + 1,
       },
     });
   }
@@ -23,8 +29,28 @@ export class TodosService {
   async getTodosByUserId(userId: string): Promise<Todo[]> {
     return this.prisma.todo.findMany({
       where: { userId },
-      orderBy: { dueDate: 'asc' },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
+  }
+
+  async reorderTodos(userId: string, ids: string[]): Promise<{ count: number }> {
+    const owned = await this.prisma.todo.findMany({
+      where: { id: { in: ids }, userId },
+      select: { id: true },
+    });
+    const ownedIds = new Set(owned.map(t => t.id));
+
+    const updates = ids
+      .filter(id => ownedIds.has(id))
+      .map((id, index) =>
+        this.prisma.todo.update({
+          where: { id },
+          data: { order: index },
+        }),
+      );
+
+    const results = await this.prisma.$transaction(updates);
+    return { count: results.length };
   }
 
   async getTodoById(id: string, userId: string): Promise<Todo | null> {

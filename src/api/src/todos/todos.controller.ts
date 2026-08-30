@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { TodosService } from './todos.service';
-import { CreateTodoDto, UpdateTodoDto, ToggleDoneDto, TogglePriorityDto, BulkMarkDoneDto } from './dto/todo.dto';
+import { CreateTodoDto, UpdateTodoDto, ToggleDoneDto, TogglePriorityDto, BulkMarkDoneDto, ReorderTodosDto } from './dto/todo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
@@ -39,6 +39,11 @@ export class TodosController {
       throw new HttpException('Todo not found', HttpStatus.NOT_FOUND);
     }
     return todo;
+  }
+
+  @Put('reorder')
+  async reorderTodos(@Request() req, @Body() dto: ReorderTodosDto) {
+    return this.todosService.reorderTodos(req.user.id, dto.ids);
   }
 
   @Put(':id')

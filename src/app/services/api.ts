@@ -519,6 +519,11 @@ export const todosApi = {
     const response = await apiClient.post('/todos/bulk/mark-done', { ids });
     return response.data;
   },
+
+  reorderTodos: async (ids: string[]): Promise<{ count: number }> => {
+    const response = await apiClient.put('/todos/reorder', { ids });
+    return response.data;
+  },
 };
 
 export const journalApi = {
