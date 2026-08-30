@@ -2,7 +2,19 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Todo } from '../types';
-import { CheckCircle, Circle, Plus, X, GripVertical, Calendar } from 'lucide-react';
+import {
+  CheckCircle,
+  Circle,
+  Plus,
+  X,
+  GripVertical,
+  Calendar,
+  ListTodo,
+  AlertTriangle,
+  Sun,
+  CalendarClock,
+  LucideIcon,
+} from 'lucide-react';
 import { TodoDetailPanel } from './TodoDetailPanel';
 import { DueDatePreset, getPresetISODate, getDueDateStatus } from '../utils/dueDate';
 
@@ -28,6 +40,65 @@ function DueDateChip({ dueDate }: { dueDate: Date }) {
     >
       {status.label}
     </span>
+  );
+}
+
+type StatTone = 'brand' | 'overdue' | 'today' | 'upcoming';
+
+const TONE_CLASSES: Record<StatTone, { active: string; inactive: string; iconInactive: string }> = {
+  brand: {
+    active: 'bg-[#805232] border-[#805232] text-white',
+    inactive: 'bg-white border-gray-200 text-[#805232] hover:border-[#805232]/40',
+    iconInactive: 'text-[#805232]/50',
+  },
+  overdue: {
+    active: 'bg-red-600 border-red-600 text-white',
+    inactive: 'bg-red-50/70 border-red-100 text-red-700 hover:border-red-300',
+    iconInactive: 'text-red-400',
+  },
+  today: {
+    active: 'bg-amber-500 border-amber-500 text-white',
+    inactive: 'bg-amber-50/70 border-amber-100 text-amber-700 hover:border-amber-300',
+    iconInactive: 'text-amber-400',
+  },
+  upcoming: {
+    active: 'bg-slate-600 border-slate-600 text-white',
+    inactive: 'bg-slate-50/70 border-slate-100 text-slate-700 hover:border-slate-300',
+    iconInactive: 'text-slate-400',
+  },
+};
+
+function StatTile({
+  label,
+  value,
+  icon: Icon,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  tone: StatTone;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const c = TONE_CLASSES[tone];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col gap-3 p-4 rounded-xl border text-left transition-all ${active ? c.active + ' shadow-sm' : c.inactive}`}
+    >
+      <div className="flex items-center justify-between">
+        <span className={`text-[11px] font-semibold uppercase tracking-wide ${active ? 'text-white/75' : 'opacity-70'}`}>
+          {label}
+        </span>
+        <Icon className={`w-4 h-4 ${active ? 'text-white/70' : c.iconInactive}`} />
+      </div>
+      <span className="text-2xl font-bold leading-none tabular-nums">{value}</span>
+    </button>
   );
 }
 
@@ -73,8 +144,8 @@ function DraggableTodoItem({
   return (
     <div
       ref={containerRef}
-      className={`flex items-center gap-3 p-3 bg-white border rounded-lg group transition-all ${
-        isDragging ? 'opacity-40 shadow-lg border-[#805232]' : 'border-gray-200 hover:shadow-sm'
+      className={`flex items-center gap-3 p-3.5 bg-white border rounded-lg shadow-sm group transition-all ${
+        isDragging ? 'opacity-40 shadow-lg border-[#805232]' : 'border-gray-200 hover:shadow-md hover:border-gray-300'
       }`}
     >
       <div
@@ -124,7 +195,7 @@ function StaticTodoItem({
   onSelect: (todo: Todo) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg group hover:shadow-sm transition-all">
+    <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-200 rounded-lg shadow-sm group hover:shadow-md hover:border-gray-300 transition-all">
       <button
         onClick={() => onToggleDone(todo.id, true)}
         className="flex-shrink-0 text-gray-300 hover:text-[#805232] transition-colors"
@@ -153,7 +224,7 @@ function StaticTodoItem({
   );
 }
 
-type DueDateFilter = 'all' | 'today' | 'overdue';
+type DueDateFilter = 'all' | 'today' | 'overdue' | 'upcoming';
 
 interface TodosPageProps {
   todos: Todo[];
@@ -195,6 +266,7 @@ export function TodosPage({
 
   const overdueCount = inProgressTodos.filter(t => getDueDateStatus(t.dueDate).kind === 'overdue').length;
   const todayCount = inProgressTodos.filter(t => getDueDateStatus(t.dueDate).kind === 'today').length;
+  const upcomingCount = inProgressTodos.filter(t => getDueDateStatus(t.dueDate).kind === 'upcoming').length;
 
   const visibleTodos = inProgressTodos.filter(t => {
     if (filter === 'all') return true;
@@ -232,23 +304,23 @@ export function TodosPage({
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4">
-        <h1 className="text-2xl font-bold text-[#805232] mb-4">My Todos</h1>
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <h1 className="text-3xl font-bold tracking-tight text-[#805232] mb-6">My Todos</h1>
 
         {/* Add Todo */}
-        <div className="mb-3">
-          <div className="flex gap-2 mb-2">
+        <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="flex gap-2 mb-3">
             <input
               type="text"
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
               placeholder="Add a new todo..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] focus:border-transparent"
+              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] focus:border-transparent"
             />
             <button
               onClick={handleAdd}
-              className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-1.5 text-sm font-medium"
+              className="px-4 py-2.5 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-1.5 text-sm font-medium shadow-sm"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -298,34 +370,47 @@ export function TodosPage({
           </div>
         </div>
 
-        {/* In Progress */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">In Progress</h2>
-            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-              {inProgressTodos.length}
-            </span>
+        {/* Stat tiles — also the In Progress filter */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatTile
+            label="Total"
+            value={inProgressTodos.length}
+            icon={ListTodo}
+            tone="brand"
+            active={filter === 'all'}
+            onClick={() => setFilter('all')}
+          />
+          <StatTile
+            label="Overdue"
+            value={overdueCount}
+            icon={AlertTriangle}
+            tone="overdue"
+            active={filter === 'overdue'}
+            onClick={() => setFilter('overdue')}
+          />
+          <StatTile
+            label="Today"
+            value={todayCount}
+            icon={Sun}
+            tone="today"
+            active={filter === 'today'}
+            onClick={() => setFilter('today')}
+          />
+          <StatTile
+            label="Upcoming"
+            value={upcomingCount}
+            icon={CalendarClock}
+            tone="upcoming"
+            active={filter === 'upcoming'}
+            onClick={() => setFilter('upcoming')}
+          />
+        </div>
 
-            <div className="ml-auto inline-flex bg-gray-100 rounded-full p-0.5">
-              {(
-                [
-                  { key: 'all', label: 'All' },
-                  { key: 'today', label: `Today${todayCount ? ` (${todayCount})` : ''}` },
-                  { key: 'overdue', label: `Overdue${overdueCount ? ` (${overdueCount})` : ''}` },
-                ] as { key: DueDateFilter; label: string }[]
-              ).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilter(tab.key)}
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
-                    filter === tab.key ? 'bg-white text-[#805232] shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* In Progress */}
+        <div className="mb-6">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            {filter === 'all' ? 'In Progress' : `In Progress · ${filter[0].toUpperCase()}${filter.slice(1)}`}
+          </h2>
 
           {visibleTodos.length === 0 ? (
             <div className="text-center py-3 border-2 border-dashed border-gray-200 rounded-lg">
