@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
@@ -95,5 +95,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   async executeRawUnsafe(query: string, ...values: any[]) {
     return this.prisma.$executeRawUnsafe(query, ...values);
+  }
+
+  $transaction<T>(operations: Prisma.PrismaPromise<T>[]) {
+    return this.prisma.$transaction(operations);
   }
 }

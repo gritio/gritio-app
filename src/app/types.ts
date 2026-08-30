@@ -137,6 +137,7 @@ export interface Todo {
   done: boolean;
   priority: boolean;
   dueDate: Date;
+  order: number;
   createdAt: Date;
   updatedAt: Date;
 }

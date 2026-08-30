@@ -289,19 +289,13 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
-  const handleAddTodo = async (title: string) => {
-    console.log('handleAddTodo called with:', title);
+  const handleAddTodo = async (title: string, dueDate: string) => {
     try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dueDate = tomorrow.toISOString().split('T')[0];
-      console.log('Creating todo with dueDate:', dueDate);
       const newTodo = await todosApi.createTodo({
         title,
         dueDate,
         priority: false,
       });
-      console.log('Todo created successfully:', newTodo);
       setTodos([...todos, newTodo]);
     } catch (error: any) {
       console.error('Failed to create todo:', error);
@@ -348,6 +342,21 @@ export default function App() {
       setTodos(todos.map(t => t.id === id ? { ...t, priority } : t));
     } catch (error: any) {
       console.error('Failed to toggle todo priority:', error);
+    }
+  };
+
+  const handleReorderTodos = async (orderedIds: string[]) => {
+    const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+    setTodos(prev =>
+      [...prev]
+        .map(t => (orderById.has(t.id) ? { ...t, order: orderById.get(t.id)! } : t))
+        .sort((a, b) => a.order - b.order),
+    );
+    try {
+      await todosApi.reorderTodos(orderedIds);
+    } catch (error: any) {
+      console.error('Failed to persist todo order:', error);
+      toast.error('Failed to save new order');
     }
   };
 
@@ -553,6 +562,7 @@ export default function App() {
                   onDeleteTodo={handleDeleteTodo}
                   onToggleDone={handleToggleTodoDone}
                   onTogglePriority={handleToggleTodoPriority}
+                  onReorder={handleReorderTodos}
                 />
               )}
 

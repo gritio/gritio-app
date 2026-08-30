@@ -2,15 +2,40 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Todo } from '../types';
-import { CheckCircle, Circle, Plus, X, GripVertical } from 'lucide-react';
+import { CheckCircle, Circle, Plus, X, GripVertical, Calendar } from 'lucide-react';
 import { TodoDetailPanel } from './TodoDetailPanel';
+import { DueDatePreset, getPresetISODate, getDueDateStatus } from '../utils/dueDate';
 
 const DRAG_TYPE = 'TODO_ITEM';
+
+const PRESETS: { key: DueDatePreset; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'weekend', label: 'Weekend' },
+];
+
+function DueDateChip({ dueDate }: { dueDate: Date }) {
+  const status = getDueDateStatus(dueDate);
+  const kindClasses = {
+    overdue: 'bg-red-50 text-red-600',
+    today: 'bg-amber-50 text-amber-700',
+    upcoming: 'bg-gray-100 text-gray-500',
+  } as const;
+
+  return (
+    <span
+      className={`flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${kindClasses[status.kind]}`}
+    >
+      {status.label}
+    </span>
+  );
+}
 
 function DraggableTodoItem({
   todo,
   index,
   moveItem,
+  onDragEnd,
   onToggleDone,
   onDelete,
   onSelect,
@@ -18,6 +43,7 @@ function DraggableTodoItem({
   todo: Todo;
   index: number;
   moveItem: (from: number, to: number) => void;
+  onDragEnd: () => void;
   onToggleDone: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
   onSelect: (todo: Todo) => void;
@@ -29,6 +55,7 @@ function DraggableTodoItem({
     type: DRAG_TYPE,
     item: { index },
     collect: monitor => ({ isDragging: monitor.isDragging() }),
+    end: () => onDragEnd(),
   });
 
   const [, drop] = useDrop<{ index: number }>({
@@ -72,6 +99,8 @@ function DraggableTodoItem({
         {todo.title}
       </span>
 
+      <DueDateChip dueDate={todo.dueDate} />
+
       <button
         onClick={() => onDelete(todo.id)}
         className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
@@ -83,13 +112,57 @@ function DraggableTodoItem({
   );
 }
 
+function StaticTodoItem({
+  todo,
+  onToggleDone,
+  onDelete,
+  onSelect,
+}: {
+  todo: Todo;
+  onToggleDone: (id: string, done: boolean) => void;
+  onDelete: (id: string) => void;
+  onSelect: (todo: Todo) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg group hover:shadow-sm transition-all">
+      <button
+        onClick={() => onToggleDone(todo.id, true)}
+        className="flex-shrink-0 text-gray-300 hover:text-[#805232] transition-colors"
+        title="Mark as done"
+      >
+        <Circle className="w-5 h-5" />
+      </button>
+
+      <span
+        onClick={() => onSelect(todo)}
+        className="flex-1 min-w-0 text-sm text-gray-800 cursor-pointer hover:text-[#805232] truncate"
+      >
+        {todo.title}
+      </span>
+
+      <DueDateChip dueDate={todo.dueDate} />
+
+      <button
+        onClick={() => onDelete(todo.id)}
+        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+        title="Delete"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+type DueDateFilter = 'all' | 'today' | 'overdue';
+
 interface TodosPageProps {
   todos: Todo[];
-  onAddTodo: (title: string) => void;
+  onAddTodo: (title: string, dueDate: string) => void;
   onUpdateTodo: (todo: Todo) => void;
   onDeleteTodo: (id: string) => void;
   onToggleDone: (id: string, done: boolean) => void;
   onTogglePriority: (id: string, priority: boolean) => void;
+  onReorder: (orderedIds: string[]) => void;
 }
 
 export function TodosPage({
@@ -98,10 +171,14 @@ export function TodosPage({
   onUpdateTodo,
   onDeleteTodo,
   onToggleDone,
+  onReorder,
 }: TodosPageProps) {
   const [newTitle, setNewTitle] = useState('');
+  const [newDueDate, setNewDueDate] = useState(getPresetISODate('today'));
+  const [selectedPreset, setSelectedPreset] = useState<DueDatePreset | null>('today');
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [inProgressOrder, setInProgressOrder] = useState<string[]>([]);
+  const [filter, setFilter] = useState<DueDateFilter>('all');
 
   useEffect(() => {
     const inProgressIds = todos.filter(t => !t.done).map(t => t.id);
@@ -116,9 +193,20 @@ export function TodosPage({
     .map(id => todos.find(t => t.id === id && !t.done))
     .filter((t): t is Todo => !!t);
 
+  const overdueCount = inProgressTodos.filter(t => getDueDateStatus(t.dueDate).kind === 'overdue').length;
+  const todayCount = inProgressTodos.filter(t => getDueDateStatus(t.dueDate).kind === 'today').length;
+
+  const visibleTodos = inProgressTodos.filter(t => {
+    if (filter === 'all') return true;
+    return getDueDateStatus(t.dueDate).kind === filter;
+  });
+
   const doneTodos = todos
     .filter(t => t.done)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  const inProgressOrderRef = useRef(inProgressOrder);
+  inProgressOrderRef.current = inProgressOrder;
 
   const moveItem = useCallback((from: number, to: number) => {
     setInProgressOrder(prev => {
@@ -129,14 +217,16 @@ export function TodosPage({
     });
   }, []);
 
+  const handleDragEnd = useCallback(() => {
+    onReorder(inProgressOrderRef.current);
+  }, [onReorder]);
+
   const handleAdd = () => {
-    console.log('Add button clicked. Title:', newTitle);
     if (newTitle.trim()) {
-      console.log('Calling onAddTodo with:', newTitle.trim());
-      onAddTodo(newTitle.trim());
+      onAddTodo(newTitle.trim(), newDueDate);
       setNewTitle('');
-    } else {
-      console.warn('Title is empty');
+      setNewDueDate(getPresetISODate('today'));
+      setSelectedPreset('today');
     }
   };
 
@@ -146,45 +236,126 @@ export function TodosPage({
         <h1 className="text-2xl font-bold text-[#805232] mb-4">My Todos</h1>
 
         {/* Add Todo */}
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Add a new todo..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] focus:border-transparent"
-          />
-          <button
-            onClick={handleAdd}
-            className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-1.5 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
+        <div className="mb-3">
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="Add a new todo..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#805232] focus:border-transparent"
+            />
+            <button
+              onClick={handleAdd}
+              className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors flex items-center gap-1.5 text-sm font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {PRESETS.map(preset => (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => {
+                  setNewDueDate(getPresetISODate(preset.key));
+                  setSelectedPreset(preset.key);
+                }}
+                className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                  selectedPreset === preset.key
+                    ? 'bg-[#805232] text-white border-[#805232]'
+                    : 'bg-white text-gray-500 border-gray-300 hover:border-[#805232] hover:text-[#805232]'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+            <label
+              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+                selectedPreset !== null
+                  ? 'bg-white text-gray-500 border-gray-300 hover:border-[#805232] hover:text-[#805232]'
+                  : 'bg-[#805232] text-white border-[#805232]'
+              }`}
+            >
+              <Calendar className="w-3 h-3" />
+              {selectedPreset !== null
+                ? 'Pick date'
+                : new Date(newDueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={e => {
+                  if (!e.target.value) return;
+                  setNewDueDate(e.target.value);
+                  setSelectedPreset(null);
+                }}
+                className="sr-only"
+              />
+            </label>
+          </div>
         </div>
 
         {/* In Progress */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">In Progress</h2>
             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               {inProgressTodos.length}
             </span>
+
+            <div className="ml-auto inline-flex bg-gray-100 rounded-full p-0.5">
+              {(
+                [
+                  { key: 'all', label: 'All' },
+                  { key: 'today', label: `Today${todayCount ? ` (${todayCount})` : ''}` },
+                  { key: 'overdue', label: `Overdue${overdueCount ? ` (${overdueCount})` : ''}` },
+                ] as { key: DueDateFilter; label: string }[]
+              ).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilter(tab.key)}
+                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
+                    filter === tab.key ? 'bg-white text-[#805232] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {inProgressTodos.length === 0 ? (
+          {visibleTodos.length === 0 ? (
             <div className="text-center py-3 border-2 border-dashed border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-400">No tasks in progress. Add one above!</p>
+              <p className="text-sm text-gray-400">
+                {inProgressTodos.length === 0
+                  ? 'No tasks in progress. Add one above!'
+                  : 'Nothing here for this filter.'}
+              </p>
             </div>
-          ) : (
+          ) : filter === 'all' ? (
             <div className="space-y-2">
-              {inProgressTodos.map((todo, index) => (
+              {visibleTodos.map((todo, index) => (
                 <DraggableTodoItem
                   key={todo.id}
                   todo={todo}
                   index={index}
                   moveItem={moveItem}
+                  onDragEnd={handleDragEnd}
+                  onToggleDone={onToggleDone}
+                  onDelete={onDeleteTodo}
+                  onSelect={setSelectedTodo}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visibleTodos.map(todo => (
+                <StaticTodoItem
+                  key={todo.id}
+                  todo={todo}
                   onToggleDone={onToggleDone}
                   onDelete={onDeleteTodo}
                   onSelect={setSelectedTodo}

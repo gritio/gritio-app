@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Todo } from '../types';
 import { X, Trash2 } from 'lucide-react';
+import { DueDatePreset, getPresetISODate } from '../utils/dueDate';
+
+const PRESETS: { key: DueDatePreset; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'weekend', label: 'Weekend' },
+];
 
 interface TodoDetailPanelProps {
   todo: Todo;
@@ -13,6 +20,7 @@ export function TodoDetailPanel({ todo, onClose, onUpdate, onDelete }: TodoDetai
   const [title, setTitle] = useState(todo.title);
   const [description, setDescription] = useState(todo.description || '');
   const [dueDate, setDueDate] = useState(new Date(todo.dueDate).toISOString().split('T')[0]);
+  const [selectedPreset, setSelectedPreset] = useState<DueDatePreset | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
@@ -68,10 +76,32 @@ export function TodoDetailPanel({ todo, onClose, onUpdate, onDelete }: TodoDetai
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Due Date</label>
+            <div className="flex items-center gap-1.5 mb-2">
+              {PRESETS.map(preset => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  onClick={() => {
+                    setDueDate(getPresetISODate(preset.key));
+                    setSelectedPreset(preset.key);
+                  }}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                    selectedPreset === preset.key
+                      ? 'bg-[#805232] text-white border-[#805232]'
+                      : 'bg-white text-gray-500 border-gray-300 hover:border-[#805232] hover:text-[#805232]'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
             <input
               type="date"
               value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
+              onChange={e => {
+                setDueDate(e.target.value);
+                setSelectedPreset(null);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232] text-sm"
             />
           </div>
