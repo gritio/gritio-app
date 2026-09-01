@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Todo } from '../types';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, CalendarPlus, CalendarCheck } from 'lucide-react';
 import { DueDatePreset, getPresetISODate } from '../utils/dueDate';
+import { formatReminderSchedule } from '../utils/reminder';
 
 const PRESETS: { key: DueDatePreset; label: string }[] = [
   { key: 'today', label: 'Today' },
@@ -14,9 +15,22 @@ interface TodoDetailPanelProps {
   onClose: () => void;
   onUpdate: (todo: Todo) => void;
   onDelete: () => void;
+  calendarConnected: boolean;
+  isReminderPending: boolean;
+  onOpenReminderPanel: () => void;
+  onConnectCalendar: () => void;
 }
 
-export function TodoDetailPanel({ todo, onClose, onUpdate, onDelete }: TodoDetailPanelProps) {
+export function TodoDetailPanel({
+  todo,
+  onClose,
+  onUpdate,
+  onDelete,
+  calendarConnected,
+  isReminderPending,
+  onOpenReminderPanel,
+  onConnectCalendar,
+}: TodoDetailPanelProps) {
   const [title, setTitle] = useState(todo.title);
   const [description, setDescription] = useState(todo.description || '');
   const [dueDate, setDueDate] = useState(new Date(todo.dueDate).toISOString().split('T')[0]);
@@ -115,6 +129,41 @@ export function TodoDetailPanel({ todo, onClose, onUpdate, onDelete }: TodoDetai
                 <span className="text-amber-600 font-medium">In Progress</span>
               )}
             </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Google Calendar</label>
+            {todo.googleEventId && todo.googleEventLink ? (
+              <div className="space-y-1.5">
+                <button
+                  onClick={onOpenReminderPanel}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-green-200 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
+                >
+                  <CalendarCheck className="w-4 h-4" />
+                  On Calendar — edit
+                </button>
+                {formatReminderSchedule(todo) && (
+                  <p className="text-xs text-gray-500 text-center">{formatReminderSchedule(todo)}</p>
+                )}
+              </div>
+            ) : calendarConnected ? (
+              <button
+                onClick={onOpenReminderPanel}
+                disabled={isReminderPending}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-[#805232] text-[#805232] rounded-lg hover:bg-[#805232]/5 transition-colors disabled:opacity-50 text-sm font-medium"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                {isReminderPending ? 'Adding…' : 'Add to Google Calendar'}
+              </button>
+            ) : (
+              <button
+                onClick={onConnectCalendar}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-500 rounded-lg hover:border-[#805232] hover:text-[#805232] transition-colors text-sm font-medium"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                Connect Google Calendar
+              </button>
+            )}
           </div>
         </div>
 

@@ -138,8 +138,25 @@ export interface Todo {
   priority: boolean;
   dueDate: Date;
   order: number;
+  googleEventId?: string | null;
+  googleEventLink?: string | null;
+  googleEventStart?: Date | string | null;
+  googleEventAllDay?: boolean | null;
+  googleEventRecurrence?: ReminderRecurrence | null;
+  googleEventReminderMinutes?: number | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type ReminderRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface ReminderOptions {
+  date: string; // YYYY-MM-DD
+  allDay: boolean;
+  time?: string; // HH:mm, required when allDay is false
+  reminderMinutesBefore: number | null; // null = no notification
+  recurrence: ReminderRecurrence;
+  timeZone: string;
 }
 
 export interface JournalSection {
