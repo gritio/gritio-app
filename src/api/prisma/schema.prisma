@@ -29,6 +29,22 @@ model User {
   lifeGoals       LifeGoal[]
   todos           Todo[]
   journalSections JournalSection[]
+  googleCalendarConnection GoogleCalendarConnection?
+}
+
+// Per-user Google OAuth grant for Calendar access — independent of Auth0 login
+model GoogleCalendarConnection {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  googleEmail     String
+  accessTokenEnc  String   // AES-256-GCM encrypted
+  refreshTokenEnc String   // AES-256-GCM encrypted
+  expiresAt       DateTime
+  scope           String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Life Goals - user-defined life aspirations (max 5 per user)
@@ -221,6 +237,12 @@ model Todo {
   priority    Boolean    @default(false)
   dueDate     DateTime
   order       Int        @default(0)
+  googleEventId   String? // Set once "Add to Calendar" has created a matching event
+  googleEventLink String?
+  googleEventStart      DateTime? // Combined date+time (or midnight for all-day) the event is scheduled for
+  googleEventAllDay     Boolean?
+  googleEventRecurrence String? // 'none' | 'daily' | 'weekly' | 'monthly'
+  googleEventReminderMinutes Int? // null = no notification override was chosen
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 

@@ -93,6 +93,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.goalLog;
   }
 
+  get googleCalendarConnection() {
+    return this.prisma.googleCalendarConnection;
+  }
+
   async executeRawUnsafe(query: string, ...values: any[]) {
     return this.prisma.$executeRawUnsafe(query, ...values);
   }

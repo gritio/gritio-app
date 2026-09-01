@@ -19,8 +19,8 @@ import { RegisterPage } from './components/RegisterPage';
 import { OnboardingPage } from './components/OnboardingPage';
 import { JournalPage } from './components/JournalPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
-import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection } from './types';
-import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi } from './services/api';
+import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection, ReminderOptions } from './types';
+import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi, googleCalendarApi } from './services/api';
 
 type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal';
 
@@ -80,6 +80,7 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [checkIns] = useState<WeeklyCheckIn[]>(mockWeeklyCheckIns);
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState(false);
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
   const [journalSections, setJournalSections] = useState<JournalSection[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
@@ -189,12 +190,31 @@ export default function App() {
       }
       
       fetchGoals();
+      googleCalendarApi.getStatus()
+        .then(status => setCalendarConnected(status.connected))
+        .catch(() => setCalendarConnected(false));
     } else {
       console.log('isAuthenticated is false, skipping goal fetch');
       setGoalsLoading(false);
       setIsKidsMode(false);
     }
   }, [isAuthenticated]);
+
+  // Land back on Profile after the Google Calendar OAuth redirect and surface the result
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calendarResult = params.get('calendar');
+    if (!calendarResult) return;
+
+    if (calendarResult === 'connected') {
+      toast.success('Google Calendar connected');
+      setCalendarConnected(true);
+    } else if (calendarResult === 'error') {
+      toast.error('Failed to connect Google Calendar. Please try again.');
+    }
+    setCurrentView('profile');
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   // Save current view to localStorage
   useEffect(() => {
@@ -357,6 +377,57 @@ export default function App() {
     } catch (error: any) {
       console.error('Failed to persist todo order:', error);
       toast.error('Failed to save new order');
+    }
+  };
+
+  const computeReminderEventStart = (options: ReminderOptions): Date => {
+    const [year, month, day] = options.date.split('-').map(Number);
+    if (options.allDay) return new Date(year, month - 1, day);
+    const [hour, minute] = (options.time || '00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  };
+
+  const applyReminderToTodos = (todoId: string, options: ReminderOptions, eventId: string, htmlLink: string) => {
+    setTodos(prev =>
+      prev.map(t =>
+        t.id === todoId
+          ? {
+              ...t,
+              googleEventId: eventId,
+              googleEventLink: htmlLink,
+              googleEventStart: computeReminderEventStart(options),
+              googleEventAllDay: options.allDay,
+              googleEventRecurrence: options.recurrence,
+              googleEventReminderMinutes: options.reminderMinutesBefore,
+            }
+          : t,
+      ),
+    );
+  };
+
+  const handleCreateReminder = async (todoId: string, options: ReminderOptions) => {
+    try {
+      const { eventId, htmlLink } = await googleCalendarApi.createReminder(todoId, options);
+      applyReminderToTodos(todoId, options, eventId, htmlLink);
+      toast.success('Added to Google Calendar');
+    } catch (error: any) {
+      if (error?.response?.status === 404 && error?.response?.data?.message?.includes('not connected')) {
+        toast.error('Connect Google Calendar from your Profile first');
+        return;
+      }
+      console.error('Failed to create Google Calendar reminder:', error);
+      toast.error('Failed to add to Google Calendar');
+    }
+  };
+
+  const handleUpdateReminder = async (todoId: string, options: ReminderOptions) => {
+    try {
+      const { eventId, htmlLink } = await googleCalendarApi.updateReminder(todoId, options);
+      applyReminderToTodos(todoId, options, eventId, htmlLink);
+      toast.success('Calendar reminder updated');
+    } catch (error: any) {
+      console.error('Failed to update Google Calendar reminder:', error);
+      toast.error('Failed to update calendar reminder');
     }
   };
 
@@ -563,6 +634,10 @@ export default function App() {
                   onToggleDone={handleToggleTodoDone}
                   onTogglePriority={handleToggleTodoPriority}
                   onReorder={handleReorderTodos}
+                  calendarConnected={calendarConnected}
+                  onCreateReminder={handleCreateReminder}
+                  onUpdateReminder={handleUpdateReminder}
+                  onConnectCalendar={() => setCurrentView('profile')}
                 />
               )}
 

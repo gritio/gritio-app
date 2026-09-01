@@ -10,6 +10,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { TodosModule } from './todos/todos.module';
 import { LifeGoalsModule } from './life-goals/life-goals.module';
 import { JournalModule } from './journal/journal.module';
+import { GoogleCalendarModule } from './google-calendar/google-calendar.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { JournalModule } from './journal/journal.module';
     TodosModule,
     LifeGoalsModule,
     JournalModule,
+    GoogleCalendarModule,
   ],
   controllers: [AppController],
   providers: [AppService],

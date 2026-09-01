@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Goal, MonthlyGoal, Task, Todo, GoalLog, JournalSection } from '../types';
+import { Goal, MonthlyGoal, Task, Todo, GoalLog, JournalSection, ReminderOptions } from '../types';
 import { getToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -522,6 +522,32 @@ export const todosApi = {
 
   reorderTodos: async (ids: string[]): Promise<{ count: number }> => {
     const response = await apiClient.put('/todos/reorder', { ids });
+    return response.data;
+  },
+};
+
+export const googleCalendarApi = {
+  getStatus: async (): Promise<{ connected: boolean; googleEmail?: string }> => {
+    const response = await apiClient.get('/google-calendar/status');
+    return response.data;
+  },
+
+  getConnectUrl: async (): Promise<{ url: string }> => {
+    const response = await apiClient.get('/google-calendar/connect');
+    return response.data;
+  },
+
+  disconnect: async (): Promise<void> => {
+    await apiClient.delete('/google-calendar/connection');
+  },
+
+  createReminder: async (todoId: string, options: ReminderOptions): Promise<{ eventId: string; htmlLink: string }> => {
+    const response = await apiClient.post(`/google-calendar/todos/${todoId}/reminder`, options);
+    return response.data;
+  },
+
+  updateReminder: async (todoId: string, options: ReminderOptions): Promise<{ eventId: string; htmlLink: string }> => {
+    const response = await apiClient.put(`/google-calendar/todos/${todoId}/reminder`, options);
     return response.data;
   },
 };

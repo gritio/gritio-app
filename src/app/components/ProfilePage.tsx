@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, Save, X, Calendar, CheckCircle2 } from 'lucide-react';
+import { googleCalendarApi } from '../services/api';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -25,10 +26,48 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
     phone: '',
     dob: '',
   });
+  const [calendarStatus, setCalendarStatus] = useState<{ connected: boolean; googleEmail?: string } | null>(null);
+  const [isCalendarActionPending, setIsCalendarActionPending] = useState(false);
 
   useEffect(() => {
     fetchProfile();
+    fetchCalendarStatus();
   }, []);
+
+  const fetchCalendarStatus = async () => {
+    try {
+      const status = await googleCalendarApi.getStatus();
+      setCalendarStatus(status);
+    } catch (err) {
+      console.error('Failed to load Google Calendar status', err);
+    }
+  };
+
+  const handleConnectCalendar = async () => {
+    setIsCalendarActionPending(true);
+    try {
+      const { url } = await googleCalendarApi.getConnectUrl();
+      window.location.href = url;
+    } catch (err) {
+      console.error('Failed to start Google Calendar connect flow', err);
+      setIsCalendarActionPending(false);
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    if (!confirm('Disconnect Google Calendar? Existing calendar events will stay, but new reminders won’t be created until you reconnect.')) {
+      return;
+    }
+    setIsCalendarActionPending(true);
+    try {
+      await googleCalendarApi.disconnect();
+      setCalendarStatus({ connected: false });
+    } catch (err) {
+      console.error('Failed to disconnect Google Calendar', err);
+    } finally {
+      setIsCalendarActionPending(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -300,6 +339,44 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
                 </button>
               </div>
             </>
+          )}
+        </div>
+
+        {/* Google Calendar connection */}
+        <div className={`mt-4 rounded-lg border-2 p-6 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-3 mb-1">
+            <Calendar className="w-5 h-5 text-[#805232]" />
+            <h2 className="text-lg font-bold text-[#805232]">Google Calendar</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Connect your Google account to add one-click reminders for your todos.
+          </p>
+
+          {calendarStatus === null ? (
+            <p className="text-sm text-gray-400">Checking connection…</p>
+          ) : calendarStatus.connected ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                Connected as <span className="font-medium">{calendarStatus.googleEmail}</span>
+              </div>
+              <button
+                onClick={handleDisconnectCalendar}
+                disabled={isCalendarActionPending}
+                className="px-3 py-1.5 text-sm rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleConnectCalendar}
+              disabled={isCalendarActionPending}
+              className="px-4 py-2 bg-[#805232] text-white rounded-lg hover:bg-[#6b4427] transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              {isCalendarActionPending ? 'Redirecting…' : 'Connect Google Calendar'}
+            </button>
           )}
         </div>
       </div>

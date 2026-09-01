@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Todo } from '../types';
+import { Todo, ReminderOptions } from '../types';
 import {
   CheckCircle,
   Circle,
@@ -13,10 +13,14 @@ import {
   AlertTriangle,
   Sun,
   CalendarClock,
+  CalendarPlus,
+  CalendarCheck,
   LucideIcon,
 } from 'lucide-react';
 import { TodoDetailPanel } from './TodoDetailPanel';
 import { DueDatePreset, getPresetISODate, getDueDateStatus } from '../utils/dueDate';
+import { ReminderOptionsPanel } from './ReminderOptionsPanel';
+import { formatReminderSchedule } from '../utils/reminder';
 
 const DRAG_TYPE = 'TODO_ITEM';
 
@@ -40,6 +44,65 @@ function DueDateChip({ dueDate }: { dueDate: Date }) {
     >
       {status.label}
     </span>
+  );
+}
+
+function CalendarReminderButton({
+  todo,
+  calendarConnected,
+  isPending,
+  onOpenReminderPanel,
+  onConnectCalendar,
+}: {
+  todo: Todo;
+  calendarConnected: boolean;
+  isPending: boolean;
+  onOpenReminderPanel: () => void;
+  onConnectCalendar: () => void;
+}) {
+  if (todo.googleEventId && todo.googleEventLink) {
+    const schedule = formatReminderSchedule(todo);
+    return (
+      <button
+        onClick={e => {
+          e.stopPropagation();
+          onOpenReminderPanel();
+        }}
+        className="flex-shrink-0 text-green-600 hover:text-green-700 transition-colors"
+        title={schedule ? `${schedule} — click to edit` : 'On Google Calendar — click to edit'}
+      >
+        <CalendarCheck className="w-4 h-4" />
+      </button>
+    );
+  }
+
+  if (!calendarConnected) {
+    return (
+      <button
+        onClick={e => {
+          e.stopPropagation();
+          onConnectCalendar();
+        }}
+        className="flex-shrink-0 text-gray-300 hover:text-gray-500 transition-colors"
+        title="Connect Google Calendar to add reminders"
+      >
+        <CalendarPlus className="w-4 h-4" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={e => {
+        e.stopPropagation();
+        if (!isPending) onOpenReminderPanel();
+      }}
+      disabled={isPending}
+      className="flex-shrink-0 text-gray-300 hover:text-[#805232] transition-colors disabled:opacity-50"
+      title="Add to Google Calendar"
+    >
+      <CalendarPlus className="w-4 h-4" />
+    </button>
   );
 }
 
@@ -110,6 +173,10 @@ function DraggableTodoItem({
   onToggleDone,
   onDelete,
   onSelect,
+  calendarConnected,
+  isReminderPending,
+  onOpenReminderPanel,
+  onConnectCalendar,
 }: {
   todo: Todo;
   index: number;
@@ -118,6 +185,10 @@ function DraggableTodoItem({
   onToggleDone: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
   onSelect: (todo: Todo) => void;
+  calendarConnected: boolean;
+  isReminderPending: boolean;
+  onOpenReminderPanel: () => void;
+  onConnectCalendar: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gripRef = useRef<HTMLDivElement>(null);
@@ -172,6 +243,14 @@ function DraggableTodoItem({
 
       <DueDateChip dueDate={todo.dueDate} />
 
+      <CalendarReminderButton
+        todo={todo}
+        calendarConnected={calendarConnected}
+        isPending={isReminderPending}
+        onOpenReminderPanel={onOpenReminderPanel}
+        onConnectCalendar={onConnectCalendar}
+      />
+
       <button
         onClick={() => onDelete(todo.id)}
         className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
@@ -188,11 +267,19 @@ function StaticTodoItem({
   onToggleDone,
   onDelete,
   onSelect,
+  calendarConnected,
+  isReminderPending,
+  onOpenReminderPanel,
+  onConnectCalendar,
 }: {
   todo: Todo;
   onToggleDone: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
   onSelect: (todo: Todo) => void;
+  calendarConnected: boolean;
+  isReminderPending: boolean;
+  onOpenReminderPanel: () => void;
+  onConnectCalendar: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-200 rounded-lg shadow-sm group hover:shadow-md hover:border-gray-300 transition-all">
@@ -212,6 +299,14 @@ function StaticTodoItem({
       </span>
 
       <DueDateChip dueDate={todo.dueDate} />
+
+      <CalendarReminderButton
+        todo={todo}
+        calendarConnected={calendarConnected}
+        isPending={isReminderPending}
+        onOpenReminderPanel={onOpenReminderPanel}
+        onConnectCalendar={onConnectCalendar}
+      />
 
       <button
         onClick={() => onDelete(todo.id)}
@@ -234,6 +329,10 @@ interface TodosPageProps {
   onToggleDone: (id: string, done: boolean) => void;
   onTogglePriority: (id: string, priority: boolean) => void;
   onReorder: (orderedIds: string[]) => void;
+  calendarConnected: boolean;
+  onCreateReminder: (todoId: string, options: ReminderOptions) => Promise<void>;
+  onUpdateReminder: (todoId: string, options: ReminderOptions) => Promise<void>;
+  onConnectCalendar: () => void;
 }
 
 export function TodosPage({
@@ -243,6 +342,10 @@ export function TodosPage({
   onDeleteTodo,
   onToggleDone,
   onReorder,
+  calendarConnected,
+  onCreateReminder,
+  onUpdateReminder,
+  onConnectCalendar,
 }: TodosPageProps) {
   const [newTitle, setNewTitle] = useState('');
   const [newDueDate, setNewDueDate] = useState(getPresetISODate('today'));
@@ -250,6 +353,33 @@ export function TodosPage({
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [inProgressOrder, setInProgressOrder] = useState<string[]>([]);
   const [filter, setFilter] = useState<DueDateFilter>('all');
+  const [pendingReminderIds, setPendingReminderIds] = useState<Set<string>>(new Set());
+  const [reminderPanelTodo, setReminderPanelTodo] = useState<Todo | null>(null);
+
+  const handleSaveReminder = async (todoId: string, options: ReminderOptions, isEditing: boolean) => {
+    setPendingReminderIds(prev => new Set(prev).add(todoId));
+    try {
+      if (isEditing) {
+        await onUpdateReminder(todoId, options);
+      } else {
+        await onCreateReminder(todoId, options);
+      }
+    } finally {
+      setPendingReminderIds(prev => {
+        const next = new Set(prev);
+        next.delete(todoId);
+        return next;
+      });
+    }
+  };
+
+  const handleSubmitReminder = (options: ReminderOptions) => {
+    if (!reminderPanelTodo) return;
+    const todoId = reminderPanelTodo.id;
+    const isEditing = !!reminderPanelTodo.googleEventId;
+    setReminderPanelTodo(null);
+    handleSaveReminder(todoId, options, isEditing);
+  };
 
   useEffect(() => {
     const inProgressIds = todos.filter(t => !t.done).map(t => t.id);
@@ -432,6 +562,10 @@ export function TodosPage({
                   onToggleDone={onToggleDone}
                   onDelete={onDeleteTodo}
                   onSelect={setSelectedTodo}
+                  calendarConnected={calendarConnected}
+                  isReminderPending={pendingReminderIds.has(todo.id)}
+                  onOpenReminderPanel={() => setReminderPanelTodo(todo)}
+                  onConnectCalendar={onConnectCalendar}
                 />
               ))}
             </div>
@@ -444,6 +578,10 @@ export function TodosPage({
                   onToggleDone={onToggleDone}
                   onDelete={onDeleteTodo}
                   onSelect={setSelectedTodo}
+                  calendarConnected={calendarConnected}
+                  isReminderPending={pendingReminderIds.has(todo.id)}
+                  onOpenReminderPanel={() => setReminderPanelTodo(todo)}
+                  onConnectCalendar={onConnectCalendar}
                 />
               ))}
             </div>
@@ -504,6 +642,19 @@ export function TodosPage({
             onDeleteTodo(selectedTodo.id);
             setSelectedTodo(null);
           }}
+          calendarConnected={calendarConnected}
+          isReminderPending={pendingReminderIds.has(selectedTodo.id)}
+          onOpenReminderPanel={() => setReminderPanelTodo(selectedTodo)}
+          onConnectCalendar={onConnectCalendar}
+        />
+      )}
+
+      {reminderPanelTodo && (
+        <ReminderOptionsPanel
+          todo={reminderPanelTodo}
+          onClose={() => setReminderPanelTodo(null)}
+          onSubmit={handleSubmitReminder}
+          isSubmitting={false}
         />
       )}
     </DndProvider>
