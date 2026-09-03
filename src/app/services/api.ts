@@ -354,7 +354,7 @@ export const tasksApi = {
 
   updateTask: async (
     id: string,
-    taskData: { title?: string; target?: number; unit?: string; timesPerWeek?: number; type?: string; frequency?: string }
+    taskData: { title?: string; target?: number; unit?: string; timesPerWeek?: number; type?: string; frequency?: string; notifyEnabled?: boolean }
   ): Promise<Task> => {
     const response = await apiClient.put(`/tasks/${id}`, taskData);
     return response.data;
@@ -532,8 +532,8 @@ export const googleCalendarApi = {
     return response.data;
   },
 
-  getConnectUrl: async (): Promise<{ url: string }> => {
-    const response = await apiClient.get('/google-calendar/connect');
+  getConnectUrl: async (platform: 'web' | 'native' = 'web'): Promise<{ url: string }> => {
+    const response = await apiClient.get('/google-calendar/connect', { params: { platform } });
     return response.data;
   },
 

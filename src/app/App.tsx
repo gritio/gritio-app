@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Sidebar } from './components/Sidebar';
 import { GoalsPage } from './components/GoalsPage';
 import { GoalDetail } from './components/GoalDetail';
@@ -21,6 +24,7 @@ import { JournalPage } from './components/JournalPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection, ReminderOptions } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi, googleCalendarApi } from './services/api';
+import { scheduleTodayDigest, scheduleWeekDigest } from './utils/notifications';
 
 type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal';
 
@@ -200,10 +204,7 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  // Land back on Profile after the Google Calendar OAuth redirect and surface the result
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const calendarResult = params.get('calendar');
+  const handleCalendarRedirectResult = (calendarResult: string | null) => {
     if (!calendarResult) return;
 
     if (calendarResult === 'connected') {
@@ -213,8 +214,51 @@ export default function App() {
       toast.error('Failed to connect Google Calendar. Please try again.');
     }
     setCurrentView('profile');
-    window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  // Land back on Profile after the Google Calendar OAuth redirect and surface the result (web)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    handleCalendarRedirectResult(params.get('calendar'));
+    if (params.get('calendar')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
+
+  // Same thing, but for the native app: Google's OAuth flow opens in the system
+  // browser (Capacitor WebViews get blocked by Google's OAuth policy), so the
+  // backend redirects to a gritio:// deep link instead of a web URL to hand back control.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerPromise = CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      const parsed = new URL(url);
+      if (parsed.host !== 'calendar-callback') return;
+      handleCalendarRedirectResult(parsed.searchParams.get('calendar'));
+      Browser.close().catch(() => {});
+    });
+
+    return () => {
+      listenerPromise.then(listener => listener.remove());
+    };
+  }, []);
+
+  // Recompute today's local-notification digest whenever the data it depends
+  // on changes — cheap no-op on web, and always replaces the same
+  // notification id on native rather than stacking duplicates.
+  const rescheduleNotifications = () => {
+    scheduleTodayDigest(todos, tasks).catch(err =>
+      console.error('Failed to schedule today digest notification:', err),
+    );
+    scheduleWeekDigest(tasks).catch(err =>
+      console.error('Failed to schedule week digest notification:', err),
+    );
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || goalsLoading) return;
+    rescheduleNotifications();
+  }, [isAuthenticated, goalsLoading, todos, tasks]);
 
   // Save current view to localStorage
   useEffect(() => {
@@ -485,6 +529,17 @@ export default function App() {
     setUpdatingTaskId(taskId);
     setIsUpdateProgressPanelOpen(true);
   };
+
+  const handleToggleTaskNotify = async (taskId: string, notifyEnabled: boolean) => {
+    setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, notifyEnabled } : t)));
+    try {
+      await tasksApi.updateTask(taskId, { notifyEnabled });
+    } catch (error) {
+      console.error('Failed to update task notification setting:', error);
+      setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, notifyEnabled: !notifyEnabled } : t)));
+      toast.error('Failed to update notification setting');
+    }
+  };
   
   const handleSaveProgress = (taskId: string, newProgress: number) => {
     setTasks(tasks.map(task => {
@@ -589,6 +644,7 @@ export default function App() {
                   onUpdateGoal={handleSaveEditedGoal}
                   onDeleteGoal={handleDeleteGoal}
                   onRefreshGoals={fetchGoals}
+                  onToggleTaskNotify={handleToggleTaskNotify}
                   isKidsMode={isKidsMode}
                 />
               )}
@@ -604,9 +660,10 @@ export default function App() {
                     setIsMonthlyGoalPanelOpen(true);
                   }}
                   onAddTask={handleAddTaskFromOverview}
+                  onToggleTaskNotify={handleToggleTaskNotify}
                 />
               )}
-              
+
               {currentView === 'today' && (
                 <TaskTrackingView
                   tasks={tasks}
@@ -638,6 +695,7 @@ export default function App() {
                   onCreateReminder={handleCreateReminder}
                   onUpdateReminder={handleUpdateReminder}
                   onConnectCalendar={() => setCurrentView('profile')}
+                  onNotifySettingsChanged={rescheduleNotifications}
                 />
               )}
 
@@ -678,6 +736,7 @@ export default function App() {
                 <ProfilePage
                   onBack={() => setCurrentView('overview')}
                   isKidsMode={isKidsMode}
+                  onNotifySettingsChanged={rescheduleNotifications}
                 />
               )}
             </main>

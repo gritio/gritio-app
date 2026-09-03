@@ -17,6 +17,7 @@ interface GoalsPageProps {
   onUpdateGoal?: (updatedGoal: Goal) => void;
   onDeleteGoal?: (goalId: string) => void;
   onRefreshGoals?: () => void;
+  onToggleTaskNotify: (taskId: string, notifyEnabled: boolean) => void;
   isKidsMode?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function GoalsPage({
   onUpdateGoal,
   onDeleteGoal,
   onRefreshGoals,
+  onToggleTaskNotify,
   isKidsMode
 }: GoalsPageProps) {
   const [showLifeGoals, setShowLifeGoals] = useState(false);
@@ -81,6 +83,7 @@ export function GoalsPage({
           onUpdateGoal={onUpdateGoal}
           onDeleteGoal={onDeleteGoal}
           onRefreshGoals={onRefreshGoals}
+          onToggleTaskNotify={onToggleTaskNotify}
           isKidsMode={isKidsMode}
         />
       </div>

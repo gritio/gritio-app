@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { authApi } from '../services/api';
 import { Mail, Lock, User, Phone, Calendar, Eye, EyeOff } from 'lucide-react';
+import { GritioLogo } from './LoginPage';
+
+const inputClass =
+  'w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#805232]/30 focus:border-[#805232] transition-colors';
+const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5';
 
 interface RegisterPageProps {
   onRegisterSuccess: () => void;
@@ -134,181 +139,184 @@ export function RegisterPage({ onRegisterSuccess, onBackToLogin }: RegisterPageP
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-[#FAFAFA] via-[#B8BABB] to-[#E8D5C4] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#805232] mb-2">Create Account</h1>
-          <p className="text-[#805232] text-sm">Join HouseholdTracker today</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                placeholder="John Doe"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#FAF7F3] via-[#F3E9DE] to-[#E8D5C4] flex items-center justify-center p-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-3xl shadow-xl shadow-black/5 ring-1 ring-black/5 p-8 sm:p-10">
+          <div className="text-center mb-8">
+            <GritioLogo />
+            <h1 className="text-2xl font-bold text-[#805232] mt-4 tracking-tight">Create Account</h1>
+            <p className="text-gray-500 text-sm mt-1.5">Join Gritio today</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="your@email.com"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Phone Number</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Date of Birth</label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type="date"
-                value={formData.dob}
-                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handlePasswordChange}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-[#805232]"
-                disabled={isLoading}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className={labelClass}>Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder="John Doe"
+                  className={inputClass}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
-            {formData.password && (
-              <div className="mt-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`h-2 flex-1 rounded ${getPasswordStrengthColor()}`}></div>
-                  <span className="text-xs font-semibold text-[#805232]">{getPasswordStrengthText()}</span>
+            <div>
+              <label className={labelClass}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="your@email.com"
+                  className={inputClass}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+1 (555) 123-4567"
+                  className={inputClass}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Date of Birth</label>
+              <div className="relative">
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="date"
+                  value={formData.dob}
+                  onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                  className={inputClass}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handlePasswordChange}
+                  placeholder="••••••••"
+                  className={`${inputClass} pr-10`}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#805232]"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`h-1.5 flex-1 rounded-full ${getPasswordStrengthColor()}`}></div>
+                    <span className="text-xs font-semibold text-[#805232]">{getPasswordStrengthText()}</span>
+                  </div>
+                  {passwordStrength.feedback.length > 0 && (
+                    <ul className="text-xs text-gray-500 list-disc list-inside">
+                      {passwordStrength.feedback.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                {passwordStrength.feedback.length > 0 && (
-                  <ul className="text-xs text-gray-600 list-disc list-inside">
-                    {passwordStrength.feedback.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-                )}
+              )}
+            </div>
+
+            <div>
+              <label className={labelClass}>Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  placeholder="••••••••"
+                  className={`${inputClass} pr-10`}
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#805232]"
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+              )}
+            </div>
+
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 accent-[#805232]"
+                disabled={isLoading}
+              />
+              <label htmlFor="terms" className="text-sm text-gray-500">
+                I agree to the Terms and Conditions and Privacy Policy
+              </label>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-[#805232] mb-2">Confirm Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-[#805232]" />
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805232]"
-                required
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-3 text-[#805232]"
-                disabled={isLoading}
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
-              <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
-            )}
-          </div>
-
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              id="terms"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="mt-1"
+            <button
+              type="submit"
               disabled={isLoading}
-            />
-            <label htmlFor="terms" className="text-sm text-gray-600">
-              I agree to the Terms and Conditions and Privacy Policy
-            </label>
-          </div>
+              className="w-full bg-[#805232] text-white py-3 rounded-xl font-medium hover:bg-[#6b4427] hover:shadow-lg hover:shadow-[#805232]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Creating Account…' : 'Create Account'}
+            </button>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-[#805232] text-white py-2 rounded-lg font-medium hover:bg-[#6b4427] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onBackToLogin}
-            className="w-full text-[#805232] py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors"
-            disabled={isLoading}
-          >
-            Already have an account? Login
-          </button>
-        </form>
+            <button
+              type="button"
+              onClick={onBackToLogin}
+              className="w-full text-[#805232] py-2.5 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              disabled={isLoading}
+            >
+              Already have an account? Login
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { Goal, Task, MonthlyGoal } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ProgressBar } from './ProgressBar';
 import { formatTaskValue, calculateTaskCompletionToday, getTaskStatus } from '../utils/calculations';
-import { ArrowLeft, Clock, TrendingUp, Target, Calendar, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ArrowLeft, Clock, TrendingUp, Target, Calendar, ChevronDown, ChevronRight, Plus, Bell, BellOff } from 'lucide-react';
 
 interface GoalDetailProps {
   goal: Goal;
@@ -12,9 +12,10 @@ interface GoalDetailProps {
   onBack: () => void;
   onAddMonthlyGoal: () => void;
   onAddTask: (monthlyGoalId: string) => void;
+  onToggleTaskNotify: (taskId: string, notifyEnabled: boolean) => void;
 }
 
-export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal, onAddTask }: GoalDetailProps) {
+export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal, onAddTask, onToggleTaskNotify }: GoalDetailProps) {
   const [isGoalExpanded, setIsGoalExpanded] = useState(true);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   
@@ -225,10 +226,21 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
                                           {formatTaskValue(task.currentProgress, task.unit)} / {formatTaskValue(task.target, task.unit)}
                                         </div>
                                       </div>
-                                      <StatusBadge status={status} size="sm" />
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                          onClick={() => onToggleTaskNotify(task.id, !task.notifyEnabled)}
+                                          className={`flex-shrink-0 rounded-full p-1 transition-colors ${
+                                            task.notifyEnabled ? 'bg-[#805232] text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                          }`}
+                                          title={task.notifyEnabled ? 'Notifications on for this task' : 'Notify me about this task'}
+                                        >
+                                          {task.notifyEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                        </button>
+                                        <StatusBadge status={status} size="sm" />
+                                      </div>
                                     </div>
-                                    <ProgressBar 
-                                      progress={completion} 
+                                    <ProgressBar
+                                      progress={completion}
                                       status={status}
                                       showLabel={false}
                                       height="sm"
@@ -239,7 +251,7 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Weekly Tasks */}
                         {weeklyTasks.length > 0 && (
                           <div>
@@ -261,10 +273,21 @@ export function GoalDetail({ goal, monthlyGoals, tasks, onBack, onAddMonthlyGoal
                                           {formatTaskValue(task.currentProgress, task.unit)} / {formatTaskValue(task.target, task.unit)}
                                         </div>
                                       </div>
-                                      <StatusBadge status={status} size="sm" />
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                          onClick={() => onToggleTaskNotify(task.id, !task.notifyEnabled)}
+                                          className={`flex-shrink-0 rounded-full p-1 transition-colors ${
+                                            task.notifyEnabled ? 'bg-[#805232] text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                          }`}
+                                          title={task.notifyEnabled ? 'Midweek reminder on for this task' : 'Remind me midweek about this task'}
+                                        >
+                                          {task.notifyEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                        </button>
+                                        <StatusBadge status={status} size="sm" />
+                                      </div>
                                     </div>
-                                    <ProgressBar 
-                                      progress={completion} 
+                                    <ProgressBar
+                                      progress={completion}
                                       status={status}
                                       showLabel={false}
                                       height="sm"

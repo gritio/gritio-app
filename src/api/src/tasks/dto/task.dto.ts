@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString, IsArray } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsArray, IsBoolean } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -52,6 +52,10 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsString()
   frequency?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyEnabled?: boolean;
 }
 
 export class LogCompletionDto {

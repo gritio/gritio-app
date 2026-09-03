@@ -15,6 +15,7 @@ interface GoalsOverviewNewProps {
   onUpdateGoal?: (updatedGoal: Goal) => void;
   onDeleteGoal?: (goalId: string) => void;
   onRefreshGoals?: () => void;
+  onToggleTaskNotify: (taskId: string, notifyEnabled: boolean) => void;
   isKidsMode?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function GoalsOverviewNew({
   onUpdateGoal,
   onDeleteGoal,
   onRefreshGoals,
+  onToggleTaskNotify,
   isKidsMode,
 }: GoalsOverviewNewProps) {
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
@@ -129,6 +131,7 @@ export function GoalsOverviewNew({
             onDeleteGoal={(goalId) => setDeleteConfirmGoalId(goalId)}
             onAddTask={handleOpenAddTaskPanel}
             onRefreshGoals={onRefreshGoals}
+            onToggleTaskNotify={onToggleTaskNotify}
             tasks={tasks}
             isKidsMode={isKidsMode}
           />

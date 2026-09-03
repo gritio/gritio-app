@@ -36,12 +36,20 @@ export class GoogleCalendarController {
 
   @UseGuards(JwtAuthGuard)
   @Get('connect')
-  async getConnectUrl(@Request() req) {
+  async getConnectUrl(@Request() req, @Query('platform') platform: string) {
     const state = this.jwtService.sign(
-      { sub: req.user.id, purpose: STATE_PURPOSE },
+      { sub: req.user.id, purpose: STATE_PURPOSE, platform: platform === 'native' ? 'native' : 'web' },
       { expiresIn: '10m' },
     );
     return { url: this.googleCalendarService.getAuthUrl(state) };
+  }
+
+  private redirectBaseFor(platform: string): string {
+    if (platform === 'native') {
+      return 'gritio://calendar-callback';
+    }
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return `${frontendUrl}/`;
   }
 
   // Hit directly by Google's redirect — no Authorization header available here,
@@ -53,18 +61,24 @@ export class GoogleCalendarController {
     @Query('error') error: string,
     @Res() res: Response,
   ) {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectBase = `${frontendUrl}/`;
+    // Decode (without trusting yet) just to pick the right redirect target —
+    // the actual security check happens via jwtService.verify below.
+    let redirectBase = this.redirectBaseFor('web');
+    let payload: any;
+    if (state) {
+      try {
+        payload = this.jwtService.verify(state);
+        redirectBase = this.redirectBaseFor(payload.platform);
+      } catch {
+        // Falls through to the web default; the error branch below still fires.
+      }
+    }
 
-    if (error || !code || !state) {
+    if (error || !code || !payload || payload.purpose !== STATE_PURPOSE || !payload.sub) {
       return res.redirect(`${redirectBase}?calendar=error`);
     }
 
     try {
-      const payload = this.jwtService.verify(state);
-      if (payload.purpose !== STATE_PURPOSE || !payload.sub) {
-        throw new Error('Invalid state token');
-      }
       await this.googleCalendarService.handleCallback(code, payload.sub);
       return res.redirect(`${redirectBase}?calendar=connected`);
     } catch (err) {

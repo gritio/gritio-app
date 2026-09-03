@@ -9,7 +9,12 @@
     "dev:frontend": "vite"
   },
   "dependencies": {
-    "@auth0/auth0-spa-js": "^2.11.0",
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/local-notifications": "^8.3.1",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.5",
@@ -66,9 +71,11 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
+    "typescript": "^7.0.2",
     "vite": "^6.4.1"
   },
   "peerDependencies": {
@@ -87,5 +94,8 @@
     "overrides": {
       "vite": "6.3.5"
     }
+  },
+  "allowScripts": {
+    "sharp@0.32.6": true
   }
 }

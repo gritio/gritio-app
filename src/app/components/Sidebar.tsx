@@ -142,17 +142,18 @@ export function Sidebar({ currentView, onNavigate, onLogout, isKidsMode, onboard
       {/* Footer Section */}
       <div className="p-3 border-t border-white/10">
         {user && (
-          <div className="mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#805232] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                {(user.name || user.email)?.substring(0, 2).toUpperCase()}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-white text-xs font-medium truncate">{user.name || user.email}</p>
-                <p className="text-white/40 text-xs">Settings · Logout</p>
-              </div>
+          <button
+            onClick={() => handleNavigate('profile')}
+            className="mb-3 w-full flex items-center gap-2 rounded-md p-1 -m-1 hover:bg-white/5 transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#805232] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {(user.name || user.email)?.substring(0, 2).toUpperCase()}
             </div>
-          </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-xs font-medium truncate">{user.name || user.email}</p>
+              <p className="text-white/40 text-xs">Profile & settings</p>
+            </div>
+          </button>
         )}
         {onLogout && (
           <button
