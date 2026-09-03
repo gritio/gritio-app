@@ -24,6 +24,7 @@ import { JournalPage } from './components/JournalPage';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
 import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection, ReminderOptions } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi, googleCalendarApi } from './services/api';
+import { scheduleTodayDigest, scheduleWeekDigest } from './utils/notifications';
 
 type View = 'overview' | 'detail' | 'today' | 'weekly' | 'task-timeline' | 'todos' | 'life-goals' | 'profile' | 'onboarding' | 'journal';
 
@@ -241,6 +242,23 @@ export default function App() {
       listenerPromise.then(listener => listener.remove());
     };
   }, []);
+
+  // Recompute today's local-notification digest whenever the data it depends
+  // on changes — cheap no-op on web, and always replaces the same
+  // notification id on native rather than stacking duplicates.
+  const rescheduleNotifications = () => {
+    scheduleTodayDigest(todos, tasks).catch(err =>
+      console.error('Failed to schedule today digest notification:', err),
+    );
+    scheduleWeekDigest(tasks).catch(err =>
+      console.error('Failed to schedule week digest notification:', err),
+    );
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || goalsLoading) return;
+    rescheduleNotifications();
+  }, [isAuthenticated, goalsLoading, todos, tasks]);
 
   // Save current view to localStorage
   useEffect(() => {
@@ -511,6 +529,17 @@ export default function App() {
     setUpdatingTaskId(taskId);
     setIsUpdateProgressPanelOpen(true);
   };
+
+  const handleToggleTaskNotify = async (taskId: string, notifyEnabled: boolean) => {
+    setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, notifyEnabled } : t)));
+    try {
+      await tasksApi.updateTask(taskId, { notifyEnabled });
+    } catch (error) {
+      console.error('Failed to update task notification setting:', error);
+      setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, notifyEnabled: !notifyEnabled } : t)));
+      toast.error('Failed to update notification setting');
+    }
+  };
   
   const handleSaveProgress = (taskId: string, newProgress: number) => {
     setTasks(tasks.map(task => {
@@ -615,6 +644,7 @@ export default function App() {
                   onUpdateGoal={handleSaveEditedGoal}
                   onDeleteGoal={handleDeleteGoal}
                   onRefreshGoals={fetchGoals}
+                  onToggleTaskNotify={handleToggleTaskNotify}
                   isKidsMode={isKidsMode}
                 />
               )}
@@ -630,9 +660,10 @@ export default function App() {
                     setIsMonthlyGoalPanelOpen(true);
                   }}
                   onAddTask={handleAddTaskFromOverview}
+                  onToggleTaskNotify={handleToggleTaskNotify}
                 />
               )}
-              
+
               {currentView === 'today' && (
                 <TaskTrackingView
                   tasks={tasks}
@@ -664,6 +695,7 @@ export default function App() {
                   onCreateReminder={handleCreateReminder}
                   onUpdateReminder={handleUpdateReminder}
                   onConnectCalendar={() => setCurrentView('profile')}
+                  onNotifySettingsChanged={rescheduleNotifications}
                 />
               )}
 
@@ -704,6 +736,7 @@ export default function App() {
                 <ProfilePage
                   onBack={() => setCurrentView('overview')}
                   isKidsMode={isKidsMode}
+                  onNotifySettingsChanged={rescheduleNotifications}
                 />
               )}
             </main>

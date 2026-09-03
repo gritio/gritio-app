@@ -129,6 +129,7 @@ export class TasksService {
         ...(dto.timesPerWeek !== undefined && { timesPerWeek: dto.timesPerWeek }),
         ...(dto.type && { type: dto.type.toUpperCase() as MeasurementType }),
         ...(dto.frequency && { frequency: dto.frequency.toUpperCase() as Frequency }),
+        ...(dto.notifyEnabled !== undefined && { notifyEnabled: dto.notifyEnabled }),
       },
       include: {
         completionRecords: true,

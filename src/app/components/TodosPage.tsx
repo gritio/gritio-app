@@ -15,12 +15,15 @@ import {
   CalendarClock,
   CalendarPlus,
   CalendarCheck,
+  Bell,
+  BellOff,
   LucideIcon,
 } from 'lucide-react';
 import { TodoDetailPanel } from './TodoDetailPanel';
 import { DueDatePreset, getPresetISODate, getDueDateStatus } from '../utils/dueDate';
 import { ReminderOptionsPanel } from './ReminderOptionsPanel';
 import { formatReminderSchedule } from '../utils/reminder';
+import { getTodosNotifyEnabled, setTodosNotifyEnabled } from '../utils/notifications';
 
 const DRAG_TYPE = 'TODO_ITEM';
 
@@ -333,6 +336,7 @@ interface TodosPageProps {
   onCreateReminder: (todoId: string, options: ReminderOptions) => Promise<void>;
   onUpdateReminder: (todoId: string, options: ReminderOptions) => Promise<void>;
   onConnectCalendar: () => void;
+  onNotifySettingsChanged: () => void;
 }
 
 export function TodosPage({
@@ -346,6 +350,7 @@ export function TodosPage({
   onCreateReminder,
   onUpdateReminder,
   onConnectCalendar,
+  onNotifySettingsChanged,
 }: TodosPageProps) {
   const [newTitle, setNewTitle] = useState('');
   const [newDueDate, setNewDueDate] = useState(getPresetISODate('today'));
@@ -355,6 +360,14 @@ export function TodosPage({
   const [filter, setFilter] = useState<DueDateFilter>('all');
   const [pendingReminderIds, setPendingReminderIds] = useState<Set<string>>(new Set());
   const [reminderPanelTodo, setReminderPanelTodo] = useState<Todo | null>(null);
+  const [todosNotifyOn, setTodosNotifyOn] = useState(getTodosNotifyEnabled);
+
+  const handleToggleTodosNotify = () => {
+    const next = !todosNotifyOn;
+    setTodosNotifyOn(next);
+    setTodosNotifyEnabled(next);
+    onNotifySettingsChanged();
+  };
 
   const handleSaveReminder = async (todoId: string, options: ReminderOptions, isEditing: boolean) => {
     setPendingReminderIds(prev => new Set(prev).add(todoId));
@@ -435,7 +448,21 @@ export function TodosPage({
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#805232] mb-6">My Todos</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-[#805232]">My Todos</h1>
+          <button
+            onClick={handleToggleTodosNotify}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+              todosNotifyOn
+                ? 'bg-[#805232] text-white border-[#805232]'
+                : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400'
+            }`}
+            title={todosNotifyOn ? 'Notifications on for due/overdue todos' : 'Todo notifications muted'}
+          >
+            {todosNotifyOn ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+            {todosNotifyOn ? 'Notify on' : 'Muted'}
+          </button>
+        </div>
 
         {/* Add Todo */}
         <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">

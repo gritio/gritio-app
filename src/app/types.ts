@@ -111,6 +111,8 @@ export interface Task {
   currentProgress: number;
   lastUpdated: Date;
   completionHistory: CompletionRecord[];
+  notifyEnabled?: boolean;
+  months?: number[];
 }
 
 export interface CompletionRecord {

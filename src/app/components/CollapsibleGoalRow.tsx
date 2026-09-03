@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Goal, Task, GoalLog, TaskProgressEntry } from '../types';
-import { ChevronRight, Edit, Trash2, Plus, Heart, Building2, Users, Star, Pencil, Check, X } from 'lucide-react';
+import { ChevronRight, Edit, Trash2, Plus, Heart, Building2, Users, Star, Pencil, Check, X, Bell, BellOff } from 'lucide-react';
 import { goalLogsApi } from '../services/api';
 import { EditTaskPanel } from './EditTaskPanel';
 import { COLORS } from '../constants/colors';
@@ -28,6 +28,7 @@ interface CollapsibleGoalRowProps {
   onDeleteGoal?: (goalId: string) => void;
   onAddTask?: (goalId: string) => void;
   onRefreshGoals?: () => void;
+  onToggleTaskNotify: (taskId: string, notifyEnabled: boolean) => void;
   tasks?: Task[];
   isKidsMode?: boolean;
 }
@@ -50,6 +51,7 @@ export function CollapsibleGoalRow({
   onDeleteGoal,
   onAddTask,
   onRefreshGoals,
+  onToggleTaskNotify,
   tasks = [],
   isKidsMode,
 }: CollapsibleGoalRowProps) {
@@ -520,6 +522,8 @@ export function CollapsibleGoalRow({
                     const freqText = tp.frequency === 'WEEKLY'
                       ? `${tp.timesPerWeek || 1}× / week`
                       : 'daily';
+                    const rawTask = tasks.find(t => t.id === tp.taskId);
+                    const notifyEnabled = !!rawTask?.notifyEnabled;
                     return (
                       <div key={tp.taskId} className="flex items-center gap-3 bg-[#FAFAFA] rounded px-3 py-2">
                         <div className="flex-1 min-w-0">
@@ -537,6 +541,15 @@ export function CollapsibleGoalRow({
                         <div className="text-xs font-semibold text-[#805232] w-10 text-right">
                           {adherence}%
                         </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onToggleTaskNotify(tp.taskId, !notifyEnabled); }}
+                          className={`flex-shrink-0 rounded-full p-1 transition-colors ml-1 ${
+                            notifyEnabled ? 'bg-[#805232] text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                          }`}
+                          title={notifyEnabled ? 'Reminder on for this task' : 'Remind me about this task'}
+                        >
+                          {notifyEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                        </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditingTask(tp); }}
                           className="text-[#805232] opacity-50 hover:opacity-100 transition-opacity ml-1"

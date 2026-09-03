@@ -1,4 +1,4 @@
-.PHONY: help setup up down logs sync-db dev-local restore-latest
+.PHONY: help setup up down logs sync-db dev-local restore-latest build-android
 
 help:
 	@echo "Gritio Development Commands"
@@ -9,6 +9,7 @@ help:
 	@echo "  make dev-local      - Start backend + frontend locally (requires make up)"
 	@echo "  make logs           - View service logs"
 	@echo "  make sync-db        - Sync production database from Railway (saves to ./backups/)"
+	@echo "  make build-android  - Build the Android debug APK"
 	@echo "  make restore-latest - Restore from latest backup file"
 	@echo "  make clean          - Remove containers and volumes"
 	@echo "  make shell-backend  - SSH into backend container"
@@ -75,6 +76,20 @@ shell-db:
 
 fresh-start: down clean up
 	@echo "✅ Fresh start complete"
+
+build-android:
+	@echo "📱 Building web assets..."
+	@npm run build
+	@echo "🔄 Syncing into the native Android project..."
+	@npx cap sync android
+	@echo "🔨 Compiling APK with Gradle..."
+	@cd android && \
+		ANDROID_HOME="$$HOME/Library/Android/sdk" \
+		JAVA_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home" \
+		PATH="$$PATH:$$HOME/Library/Android/sdk/platform-tools:$$HOME/Library/Android/sdk/emulator:/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home/bin" \
+		./gradlew assembleDebug
+	@echo ""
+	@echo "✅ APK ready: android/app/build/outputs/apk/debug/app-debug.apk"
 
 dev-local:
 	@if [ ! -f src/api/.env ]; then \

@@ -354,7 +354,7 @@ export const tasksApi = {
 
   updateTask: async (
     id: string,
-    taskData: { title?: string; target?: number; unit?: string; timesPerWeek?: number; type?: string; frequency?: string }
+    taskData: { title?: string; target?: number; unit?: string; timesPerWeek?: number; type?: string; frequency?: string; notifyEnabled?: boolean }
   ): Promise<Task> => {
     const response = await apiClient.put(`/tasks/${id}`, taskData);
     return response.data;

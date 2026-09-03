@@ -1,12 +1,31 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Save, X, Calendar, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, X, Calendar, CheckCircle2, Bell, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { googleCalendarApi } from '../services/api';
+import {
+  getDailyReminderTime,
+  setDailyReminderTime,
+  getWeeklyReminderDay,
+  setWeeklyReminderDay,
+  getWeeklyReminderTime,
+  setWeeklyReminderTime,
+} from '../utils/notifications';
+
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
 
 interface ProfilePageProps {
   onBack: () => void;
   isKidsMode?: boolean;
+  onNotifySettingsChanged: () => void;
 }
 
 interface UserProfile {
@@ -18,9 +37,10 @@ interface UserProfile {
   coins: number;
 }
 
-export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
+export function ProfilePage({ onBack, isKidsMode, onNotifySettingsChanged }: ProfilePageProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -30,6 +50,27 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
   });
   const [calendarStatus, setCalendarStatus] = useState<{ connected: boolean; googleEmail?: string } | null>(null);
   const [isCalendarActionPending, setIsCalendarActionPending] = useState(false);
+  const [dailyTime, setDailyTime] = useState(getDailyReminderTime);
+  const [weeklyDay, setWeeklyDay] = useState(getWeeklyReminderDay);
+  const [weeklyTime, setWeeklyTime] = useState(getWeeklyReminderTime);
+
+  const handleDailyTimeChange = (value: string) => {
+    setDailyTime(value);
+    setDailyReminderTime(value);
+    onNotifySettingsChanged();
+  };
+
+  const handleWeeklyDayChange = (value: number) => {
+    setWeeklyDay(value);
+    setWeeklyReminderDay(value);
+    onNotifySettingsChanged();
+  };
+
+  const handleWeeklyTimeChange = (value: string) => {
+    setWeeklyTime(value);
+    setWeeklyReminderTime(value);
+    onNotifySettingsChanged();
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -198,77 +239,75 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
         <div className={`rounded-lg border-2 p-6 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'}`}>
           {!isEditing ? (
             <>
-              {/* View Mode */}
-              <div className="space-y-6">
-                {/* Name */}
-                <div>
-                  <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
-                    Name
-                  </p>
-                  <p className="text-xl font-bold text-[#805232]">
-                    {profile.name || 'Not set'}
-                  </p>
+              {/* Compact summary — full details are collapsed by default */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-[#805232] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {(profile.name || profile.email).substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-[#805232] truncate">{profile.name || profile.email}</p>
+                    <p className="text-xs text-gray-500 truncate">{profile.email}</p>
+                  </div>
                 </div>
-
-                {/* Email */}
-                <div>
-                  <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
-                    Email
-                  </p>
-                  <p className="text-lg text-[#805232]">
-                    {profile.email}
-                  </p>
-                </div>
-
-                {/* Date of Birth */}
-                <div>
-                  <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
-                    Date of Birth
-                  </p>
-                  <p className="text-lg text-[#805232]">
-                    {profile.dob
-                      ? new Date(profile.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                      : 'Not set'}
-                  </p>
-                  {age !== null && (
-                    <p className={`text-sm mt-1 ${isKidsMode ? 'text-[#805232]' : 'text-gray-500'}`}>
-                      Age: {age}
-                    </p>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
-                    Phone
-                  </p>
-                  <p className="text-lg text-[#805232]">
-                    {profile.phone || 'Not set'}
-                  </p>
-                </div>
-
-                {/* Coins */}
-                <div>
-                  <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
-                    Coins
-                  </p>
-                  <p className="text-xl font-bold text-[#805232]">
-                    {profile.coins} 🪙
-                  </p>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="p-2 text-[#805232] hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Edit profile"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsProfileExpanded(v => !v)}
+                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
+                    title={isProfileExpanded ? 'Hide details' : 'Show details'}
+                  >
+                    {isProfileExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
-              {/* Edit Button */}
-              <button
-                onClick={() => setIsEditing(true)}
-                className={`mt-8 w-full py-2 rounded font-bold transition-colors ${
-                  isKidsMode
-                    ? 'bg-[#00FF00] text-black hover:bg-[#00DD00]'
-                    : 'bg-[#805232] text-white hover:bg-[#704229]'
-                }`}
-              >
-                Edit Profile
-              </button>
+              {isProfileExpanded && (
+                <div className="space-y-6 mt-6 pt-6 border-t border-gray-100">
+                  {/* Date of Birth */}
+                  <div>
+                    <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
+                      Date of Birth
+                    </p>
+                    <p className="text-lg text-[#805232]">
+                      {profile.dob
+                        ? new Date(profile.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                        : 'Not set'}
+                    </p>
+                    {age !== null && (
+                      <p className={`text-sm mt-1 ${isKidsMode ? 'text-[#805232]' : 'text-gray-500'}`}>
+                        Age: {age}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
+                      Phone
+                    </p>
+                    <p className="text-lg text-[#805232]">
+                      {profile.phone || 'Not set'}
+                    </p>
+                  </div>
+
+                  {/* Coins */}
+                  <div>
+                    <p className={`text-sm font-semibold ${isKidsMode ? 'text-[#805232]' : 'text-gray-600'}`}>
+                      Coins
+                    </p>
+                    <p className="text-xl font-bold text-[#805232]">
+                      {profile.coins} 🪙
+                    </p>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -397,6 +436,51 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
               {isCalendarActionPending ? 'Redirecting…' : 'Connect Google Calendar'}
             </button>
           )}
+        </div>
+
+        {/* Notification timing */}
+        <div className={`mt-4 rounded-lg border-2 p-6 ${isKidsMode ? 'bg-[#00FFFF] bg-opacity-60 border-[#0099FF]' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center gap-3 mb-1">
+            <Bell className="w-5 h-5 text-[#805232]" />
+            <h2 className="text-lg font-bold text-[#805232]">Notifications</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-5">
+            When your daily and weekly reminders fire. What's included is controlled
+            from the Todos page and each goal's task list.
+          </p>
+
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-[#805232]">Daily reminder time</label>
+              <input
+                type="time"
+                value={dailyTime}
+                onChange={e => handleDailyTimeChange(e.target.value)}
+                className="w-full px-3 py-2 rounded border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#805232]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-[#805232]">Weekly reminder</label>
+              <div className="flex gap-2">
+                <select
+                  value={weeklyDay}
+                  onChange={e => handleWeeklyDayChange(Number(e.target.value))}
+                  className="flex-1 px-3 py-2 rounded border-2 border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#805232]"
+                >
+                  {WEEKDAY_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="time"
+                  value={weeklyTime}
+                  onChange={e => handleWeeklyTimeChange(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#805232]"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
