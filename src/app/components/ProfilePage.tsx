@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Save, X, Calendar, CheckCircle2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { googleCalendarApi } from '../services/api';
 
 interface ProfilePageProps {
@@ -32,6 +34,16 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
   useEffect(() => {
     fetchProfile();
     fetchCalendarStatus();
+
+    if (!Capacitor.isNativePlatform()) return;
+    // If the user closes the system browser tab without finishing (or cancels),
+    // don't leave the Connect button stuck in a disabled "pending" state.
+    const listenerPromise = Browser.addListener('browserFinished', () => {
+      setIsCalendarActionPending(false);
+    });
+    return () => {
+      listenerPromise.then(listener => listener.remove());
+    };
   }, []);
 
   const fetchCalendarStatus = async () => {
@@ -46,8 +58,15 @@ export function ProfilePage({ onBack, isKidsMode }: ProfilePageProps) {
   const handleConnectCalendar = async () => {
     setIsCalendarActionPending(true);
     try {
-      const { url } = await googleCalendarApi.getConnectUrl();
-      window.location.href = url;
+      const isNative = Capacitor.isNativePlatform();
+      const { url } = await googleCalendarApi.getConnectUrl(isNative ? 'native' : 'web');
+      if (isNative) {
+        // Google blocks its OAuth consent screen inside an embedded WebView —
+        // this has to open in the device's real browser, not navigate in-app.
+        await Browser.open({ url });
+      } else {
+        window.location.href = url;
+      }
     } catch (err) {
       console.error('Failed to start Google Calendar connect flow', err);
       setIsCalendarActionPending(false);

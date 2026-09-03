@@ -532,8 +532,8 @@ export const googleCalendarApi = {
     return response.data;
   },
 
-  getConnectUrl: async (): Promise<{ url: string }> => {
-    const response = await apiClient.get('/google-calendar/connect');
+  getConnectUrl: async (platform: 'web' | 'native' = 'web'): Promise<{ url: string }> => {
+    const response = await apiClient.get('/google-calendar/connect', { params: { platform } });
     return response.data;
   },
 

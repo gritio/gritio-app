@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Sidebar } from './components/Sidebar';
 import { GoalsPage } from './components/GoalsPage';
 import { GoalDetail } from './components/GoalDetail';
@@ -200,10 +203,7 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  // Land back on Profile after the Google Calendar OAuth redirect and surface the result
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const calendarResult = params.get('calendar');
+  const handleCalendarRedirectResult = (calendarResult: string | null) => {
     if (!calendarResult) return;
 
     if (calendarResult === 'connected') {
@@ -213,7 +213,33 @@ export default function App() {
       toast.error('Failed to connect Google Calendar. Please try again.');
     }
     setCurrentView('profile');
-    window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  // Land back on Profile after the Google Calendar OAuth redirect and surface the result (web)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    handleCalendarRedirectResult(params.get('calendar'));
+    if (params.get('calendar')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Same thing, but for the native app: Google's OAuth flow opens in the system
+  // browser (Capacitor WebViews get blocked by Google's OAuth policy), so the
+  // backend redirects to a gritio:// deep link instead of a web URL to hand back control.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerPromise = CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      const parsed = new URL(url);
+      if (parsed.host !== 'calendar-callback') return;
+      handleCalendarRedirectResult(parsed.searchParams.get('calendar'));
+      Browser.close().catch(() => {});
+    });
+
+    return () => {
+      listenerPromise.then(listener => listener.remove());
+    };
   }, []);
 
   // Save current view to localStorage

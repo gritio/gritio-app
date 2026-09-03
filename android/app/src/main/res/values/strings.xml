@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gritio</string>
+    <string name="title_activity_main">Gritio</string>
+    <string name="package_name">com.gritio.app</string>
+    <string name="custom_url_scheme">com.gritio.app</string>
+</resources>
