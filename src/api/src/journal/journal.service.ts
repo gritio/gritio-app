@@ -1,21 +1,26 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateJournalSectionDto, UpdateJournalSectionDto } from './dto/journal.dto';
-import { JournalSection } from '@prisma/client';
+import {
+  CreateJournalNotebookDto,
+  UpdateJournalNotebookDto,
+  CreateJournalPageDto,
+  UpdateJournalPageDto,
+} from './dto/journal.dto';
+import { JournalNotebook, JournalPage } from '@prisma/client';
 
 @Injectable()
 export class JournalService {
   constructor(private prisma: PrismaService) {}
 
-  async getSectionsByUserId(userId: string): Promise<JournalSection[]> {
-    return this.prisma.journalSection.findMany({
+  async getNotebooksByUserId(userId: string): Promise<JournalNotebook[]> {
+    return this.prisma.journalNotebook.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async createSection(userId: string, dto: CreateJournalSectionDto): Promise<JournalSection> {
-    return this.prisma.journalSection.create({
+  async createNotebook(userId: string, dto: CreateJournalNotebookDto): Promise<JournalNotebook> {
+    return this.prisma.journalNotebook.create({
       data: {
         userId,
         name: dto.name,
@@ -24,30 +29,68 @@ export class JournalService {
     });
   }
 
-  private async getSectionOwned(id: string, userId: string): Promise<JournalSection> {
-    const section = await this.prisma.journalSection.findUnique({ where: { id } });
-    if (!section) throw new NotFoundException('Section not found');
-    if (section.userId !== userId) throw new ForbiddenException('Not your section');
-    return section;
+  private async getNotebookOwned(id: string, userId: string): Promise<JournalNotebook> {
+    const notebook = await this.prisma.journalNotebook.findUnique({ where: { id } });
+    if (!notebook) throw new NotFoundException('Notebook not found');
+    if (notebook.userId !== userId) throw new ForbiddenException('Not your notebook');
+    return notebook;
   }
 
-  async updateSection(id: string, userId: string, dto: UpdateJournalSectionDto): Promise<JournalSection> {
-    await this.getSectionOwned(id, userId);
-    // Fields left undefined in dto are skipped by Prisma, not overwritten —
-    // this is what lets a rename-only PATCH and a content-only (autosave)
-    // PATCH share this same endpoint without clobbering each other.
-    return this.prisma.journalSection.update({
+  async updateNotebook(id: string, userId: string, dto: UpdateJournalNotebookDto): Promise<JournalNotebook> {
+    await this.getNotebookOwned(id, userId);
+    return this.prisma.journalNotebook.update({
       where: { id },
       data: {
         name: dto.name,
         color: dto.color,
+      },
+    });
+  }
+
+  async deleteNotebook(id: string, userId: string): Promise<JournalNotebook> {
+    await this.getNotebookOwned(id, userId);
+    return this.prisma.journalNotebook.delete({ where: { id } });
+  }
+
+  async getPagesByNotebookId(notebookId: string, userId: string): Promise<JournalPage[]> {
+    await this.getNotebookOwned(notebookId, userId);
+    return this.prisma.journalPage.findMany({
+      where: { notebookId },
+      orderBy: { date: 'desc' },
+    });
+  }
+
+  async createPage(notebookId: string, userId: string, dto: CreateJournalPageDto): Promise<JournalPage> {
+    await this.getNotebookOwned(notebookId, userId);
+    return this.prisma.journalPage.create({
+      data: {
+        notebookId,
+        date: dto.date ? new Date(dto.date) : new Date(),
+        content: dto.content || '',
+      },
+    });
+  }
+
+  private async getPageOwned(id: string, userId: string): Promise<JournalPage> {
+    const page = await this.prisma.journalPage.findUnique({ where: { id } });
+    if (!page) throw new NotFoundException('Page not found');
+    await this.getNotebookOwned(page.notebookId, userId);
+    return page;
+  }
+
+  async updatePage(id: string, userId: string, dto: UpdateJournalPageDto): Promise<JournalPage> {
+    await this.getPageOwned(id, userId);
+    return this.prisma.journalPage.update({
+      where: { id },
+      data: {
+        date: dto.date ? new Date(dto.date) : undefined,
         content: dto.content,
       },
     });
   }
 
-  async deleteSection(id: string, userId: string): Promise<JournalSection> {
-    await this.getSectionOwned(id, userId);
-    return this.prisma.journalSection.delete({ where: { id } });
+  async deletePage(id: string, userId: string): Promise<JournalPage> {
+    await this.getPageOwned(id, userId);
+    return this.prisma.journalPage.delete({ where: { id } });
   }
 }

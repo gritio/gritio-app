@@ -85,8 +85,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.todo;
   }
 
-  get journalSection() {
-    return this.prisma.journalSection;
+  get journalNotebook() {
+    return this.prisma.journalNotebook;
+  }
+
+  get journalPage() {
+    return this.prisma.journalPage;
   }
 
   get goalLog() {

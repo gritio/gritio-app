@@ -159,10 +159,18 @@ export interface ReminderOptions {
   timeZone: string;
 }
 
-export interface JournalSection {
+export interface JournalNotebook {
   id: string;
   name: string;
   color: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface JournalPageEntry {
+  id: string;
+  notebookId: string;
+  date: Date;
   content: string;
   createdAt: Date;
   updatedAt: Date;
