@@ -55,7 +55,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
   const [addingNotebook, setAddingNotebook] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [addingPage, setAddingPage] = useState(false);
-  const [newPageDate, setNewPageDate] = useState(toISODate(new Date()));
+  const [newPageTitle, setNewPageTitle] = useState('');
 
   const [renamingNotebookId, setRenamingNotebookId] = useState<string | null>(null);
   const [renameNotebookValue, setRenameNotebookValue] = useState('');
@@ -209,7 +209,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
   };
 
   const openAddPage = () => {
-    setNewPageDate(toISODate(new Date()));
+    setNewPageTitle('');
     setAddingPage(true);
   };
 
@@ -217,7 +217,11 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     setAddingPage(false);
     if (!activeNotebookId) return;
     flushSave();
-    const created = await journalApi.createPage(activeNotebookId, { date: newPageDate });
+    const title = newPageTitle.trim();
+    const created = await journalApi.createPage(activeNotebookId, {
+      date: toISODate(new Date()),
+      title: title || undefined,
+    });
     setPages(prev => [created, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setActivePageId(created.id);
     setPageDate(toISODate(created.date));
@@ -491,10 +495,15 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
           {addingPage && (
             <div className="flex items-center gap-2 px-2 pb-2">
               <input
-                type="date"
-                value={newPageDate}
-                onChange={(e) => setNewPageDate(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && confirmAddPage()}
+                type="text"
+                autoFocus
+                value={newPageTitle}
+                onChange={(e) => setNewPageTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmAddPage();
+                  if (e.key === 'Escape') setAddingPage(false);
+                }}
+                placeholder={formatPageDate(new Date())}
                 className="flex-1 min-w-0 border border-[#a67557] rounded-md px-2.5 py-1.5 text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
               />
               <button
