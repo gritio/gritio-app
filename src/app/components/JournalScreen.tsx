@@ -503,7 +503,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
                   if (e.key === 'Enter') confirmAddPage();
                   if (e.key === 'Escape') setAddingPage(false);
                 }}
-                placeholder={formatPageDate(new Date())}
+                placeholder="Page title (optional)"
                 className="flex-1 min-w-0 border border-[#a67557] rounded-md px-2.5 py-1.5 text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
               />
               <button
