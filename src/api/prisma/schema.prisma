@@ -28,7 +28,7 @@ model User {
   goals           Goal[]
   lifeGoals       LifeGoal[]
   todos           Todo[]
-  journalSections JournalSection[]
+  journalNotebooks JournalNotebook[]
   googleCalendarConnection GoogleCalendarConnection?
 }
 
@@ -256,19 +256,41 @@ model Todo {
 }
 
 // Journal - simple sections of freeform Markdown writing
-model JournalSection {
+// A notebook holds multiple dated Pages — renamed from the original flat
+// "Section" (which held one blob of content directly). @@map keeps the
+// existing table name so this is a zero-risk rename, not a table swap.
+model JournalNotebook {
   id        String   @id @default(cuid())
   userId    String
   name      String
   color     String   @default("#805232")
-  content   String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages     JournalPage[]
 
   @@index([userId])
+  @@map("JournalSection")
+}
+
+// One diary page per entry, manually added (never auto-created) — a
+// notebook can hold any number of pages, including more than one per day.
+model JournalPage {
+  id         String   @id @default(cuid())
+  notebookId String
+  title      String?
+  date       DateTime @default(now())
+  content    String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  notebook   JournalNotebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId])
+  @@index([notebookId, date])
 }
 
 // Enums

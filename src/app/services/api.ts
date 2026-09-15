@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Goal, MonthlyGoal, Task, Todo, GoalLog, JournalSection, ReminderOptions } from '../types';
+import { Goal, MonthlyGoal, Task, Todo, GoalLog, JournalNotebook, JournalPageEntry, ReminderOptions } from '../types';
 import { getToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -553,44 +553,80 @@ export const googleCalendarApi = {
 };
 
 export const journalApi = {
-  getSections: async (): Promise<JournalSection[]> => {
+  getNotebooks: async (): Promise<JournalNotebook[]> => {
     try {
-      const response = await apiClient.get('/journal/sections');
+      const response = await apiClient.get('/journal/notebooks');
       return response.data;
     } catch (error: any) {
-      console.error('Failed to fetch journal sections:', error.response?.data || error.message);
+      console.error('Failed to fetch journal notebooks:', error.response?.data || error.message);
       return [];
     }
   },
 
-  createSection: async (sectionData: { name: string; color?: string }): Promise<JournalSection> => {
+  createNotebook: async (data: { name: string; color?: string }): Promise<JournalNotebook> => {
     try {
-      const response = await apiClient.post('/journal/sections', sectionData);
+      const response = await apiClient.post('/journal/notebooks', data);
       return response.data;
     } catch (error: any) {
-      console.error('Failed to create journal section:', error.response?.data || error.message);
+      console.error('Failed to create journal notebook:', error.response?.data || error.message);
       throw error;
     }
   },
 
-  updateSection: async (
-    id: string,
-    sectionData: { name?: string; color?: string; content?: string }
-  ): Promise<JournalSection> => {
+  updateNotebook: async (id: string, data: { name?: string; color?: string }): Promise<JournalNotebook> => {
     try {
-      const response = await apiClient.patch(`/journal/sections/${id}`, sectionData);
+      const response = await apiClient.patch(`/journal/notebooks/${id}`, data);
       return response.data;
     } catch (error: any) {
-      console.error('Failed to update journal section:', error.response?.data || error.message);
+      console.error('Failed to update journal notebook:', error.response?.data || error.message);
       throw error;
     }
   },
 
-  deleteSection: async (id: string): Promise<void> => {
+  deleteNotebook: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/journal/sections/${id}`);
+      await apiClient.delete(`/journal/notebooks/${id}`);
     } catch (error: any) {
-      console.error('Failed to delete journal section:', error.response?.data || error.message);
+      console.error('Failed to delete journal notebook:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getPages: async (notebookId: string): Promise<JournalPageEntry[]> => {
+    try {
+      const response = await apiClient.get(`/journal/notebooks/${notebookId}/pages`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch journal pages:', error.response?.data || error.message);
+      return [];
+    }
+  },
+
+  createPage: async (notebookId: string, data: { date?: string; title?: string; content?: string }): Promise<JournalPageEntry> => {
+    try {
+      const response = await apiClient.post(`/journal/notebooks/${notebookId}/pages`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to create journal page:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  updatePage: async (id: string, data: { date?: string; title?: string; content?: string }): Promise<JournalPageEntry> => {
+    try {
+      const response = await apiClient.patch(`/journal/pages/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to update journal page:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  deletePage: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/journal/pages/${id}`);
+    } catch (error: any) {
+      console.error('Failed to delete journal page:', error.response?.data || error.message);
       throw error;
     }
   },

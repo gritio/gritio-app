@@ -20,9 +20,9 @@ import { AddGoalModal } from './components/AddGoalModal';
 import { LoginPage } from './components/LoginPage';
 import { RegisterPage } from './components/RegisterPage';
 import { OnboardingPage } from './components/OnboardingPage';
-import { JournalPage } from './components/JournalPage';
+import { JournalScreen } from './components/JournalScreen';
 import { mockGoals, mockMonthlyGoals, mockTasks, mockWeeklyCheckIns } from './data/mockData';
-import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalSection, ReminderOptions } from './types';
+import { Goal, MonthlyGoal, Task, WeeklyCheckIn, Todo, LifeGoal, JournalNotebook, ReminderOptions } from './types';
 import { goalsApi, authApi, monthlyGoalsApi, tasksApi, todosApi, lifeGoalsApi, journalApi, googleCalendarApi } from './services/api';
 import { scheduleTodayDigest, scheduleWeekDigest } from './utils/notifications';
 
@@ -86,7 +86,7 @@ export default function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [calendarConnected, setCalendarConnected] = useState(false);
   const [lifeGoals, setLifeGoals] = useState<LifeGoal[]>([]);
-  const [journalSections, setJournalSections] = useState<JournalSection[]>([]);
+  const [journalNotebooks, setJournalNotebooks] = useState<JournalNotebook[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -131,9 +131,9 @@ export default function App() {
         tasksApi.getAllTasks(),
         todosApi.getAllTodos(),
         lifeGoalsApi.getLifeGoals(),
-        journalApi.getSections()
+        journalApi.getNotebooks()
       ]);
-      const [fetchedGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals, fetchedJournalSections] = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      const [fetchedGoals, fetchedTasks, fetchedTodos, fetchedLifeGoals, fetchedJournalNotebooks] = await Promise.race([fetchPromise, timeoutPromise]) as any;
 
       console.log('Goals fetched successfully:', fetchedGoals);
       console.log('Tasks fetched successfully:', fetchedTasks);
@@ -144,7 +144,7 @@ export default function App() {
       setTasks(fetchedTasks);
       setTodos(fetchedTodos);
       setLifeGoals(fetchedLifeGoals || []);
-      setJournalSections(fetchedJournalSections || []);
+      setJournalNotebooks(fetchedJournalNotebooks || []);
       
       // Check if user is in kids mode
       console.log('=== CHECKING KIDS MODE IN FETCH GOALS ===');
@@ -348,7 +348,7 @@ export default function App() {
     setMonthlyGoals([]);
     setTasks([]);
     setTodos([]);
-    setJournalSections([]);
+    setJournalNotebooks([]);
     await authApi.logout();
     setIsAuthenticated(false);
   };
@@ -475,27 +475,27 @@ export default function App() {
     }
   };
 
-  const handleCreateJournalSection = async (data: { name: string; color?: string }): Promise<JournalSection> => {
-    const created = await journalApi.createSection(data);
-    setJournalSections(prev => [...prev, created]);
+  const handleCreateJournalNotebook = async (data: { name: string; color?: string }): Promise<JournalNotebook> => {
+    const created = await journalApi.createNotebook(data);
+    setJournalNotebooks(prev => [...prev, created]);
     return created;
   };
 
-  const handleUpdateJournalSection = async (id: string, data: { name?: string; color?: string; content?: string }) => {
+  const handleUpdateJournalNotebook = async (id: string, data: { name?: string; color?: string }) => {
     try {
-      const updated = await journalApi.updateSection(id, data);
-      setJournalSections(prev => prev.map(s => s.id === id ? updated : s));
+      const updated = await journalApi.updateNotebook(id, data);
+      setJournalNotebooks(prev => prev.map(n => n.id === id ? updated : n));
     } catch (error: any) {
-      console.error('Failed to update journal section:', error);
+      console.error('Failed to update journal notebook:', error);
     }
   };
 
-  const handleDeleteJournalSection = async (id: string) => {
+  const handleDeleteJournalNotebook = async (id: string) => {
     try {
-      await journalApi.deleteSection(id);
-      setJournalSections(prev => prev.filter(s => s.id !== id));
+      await journalApi.deleteNotebook(id);
+      setJournalNotebooks(prev => prev.filter(n => n.id !== id));
     } catch (error: any) {
-      console.error('Failed to delete journal section:', error);
+      console.error('Failed to delete journal notebook:', error);
     }
   };
   
@@ -613,7 +613,7 @@ export default function App() {
       ) : (
         <div className={`min-h-screen flex font-bold ${isKidsMode ? '' : 'bg-[#f5f0eb]'}`} style={{ ...(isKidsMode && { backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/assets/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }), fontFamily: isKidsMode ? 'Marker Felt, Chalkboard SE, Comic Sans MS, sans-serif' : 'inherit', fontSize: isKidsMode ? '18px' : 'inherit' }}>
           {/* Sidebar */}
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} journalCount={journalSections.length} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <Sidebar currentView={currentView} onNavigate={setCurrentView} onLogout={handleLogout} isKidsMode={isKidsMode} onboardingStep={onboardingStep} lifeGoalsCount={lifeGoals.length} goalsCount={goals.length} tasksCount={tasks.length} todosCount={todos.length} journalCount={journalNotebooks.length} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
           {/* Main Content Area with Panel */}
           <div className={`flex-1 flex flex-col transition-all duration-300 overflow-hidden ${isEditPanelOpen ? 'md:mr-96' : ''}`}>
@@ -700,11 +700,11 @@ export default function App() {
               )}
 
               {currentView === 'journal' && (
-                <JournalPage
-                  sections={journalSections}
-                  onCreateSection={handleCreateJournalSection}
-                  onUpdateSection={handleUpdateJournalSection}
-                  onDeleteSection={handleDeleteJournalSection}
+                <JournalScreen
+                  notebooks={journalNotebooks}
+                  onCreateNotebook={handleCreateJournalNotebook}
+                  onUpdateNotebook={handleUpdateJournalNotebook}
+                  onDeleteNotebook={handleDeleteJournalNotebook}
                 />
               )}
               
