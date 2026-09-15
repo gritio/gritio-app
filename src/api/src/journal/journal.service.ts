@@ -66,6 +66,7 @@ export class JournalService {
       data: {
         notebookId,
         date: dto.date ? new Date(dto.date) : new Date(),
+        title: dto.title,
         content: dto.content || '',
       },
     });
@@ -84,6 +85,7 @@ export class JournalService {
       where: { id },
       data: {
         date: dto.date ? new Date(dto.date) : undefined,
+        title: dto.title,
         content: dto.content,
       },
     });

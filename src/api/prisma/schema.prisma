@@ -279,6 +279,7 @@ model JournalNotebook {
 model JournalPage {
   id         String   @id @default(cuid())
   notebookId String
+  title      String?
   date       DateTime @default(now())
   content    String   @default("")
   createdAt  DateTime @default(now())

@@ -602,7 +602,7 @@ export const journalApi = {
     }
   },
 
-  createPage: async (notebookId: string, data: { date?: string; content?: string }): Promise<JournalPageEntry> => {
+  createPage: async (notebookId: string, data: { date?: string; title?: string; content?: string }): Promise<JournalPageEntry> => {
     try {
       const response = await apiClient.post(`/journal/notebooks/${notebookId}/pages`, data);
       return response.data;
@@ -612,7 +612,7 @@ export const journalApi = {
     }
   },
 
-  updatePage: async (id: string, data: { date?: string; content?: string }): Promise<JournalPageEntry> => {
+  updatePage: async (id: string, data: { date?: string; title?: string; content?: string }): Promise<JournalPageEntry> => {
     try {
       const response = await apiClient.patch(`/journal/pages/${id}`, data);
       return response.data;

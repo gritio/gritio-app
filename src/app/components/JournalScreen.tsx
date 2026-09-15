@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, Bold, Italic, Underline, List, Heading1, Heading2, Heading3, ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState, KeyboardEvent } from 'react';
+import { Plus, Trash2, Pencil, Bold, Italic, Underline, List, Heading1, Heading2, Heading3, ArrowLeft } from 'lucide-react';
 import { JournalNotebook, JournalPageEntry } from '../types';
 import { journalApi } from '../services/api';
 import { mdToHtml } from '../utils/markdown';
@@ -47,6 +47,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
 
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [pageDate, setPageDate] = useState('');
+  const [pageTitle, setPageTitle] = useState('');
   const [content, setContent] = useState('');
   const [mode, setMode] = useState<'write' | 'preview'>('write');
   const [font, setFont] = useState<'body' | 'serif' | 'mono'>('body');
@@ -56,16 +57,22 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
   const [addingPage, setAddingPage] = useState(false);
   const [newPageDate, setNewPageDate] = useState(toISODate(new Date()));
 
+  const [renamingNotebookId, setRenamingNotebookId] = useState<string | null>(null);
+  const [renameNotebookValue, setRenameNotebookValue] = useState('');
+  const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
+  const [renamePageValue, setRenamePageValue] = useState('');
+
   const [mobilePane, setMobilePane] = useState<MobilePane>('notebooks');
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const newNotebookInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Debounced autosave — captures (id, content) at schedule time so a pending
+  // Debounced autosave — captures (id, fields) at schedule time so a pending
   // save always targets the page it was scheduled for, even if the user
-  // switches pages before the timer fires.
+  // switches pages before the timer fires. Title and content edits within
+  // the same debounce window are merged into a single request.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingRef = useRef<{ id: string; content: string } | null>(null);
+  const pendingRef = useRef<{ id: string; title?: string; content?: string } | null>(null);
 
   const flushSave = () => {
     if (debounceRef.current) {
@@ -75,15 +82,18 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     const pending = pendingRef.current;
     pendingRef.current = null;
     if (pending) {
-      journalApi.updatePage(pending.id, { content: pending.content }).catch(() => {
+      const { id, ...data } = pending;
+      journalApi.updatePage(id, data).then((updated) => {
+        setPages(prev => prev.map(p => (p.id === id ? updated : p)));
+      }).catch(() => {
         // Best-effort autosave — errors are already logged in journalApi.
       });
     }
   };
 
-  const scheduleSave = (id: string, nextContent: string) => {
+  const scheduleSave = (id: string, data: { title?: string; content?: string }) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    pendingRef.current = { id, content: nextContent };
+    pendingRef.current = { ...(pendingRef.current?.id === id ? pendingRef.current : {}), id, ...data };
     debounceRef.current = setTimeout(flushSave, SAVE_DELAY_MS);
   };
 
@@ -114,6 +124,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     setPagesLoading(true);
     setActivePageId(null);
     setContent('');
+    setPageTitle('');
     journalApi.getPages(activeNotebookId).then(fetched => {
       setPages(fetched);
       setPagesLoading(false);
@@ -132,6 +143,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     flushSave();
     setActivePageId(page.id);
     setPageDate(toISODate(page.date));
+    setPageTitle(page.title || '');
     setContent(page.content);
     setMode('write');
     setMobilePane('editor');
@@ -139,7 +151,12 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
 
   const handleContentChange = (value: string) => {
     setContent(value);
-    if (activePageId) scheduleSave(activePageId, value);
+    if (activePageId) scheduleSave(activePageId, { content: value });
+  };
+
+  const handleTitleChange = (value: string) => {
+    setPageTitle(value);
+    if (activePageId) scheduleSave(activePageId, { title: value });
   };
 
   const handlePageDateChange = async (value: string) => {
@@ -169,6 +186,18 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     setMobilePane('pages');
   };
 
+  const openRenameNotebook = (notebook: JournalNotebook) => {
+    setRenamingNotebookId(notebook.id);
+    setRenameNotebookValue(notebook.name);
+  };
+
+  const confirmRenameNotebook = async (notebook: JournalNotebook) => {
+    const name = renameNotebookValue.trim();
+    setRenamingNotebookId(null);
+    if (!name || name === notebook.name) return;
+    await onUpdateNotebook(notebook.id, { name });
+  };
+
   const handleDeleteNotebook = async (notebook: JournalNotebook) => {
     if (!confirm(`Delete "${notebook.name}" and all its pages? This can't be undone.`)) return;
     if (notebook.id === activeNotebookId) flushSave();
@@ -192,10 +221,25 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     setPages(prev => [created, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setActivePageId(created.id);
     setPageDate(toISODate(created.date));
+    setPageTitle(created.title || '');
     setContent(created.content);
     setMode('write');
     setMobilePane('editor');
     requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+
+  const openRenamePage = (page: JournalPageEntry) => {
+    setRenamingPageId(page.id);
+    setRenamePageValue(page.title || '');
+  };
+
+  const confirmRenamePage = async (page: JournalPageEntry) => {
+    const title = renamePageValue.trim();
+    setRenamingPageId(null);
+    if (title === (page.title || '')) return;
+    const updated = await journalApi.updatePage(page.id, { title });
+    setPages(prev => prev.map(p => (p.id === page.id ? updated : p)));
+    if (page.id === activePageId) setPageTitle(updated.title || '');
   };
 
   const handleDeletePage = async (page: JournalPageEntry) => {
@@ -206,6 +250,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
     if (page.id === activePageId) {
       setActivePageId(null);
       setContent('');
+      setPageTitle('');
       setMobilePane('pages');
     }
   };
@@ -238,6 +283,68 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
       el.focus();
       el.setSelectionRange(cursor, cursor);
     });
+  };
+
+  // Toggles "- " on every non-blank line the selection touches (or just the
+  // current line with no selection) — turns bullets on if any line lacks
+  // one, off only once every line already has one.
+  const toggleBulletList = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const blockStart = content.lastIndexOf('\n', start - 1) + 1;
+    let blockEnd = content.indexOf('\n', end);
+    if (blockEnd === -1) blockEnd = content.length;
+    const block = content.slice(blockStart, blockEnd);
+    const lines = block.split('\n');
+    const allBulleted = lines.every(line => line.trim() === '' || /^- /.test(line));
+    const nextLines = lines.map(line => {
+      if (line.trim() === '') return line;
+      return allBulleted ? line.replace(/^- /, '') : '- ' + line;
+    });
+    const nextBlock = nextLines.join('\n');
+    const next = content.slice(0, blockStart) + nextBlock + content.slice(blockEnd);
+    handleContentChange(next);
+    const cursor = Math.max(blockStart, end + (nextBlock.length - block.length));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  // Pressing Enter inside a bullet line continues the list onto the next
+  // line; pressing Enter on an already-empty bullet ends the list instead.
+  const handleTextareaKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Enter') return;
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start !== end) return;
+    const lineStart = content.lastIndexOf('\n', start - 1) + 1;
+    const line = content.slice(lineStart, start);
+    const match = line.match(/^(\s*)- (.*)$/);
+    if (!match) return;
+    e.preventDefault();
+    const [, indent, rest] = match;
+    if (rest.trim() === '') {
+      const next = content.slice(0, lineStart) + content.slice(start);
+      handleContentChange(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(lineStart, lineStart);
+      });
+    } else {
+      const insertion = '\n' + indent + '- ';
+      const next = content.slice(0, start) + insertion + content.slice(end);
+      handleContentChange(next);
+      const cursor = start + insertion.length;
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
+    }
   };
 
   const activeFont = FONT_STACKS[font];
@@ -303,10 +410,40 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
               >
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: notebook.color }} />
                 <div className="min-w-0 flex-1">
-                  <div className={`text-sm font-semibold truncate ${notebook.id === activeNotebookId ? 'text-[#6b4427]' : 'text-gray-800'}`}>
-                    {notebook.name}
-                  </div>
+                  {renamingNotebookId === notebook.id ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={renameNotebookValue}
+                      onChange={(e) => setRenameNotebookValue(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') confirmRenameNotebook(notebook);
+                        if (e.key === 'Escape') setRenamingNotebookId(null);
+                      }}
+                      onBlur={() => confirmRenameNotebook(notebook)}
+                      className="w-full min-w-0 border border-[#a67557] rounded px-1.5 py-0.5 text-sm text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
+                    />
+                  ) : (
+                    <div className={`text-sm font-semibold truncate ${notebook.id === activeNotebookId ? 'text-[#6b4427]' : 'text-gray-800'}`}>
+                      {notebook.name}
+                    </div>
+                  )}
                 </div>
+                {renamingNotebookId !== notebook.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openRenameNotebook(notebook);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-400 hover:text-[#805232] hover:bg-[#f1e6db] transition-opacity flex-shrink-0"
+                    title="Rename notebook"
+                    aria-label={`Rename ${notebook.name}`}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -386,11 +523,46 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
                   }`}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className={`text-xs font-semibold truncate ${page.id === activePageId ? 'text-[#6b4427]' : 'text-gray-800'}`}>
-                      {formatPageDate(page.date)}
-                    </div>
-                    <div className="text-[11px] text-gray-400 truncate">{previewOf(page.content)}</div>
+                    {renamingPageId === page.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={renamePageValue}
+                        onChange={(e) => setRenamePageValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onFocus={(e) => e.target.select()}
+                        placeholder={formatPageDate(page.date)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') confirmRenamePage(page);
+                          if (e.key === 'Escape') setRenamingPageId(null);
+                        }}
+                        onBlur={() => confirmRenamePage(page)}
+                        className="w-full min-w-0 border border-[#a67557] rounded px-1.5 py-0.5 text-xs text-[#805232] focus:outline-none focus:ring-1 focus:ring-[#805232]"
+                      />
+                    ) : (
+                      <>
+                        <div className={`text-xs font-semibold truncate ${page.id === activePageId ? 'text-[#6b4427]' : 'text-gray-800'}`}>
+                          {page.title?.trim() || formatPageDate(page.date)}
+                        </div>
+                        <div className="text-[11px] text-gray-400 truncate">
+                          {page.title?.trim() ? `${formatPageDate(page.date)} · ${previewOf(page.content)}` : previewOf(page.content)}
+                        </div>
+                      </>
+                    )}
                   </div>
+                  {renamingPageId !== page.id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRenamePage(page);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-400 hover:text-[#805232] hover:bg-[#f1e6db] transition-opacity flex-shrink-0"
+                      title="Rename page"
+                      aria-label="Rename page"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -420,12 +592,22 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
-                <input
-                  type="date"
-                  value={pageDate}
-                  onChange={(e) => handlePageDateChange(e.target.value)}
-                  className="text-lg sm:text-xl font-bold text-gray-900 outline-none bg-transparent"
-                />
+                <div className="min-w-0 flex-1 flex flex-col">
+                  <input
+                    type="text"
+                    value={pageTitle}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    onBlur={flushSave}
+                    placeholder={formatPageDate(pageDate)}
+                    className="text-lg sm:text-xl font-bold text-gray-900 outline-none bg-transparent w-full truncate placeholder:text-gray-400 placeholder:font-bold"
+                  />
+                  <input
+                    type="date"
+                    value={pageDate}
+                    onChange={(e) => handlePageDateChange(e.target.value)}
+                    className="text-xs text-gray-500 outline-none bg-transparent w-fit"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-1 flex-wrap px-4 sm:px-6 py-2 border-b border-gray-200">
@@ -447,7 +629,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
                 <button onClick={() => wrapSelection('**', '**')} className="p-1.5 rounded hover:bg-[#f1e6db] hover:text-[#6b4427] text-gray-600" title="Bold"><Bold className="w-4 h-4" /></button>
                 <button onClick={() => wrapSelection('*', '*')} className="p-1.5 rounded hover:bg-[#f1e6db] hover:text-[#6b4427] text-gray-600" title="Italic"><Italic className="w-4 h-4" /></button>
                 <button onClick={() => wrapSelection('<u>', '</u>')} className="p-1.5 rounded hover:bg-[#f1e6db] hover:text-[#6b4427] text-gray-600" title="Underline"><Underline className="w-4 h-4" /></button>
-                <button onClick={() => prefixLine('- ')} className="p-1.5 rounded hover:bg-[#f1e6db] hover:text-[#6b4427] text-gray-600" title="Bullet list"><List className="w-4 h-4" /></button>
+                <button onClick={toggleBulletList} className="p-1.5 rounded hover:bg-[#f1e6db] hover:text-[#6b4427] text-gray-600" title="Bullet list"><List className="w-4 h-4" /></button>
                 <div className="flex-1" />
                 <div className="flex border border-gray-200 rounded-md overflow-hidden">
                   <button
@@ -471,6 +653,7 @@ export function JournalScreen({ notebooks, onCreateNotebook, onUpdateNotebook, o
                     ref={textareaRef}
                     value={content}
                     onChange={(e) => handleContentChange(e.target.value)}
+                    onKeyDown={handleTextareaKeyDown}
                     onBlur={flushSave}
                     placeholder="Start writing… (Markdown supported)"
                     className="w-full h-full min-h-[360px] outline-none resize-none text-[15px] leading-7 text-gray-900"

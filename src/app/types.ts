@@ -170,6 +170,7 @@ export interface JournalNotebook {
 export interface JournalPageEntry {
   id: string;
   notebookId: string;
+  title?: string | null;
   date: Date;
   content: string;
   createdAt: Date;
